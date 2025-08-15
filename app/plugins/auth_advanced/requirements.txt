@@ -1,0 +1,42 @@
+# Advanced Authentication Plugin Requirements
+# Dependencies specific to the Advanced Authentication plugin
+# Last updated: 2024
+
+# JWT and Security
+pyjwt==2.8.0
+cryptography==41.0.7
+
+# Password Hashing
+bcrypt==4.1.2
+
+# Multi-Factor Authentication (MFA)
+pyotp==2.9.0
+qrcode[pil]==7.4.2
+
+# Session Management
+redis==5.0.1              # For session storage
+itsdangerous==2.1.2       # Secure session tokens
+
+# OAuth2 Support (optional - uncomment if using OAuth)
+# authlib==1.3.0
+# httpx==0.25.2           # For OAuth2 client requests
+
+# Email Verification (optional - uncomment if needed)
+# emails==0.6.1
+# jinja2==3.1.3           # For email templates
+
+# Database drivers (choose based on your database)
+# Uncomment the driver you need:
+# asyncpg==0.29.0         # PostgreSQL async driver
+# aiomysql==0.2.0         # MySQL async driver
+# motor==3.3.2            # MongoDB async driver
+
+# Rate Limiting
+slowapi==0.1.9
+
+# Validation
+validators==0.22.0
+
+# Security Scanning (optional for development)
+# bandit==1.7.6
+# safety==3.0.1

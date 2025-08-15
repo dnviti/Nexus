@@ -1,0 +1,341 @@
+{
+  "name": "auth_advanced",
+  "display_name": "Advanced Authentication",
+  "version": "2.0.0",
+  "description": "Comprehensive authentication and authorization system with JWT, MFA, OAuth2, RBAC, and API key management",
+  "author": "Nexus Team",
+  "license": "MIT",
+  "category": "security",
+  "tags": [
+    "authentication",
+    "authorization",
+    "jwt",
+    "oauth2",
+    "mfa",
+    "security",
+    "rbac",
+    "api-keys"
+  ],
+  "repository": "https://github.com/nexus-framework/plugin-auth-advanced",
+  "homepage": "https://nexus-framework.dev/plugins/auth-advanced",
+  "dependencies": {
+    "nexus_framework": ">=2.0.0",
+    "plugins": [],
+    "python": ">=3.11",
+    "packages": [
+      "pyjwt>=2.8.0",
+      "bcrypt>=4.1.2",
+      "pyotp>=2.9.0",
+      "qrcode[pil]>=7.4.2",
+      "redis>=5.0.1",
+      "slowapi>=0.1.9"
+    ]
+  },
+  "permissions": [
+    "database.read",
+    "database.write",
+    "events.publish",
+    "events.subscribe",
+    "api.register_routes",
+    "session.manage",
+    "user.create",
+    "user.read",
+    "user.update",
+    "user.delete"
+  ],
+  "api": {
+    "prefix": "/api/auth",
+    "version": "v1",
+    "endpoints": [
+      {
+        "path": "/register",
+        "methods": ["POST"],
+        "description": "Register a new user account"
+      },
+      {
+        "path": "/login",
+        "methods": ["POST"],
+        "description": "Login and receive access tokens"
+      },
+      {
+        "path": "/logout",
+        "methods": ["POST"],
+        "description": "Logout and revoke tokens"
+      },
+      {
+        "path": "/refresh",
+        "methods": ["POST"],
+        "description": "Refresh access token"
+      },
+      {
+        "path": "/me",
+        "methods": ["GET", "PUT"],
+        "description": "Get or update current user profile"
+      },
+      {
+        "path": "/verify-email",
+        "methods": ["POST"],
+        "description": "Verify email address"
+      },
+      {
+        "path": "/forgot-password",
+        "methods": ["POST"],
+        "description": "Request password reset"
+      },
+      {
+        "path": "/reset-password",
+        "methods": ["POST"],
+        "description": "Reset password with token"
+      },
+      {
+        "path": "/mfa/setup",
+        "methods": ["POST"],
+        "description": "Setup multi-factor authentication"
+      },
+      {
+        "path": "/mfa/verify",
+        "methods": ["POST"],
+        "description": "Verify MFA code"
+      },
+      {
+        "path": "/api-keys",
+        "methods": ["GET", "POST", "DELETE"],
+        "description": "Manage API keys"
+      },
+      {
+        "path": "/sessions",
+        "methods": ["GET", "DELETE"],
+        "description": "Manage active sessions"
+      }
+    ]
+  },
+  "events": {
+    "publishes": [
+      "user.registered",
+      "user.login",
+      "user.logout",
+      "user.password_changed",
+      "user.email_verified",
+      "user.mfa_enabled",
+      "user.mfa_disabled",
+      "user.locked",
+      "user.unlocked",
+      "session.created",
+      "session.revoked",
+      "api_key.created",
+      "api_key.revoked"
+    ],
+    "subscribes": [
+      "email.send",
+      "sms.send"
+    ]
+  },
+  "configuration": {
+    "schema": {
+      "jwt_secret": {
+        "type": "string",
+        "required": true,
+        "description": "Secret key for JWT signing (must be strong and unique)"
+      },
+      "jwt_algorithm": {
+        "type": "string",
+        "default": "HS256",
+        "enum": ["HS256", "HS384", "HS512", "RS256", "RS384", "RS512"],
+        "description": "JWT signing algorithm"
+      },
+      "enable_registration": {
+        "type": "boolean",
+        "default": true,
+        "description": "Allow new user registration"
+      },
+      "enable_mfa": {
+        "type": "boolean",
+        "default": true,
+        "description": "Enable multi-factor authentication support"
+      },
+      "enable_oauth": {
+        "type": "boolean",
+        "default": false,
+        "description": "Enable OAuth2 provider integration"
+      },
+      "enable_api_keys": {
+        "type": "boolean",
+        "default": true,
+        "description": "Enable API key authentication"
+      },
+      "token_expiry": {
+        "type": "integer",
+        "default": 3600,
+        "min": 300,
+        "max": 86400,
+        "description": "Access token expiry in seconds"
+      },
+      "refresh_token_expiry": {
+        "type": "integer",
+        "default": 604800,
+        "min": 3600,
+        "max": 2592000,
+        "description": "Refresh token expiry in seconds"
+      },
+      "max_login_attempts": {
+        "type": "integer",
+        "default": 5,
+        "min": 3,
+        "max": 10,
+        "description": "Maximum failed login attempts before lockout"
+      },
+      "lockout_duration": {
+        "type": "integer",
+        "default": 900,
+        "min": 300,
+        "max": 3600,
+        "description": "Account lockout duration in seconds"
+      },
+      "password_min_length": {
+        "type": "integer",
+        "default": 8,
+        "min": 6,
+        "max": 32,
+        "description": "Minimum password length"
+      },
+      "require_email_verification": {
+        "type": "boolean",
+        "default": true,
+        "description": "Require email verification for new accounts"
+      },
+      "session_timeout": {
+        "type": "integer",
+        "default": 86400,
+        "min": 3600,
+        "max": 604800,
+        "description": "Session timeout in seconds"
+      },
+      "max_sessions_per_user": {
+        "type": "integer",
+        "default": 5,
+        "min": 1,
+        "max": 20,
+        "description": "Maximum concurrent sessions per user"
+      }
+    }
+  },
+  "database": {
+    "tables": [
+      {
+        "name": "users",
+        "description": "User accounts table"
+      },
+      {
+        "name": "sessions",
+        "description": "Active user sessions"
+      },
+      {
+        "name": "api_keys",
+        "description": "API keys for authentication"
+      },
+      {
+        "name": "roles",
+        "description": "User roles"
+      },
+      {
+        "name": "permissions",
+        "description": "Role permissions"
+      },
+      {
+        "name": "password_resets",
+        "description": "Password reset tokens"
+      },
+      {
+        "name": "email_verifications",
+        "description": "Email verification tokens"
+      }
+    ],
+    "indexes": [
+      "users.username",
+      "users.email",
+      "sessions.token_hash",
+      "api_keys.key_hash",
+      "users.created_at"
+    ]
+  },
+  "security": {
+    "password_hashing": "bcrypt",
+    "token_signing": "jwt",
+    "session_storage": "redis",
+    "rate_limiting": true,
+    "csrf_protection": true,
+    "secure_cookies": true
+  },
+  "oauth_providers": {
+    "supported": [
+      "google",
+      "github",
+      "microsoft",
+      "facebook",
+      "twitter",
+      "linkedin"
+    ],
+    "configurable": true
+  },
+  "hooks": {
+    "install": "scripts/install.py",
+    "uninstall": "scripts/uninstall.py",
+    "update": "scripts/update.py",
+    "health_check": "scripts/health.py"
+  },
+  "metrics": {
+    "enabled": true,
+    "endpoints": [
+      {
+        "name": "auth_requests_total",
+        "type": "counter",
+        "description": "Total authentication requests"
+      },
+      {
+        "name": "auth_failures_total",
+        "type": "counter",
+        "description": "Total authentication failures"
+      },
+      {
+        "name": "active_sessions",
+        "type": "gauge",
+        "description": "Number of active sessions"
+      },
+      {
+        "name": "token_generation_time",
+        "type": "histogram",
+        "description": "Time to generate tokens in milliseconds"
+      }
+    ]
+  },
+  "i18n": {
+    "supported_languages": [
+      "en",
+      "es",
+      "fr",
+      "de",
+      "pt",
+      "it",
+      "zh",
+      "ja",
+      "ko",
+      "ru"
+    ],
+    "default_language": "en"
+  },
+  "compatibility": {
+    "min_framework_version": "2.0.0",
+    "max_framework_version": null,
+    "tested_versions": [
+      "2.0.0",
+      "2.1.0"
+    ],
+    "breaking_changes": []
+  },
+  "support": {
+    "documentation": "https://docs.nexus-framework.dev/plugins/auth-advanced",
+    "issues": "https://github.com/nexus-framework/plugin-auth-advanced/issues",
+    "email": "security@nexus-framework.dev",
+    "discord": "https://discord.gg/nexus-framework"
+  }
+}

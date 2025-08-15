@@ -1,0 +1,218 @@
+{
+  "name": "task_manager",
+  "display_name": "Task Manager",
+  "version": "2.0.0",
+  "description": "Comprehensive task management system with priorities, assignments, reminders, and analytics",
+  "author": "Nexus Team",
+  "license": "MIT",
+  "category": "productivity",
+  "tags": [
+    "tasks",
+    "productivity",
+    "project-management",
+    "todo",
+    "workflow"
+  ],
+  "repository": "https://github.com/nexus-framework/plugin-task-manager",
+  "homepage": "https://nexus-framework.dev/plugins/task-manager",
+  "dependencies": {
+    "nexus_framework": ">=2.0.0",
+    "plugins": [
+      "auth_advanced>=1.0.0"
+    ],
+    "python": ">=3.11",
+    "packages": [
+      "alembic>=1.13.0",
+      "apscheduler>=3.10.4",
+      "python-dateutil>=2.8.2"
+    ]
+  },
+  "permissions": [
+    "database.read",
+    "database.write",
+    "events.publish",
+    "events.subscribe",
+    "api.register_routes",
+    "auth.get_current_user"
+  ],
+  "api": {
+    "prefix": "/api/tasks",
+    "version": "v1",
+    "endpoints": [
+      {
+        "path": "/",
+        "methods": ["GET", "POST"],
+        "description": "List and create tasks"
+      },
+      {
+        "path": "/{task_id}",
+        "methods": ["GET", "PUT", "DELETE"],
+        "description": "Get, update, or delete a specific task"
+      },
+      {
+        "path": "/statistics",
+        "methods": ["GET"],
+        "description": "Get task statistics"
+      },
+      {
+        "path": "/dashboard",
+        "methods": ["GET"],
+        "description": "Get dashboard data"
+      }
+    ]
+  },
+  "events": {
+    "publishes": [
+      "task.created",
+      "task.updated",
+      "task.deleted",
+      "task.status_changed",
+      "task.assigned",
+      "task.completed",
+      "task.reminder.schedule"
+    ],
+    "subscribes": [
+      "user.deleted",
+      "project.deleted",
+      "task.reminder.trigger"
+    ]
+  },
+  "configuration": {
+    "schema": {
+      "enable_reminders": {
+        "type": "boolean",
+        "default": true,
+        "description": "Enable task reminder notifications"
+      },
+      "reminder_advance_hours": {
+        "type": "integer",
+        "default": 24,
+        "min": 1,
+        "max": 168,
+        "description": "Hours before due date to send reminder"
+      },
+      "max_tasks_per_user": {
+        "type": "integer",
+        "default": 1000,
+        "min": 10,
+        "max": 10000,
+        "description": "Maximum number of active tasks per user"
+      },
+      "enable_time_tracking": {
+        "type": "boolean",
+        "default": true,
+        "description": "Enable time tracking features"
+      },
+      "default_task_priority": {
+        "type": "string",
+        "default": "medium",
+        "enum": ["low", "medium", "high", "urgent"],
+        "description": "Default priority for new tasks"
+      },
+      "enable_subtasks": {
+        "type": "boolean",
+        "default": true,
+        "description": "Allow creation of subtasks"
+      },
+      "enable_task_templates": {
+        "type": "boolean",
+        "default": false,
+        "description": "Enable task template feature"
+      },
+      "auto_archive_days": {
+        "type": "integer",
+        "default": 90,
+        "min": 7,
+        "max": 365,
+        "description": "Days after completion to auto-archive tasks"
+      }
+    }
+  },
+  "database": {
+    "tables": [
+      {
+        "name": "tasks",
+        "description": "Main tasks table"
+      },
+      {
+        "name": "task_assignments",
+        "description": "Task assignment history"
+      },
+      {
+        "name": "task_comments",
+        "description": "Task comments and activity log"
+      }
+    ],
+    "indexes": [
+      "tasks.user_id",
+      "tasks.assigned_to",
+      "tasks.status",
+      "tasks.due_date",
+      "tasks.created_at"
+    ]
+  },
+  "assets": {
+    "static": [
+      "static/css/task-manager.css",
+      "static/js/task-manager.js"
+    ],
+    "templates": [
+      "templates/task-list.html",
+      "templates/task-detail.html",
+      "templates/dashboard.html"
+    ]
+  },
+  "hooks": {
+    "install": "scripts/install.py",
+    "uninstall": "scripts/uninstall.py",
+    "update": "scripts/update.py",
+    "health_check": "scripts/health.py"
+  },
+  "metrics": {
+    "enabled": true,
+    "endpoints": [
+      {
+        "name": "tasks_total",
+        "type": "counter",
+        "description": "Total number of tasks"
+      },
+      {
+        "name": "tasks_completed",
+        "type": "counter",
+        "description": "Number of completed tasks"
+      },
+      {
+        "name": "task_completion_time",
+        "type": "histogram",
+        "description": "Time to complete tasks in seconds"
+      }
+    ]
+  },
+  "i18n": {
+    "supported_languages": [
+      "en",
+      "es",
+      "fr",
+      "de",
+      "pt",
+      "zh",
+      "ja"
+    ],
+    "default_language": "en"
+  },
+  "compatibility": {
+    "min_framework_version": "2.0.0",
+    "max_framework_version": null,
+    "tested_versions": [
+      "2.0.0",
+      "2.1.0"
+    ],
+    "breaking_changes": []
+  },
+  "support": {
+    "documentation": "https://docs.nexus-framework.dev/plugins/task-manager",
+    "issues": "https://github.com/nexus-framework/plugin-task-manager/issues",
+    "email": "support@nexus-framework.dev",
+    "discord": "https://discord.gg/nexus-framework"
+  }
+}
