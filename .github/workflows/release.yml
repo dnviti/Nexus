@@ -1,0 +1,428 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 1.2.3)'
+        required: true
+        type: string
+      prerelease:
+        description: 'Is this a pre-release?'
+        required: false
+        type: boolean
+        default: false
+
+env:
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  validate-release:
+    name: Validate Release
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      is_prerelease: ${{ steps.version.outputs.is_prerelease }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Extract version from tag or input
+      id: version
+      run: |
+        if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+          VERSION="${{ github.event.inputs.version }}"
+          IS_PRERELEASE="${{ github.event.inputs.prerelease }}"
+        else
+          VERSION=${GITHUB_REF#refs/tags/v}
+          if [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            IS_PRERELEASE="false"
+          else
+            IS_PRERELEASE="true"
+          fi
+        fi
+
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "is_prerelease=$IS_PRERELEASE" >> $GITHUB_OUTPUT
+        echo "Version: $VERSION"
+        echo "Pre-release: $IS_PRERELEASE"
+
+    - name: Validate version format
+      run: |
+        VERSION="${{ steps.version.outputs.version }}"
+        if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([a-zA-Z0-9\-\.]+)?$ ]]; then
+          echo "❌ Invalid version format: $VERSION"
+          echo "Expected format: MAJOR.MINOR.PATCH[PRERELEASE]"
+          exit 1
+        fi
+        echo "✅ Version format is valid: $VERSION"
+
+    - name: Check if version exists
+      run: |
+        VERSION="${{ steps.version.outputs.version }}"
+        if git tag | grep -q "^v$VERSION$"; then
+          echo "❌ Version $VERSION already exists!"
+          exit 1
+        fi
+        echo "✅ Version $VERSION is new"
+
+  test-before-release:
+    name: Test Before Release
+    runs-on: ubuntu-latest
+    needs: validate-release
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install Poetry
+      uses: snok/install-poetry@v1
+
+    - name: Install dependencies
+      run: poetry install --no-interaction --with dev,test
+
+    - name: Run full test suite
+      run: |
+        poetry run pytest \
+          --cov=nexus \
+          --cov-branch \
+          --cov-report=term-missing \
+          --cov-fail-under=80
+
+    - name: Check package can be built
+      run: poetry build
+
+    - name: Validate package
+      run: |
+        poetry run pip install twine
+        poetry run twine check dist/*
+
+  update-version:
+    name: Update Version
+    runs-on: ubuntu-latest
+    needs: [validate-release, test-before-release]
+    if: github.event_name == 'workflow_dispatch'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install Poetry
+      uses: snok/install-poetry@v1
+
+    - name: Update version in pyproject.toml
+      run: |
+        VERSION="${{ needs.validate-release.outputs.version }}"
+        poetry version "$VERSION"
+
+    - name: Update version in __init__.py
+      run: |
+        VERSION="${{ needs.validate-release.outputs.version }}"
+        sed -i "s/__version__ = \".*\"/__version__ = \"$VERSION\"/" nexus/__init__.py
+
+    - name: Update CHANGELOG.md
+      run: |
+        VERSION="${{ needs.validate-release.outputs.version }}"
+        DATE=$(date +%Y-%m-%d)
+
+        # Create new changelog entry
+        sed -i "s/## \[Unreleased\]/## [Unreleased]\n\n## [$VERSION] - $DATE/" CHANGELOG.md
+
+    - name: Commit version changes
+      run: |
+        VERSION="${{ needs.validate-release.outputs.version }}"
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add pyproject.toml nexus/__init__.py CHANGELOG.md
+        git commit -m "Release version $VERSION"
+        git tag "v$VERSION"
+        git push origin main
+        git push origin "v$VERSION"
+
+  build-release:
+    name: Build Release
+    runs-on: ubuntu-latest
+    needs: [validate-release, test-before-release]
+    if: always() && needs.test-before-release.result == 'success'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install Poetry
+      uses: snok/install-poetry@v1
+
+    - name: Build package
+      run: poetry build
+
+    - name: Generate checksums
+      run: |
+        cd dist/
+        sha256sum * > checksums.txt
+        cat checksums.txt
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: release-artifacts
+        path: |
+          dist/
+          CHANGELOG.md
+          README.md
+
+  build-docker:
+    name: Build and Push Docker Image
+    runs-on: ubuntu-latest
+    needs: [validate-release, build-release]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Login to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: |
+          ghcr.io/${{ github.repository }}
+          ${{ secrets.DOCKERHUB_USERNAME }}/nexus
+        tags: |
+          type=semver,pattern={{version}},value=v${{ needs.validate-release.outputs.version }}
+          type=semver,pattern={{major}}.{{minor}},value=v${{ needs.validate-release.outputs.version }}
+          type=semver,pattern={{major}},value=v${{ needs.validate-release.outputs.version }}
+          type=raw,value=latest,enable={{is_default_branch}}
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        platforms: linux/amd64,linux/arm64
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+  publish-pypi:
+    name: Publish to PyPI
+    runs-on: ubuntu-latest
+    needs: [validate-release, build-release]
+    environment: pypi
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Download build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: release-artifacts
+        path: dist/
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install Poetry
+      uses: snok/install-poetry@v1
+
+    - name: Configure PyPI token
+      run: poetry config pypi-token.pypi ${{ secrets.PYPI_TOKEN }}
+
+    - name: Publish to PyPI
+      run: poetry publish --build
+
+    - name: Verify publication
+      run: |
+        VERSION="${{ needs.validate-release.outputs.version }}"
+        echo "Waiting for package to be available on PyPI..."
+        sleep 60
+
+        pip install nexus==$VERSION
+        python -c "import nexus; print(f'✅ nexus {nexus.__version__} successfully installed from PyPI')"
+
+  create-github-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: [validate-release, build-release, publish-pypi]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Download build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: release-artifacts
+
+    - name: Generate release notes
+      id: release-notes
+      run: |
+        VERSION="${{ needs.validate-release.outputs.version }}"
+
+        # Extract changelog for this version
+        if grep -q "## \[$VERSION\]" CHANGELOG.md; then
+          NOTES=$(sed -n "/## \[$VERSION\]/,/## \[/p" CHANGELOG.md | head -n -1 | tail -n +2)
+        else
+          NOTES="Release version $VERSION"
+        fi
+
+        # Add installation instructions
+        NOTES="$NOTES
+
+## Installation
+
+\`\`\`bash
+pip install nexus==$VERSION
+\`\`\`
+
+## Docker
+
+\`\`\`bash
+docker pull ghcr.io/${{ github.repository }}:$VERSION
+\`\`\`
+
+## What's Changed
+
+$NOTES
+
+**Full Changelog**: https://github.com/${{ github.repository }}/compare/v$(git describe --tags --abbrev=0 HEAD~1)...v$VERSION"
+
+        echo "RELEASE_NOTES<<EOF" >> $GITHUB_OUTPUT
+        echo "$NOTES" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: v${{ needs.validate-release.outputs.version }}
+        name: Release v${{ needs.validate-release.outputs.version }}
+        body: ${{ steps.release-notes.outputs.RELEASE_NOTES }}
+        files: |
+          dist/*
+          README.md
+          CHANGELOG.md
+        draft: false
+        prerelease: ${{ needs.validate-release.outputs.is_prerelease }}
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  update-docs:
+    name: Update Documentation
+    runs-on: ubuntu-latest
+    needs: [create-github-release]
+    if: needs.validate-release.outputs.is_prerelease == 'false'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        ref: main
+
+    - name: Trigger documentation update
+      run: |
+        echo "📚 Triggering documentation update for stable release"
+        # This will trigger the docs.yml workflow
+        curl -X POST \
+          -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          -H "Accept: application/vnd.github.v3+json" \
+          https://api.github.com/repos/${{ github.repository }}/dispatches \
+          -d '{"event_type":"docs-update"}'
+
+  announce-release:
+    name: Announce Release
+    runs-on: ubuntu-latest
+    needs: [validate-release, create-github-release, publish-pypi]
+
+    steps:
+    - name: Create announcement
+      run: |
+        VERSION="${{ needs.validate-release.outputs.version }}"
+        IS_PRERELEASE="${{ needs.validate-release.outputs.is_prerelease }}"
+
+        if [[ "$IS_PRERELEASE" == "true" ]]; then
+          echo "🚀 Pre-release $VERSION is now available!"
+        else
+          echo "🎉 Nexus $VERSION has been released!"
+        fi
+
+        echo "📦 PyPI: https://pypi.org/project/nexus/$VERSION/"
+        echo "🐳 Docker: ghcr.io/${{ github.repository }}:$VERSION"
+        echo "📖 Release Notes: https://github.com/${{ github.repository }}/releases/tag/v$VERSION"
+
+    - name: Post to Discussions (for stable releases)
+      if: needs.validate-release.outputs.is_prerelease == 'false'
+      run: |
+        echo "Would post release announcement to GitHub Discussions"
+        # This could be implemented with GitHub's GraphQL API
+
+  cleanup:
+    name: Cleanup
+    runs-on: ubuntu-latest
+    needs: [announce-release]
+    if: always()
+
+    steps:
+    - name: Clean up artifacts
+      run: |
+        echo "🧹 Release process completed"
+        echo "Version: ${{ needs.validate-release.outputs.version }}"
+        echo "Pre-release: ${{ needs.validate-release.outputs.is_prerelease }}"
+
+    - name: Summary
+      run: |
+        echo "## Release Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Version:** ${{ needs.validate-release.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Type:** ${{ needs.validate-release.outputs.is_prerelease == 'true' && 'Pre-release' || 'Stable Release' }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Published To:" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ GitHub Releases" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ PyPI" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Docker Registry" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Links:" >> $GITHUB_STEP_SUMMARY
+        echo "- [PyPI Package](https://pypi.org/project/nexus/${{ needs.validate-release.outputs.version }}/)" >> $GITHUB_STEP_SUMMARY
+        echo "- [GitHub Release](https://github.com/${{ github.repository }}/releases/tag/v${{ needs.validate-release.outputs.version }})" >> $GITHUB_STEP_SUMMARY
+        echo "- [Docker Image](https://ghcr.io/${{ github.repository }}:${{ needs.validate-release.outputs.version }})" >> $GITHUB_STEP_SUMMARY
