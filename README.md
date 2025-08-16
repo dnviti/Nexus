@@ -1,362 +1,226 @@
-# Nexus Framework - Application Scaffolding
+# Nexus Framework Project
 
-Welcome to the **Nexus Framework** - a powerful, plugin-based application framework for building modular, scalable, and maintainable applications. This scaffolding provides everything you need to start building enterprise-grade applications with a clean, extensible architecture.
-
-## 🚀 What is Nexus Framework?
-
-Nexus Framework is a next-generation application development platform that revolutionizes how we build software by making **everything a plugin**. Instead of monolithic applications, Nexus enables you to create applications as a collection of focused, reusable plugins that work together seamlessly.
-
-### Key Features
-
-- **🔌 Pure Plugin Architecture** - Every feature is a plugin, ensuring complete modularity
-- **🔥 Hot-Reload Support** - Add, update, or remove plugins without restarting
-- **🎯 Domain Isolation** - Each plugin owns its domain completely
-- **📡 Event-Driven Communication** - Plugins communicate through a robust event bus
-- **🛡️ Enterprise Security** - Built-in authentication, RBAC, and API security
-- **📊 Multi-Database Support** - Works with MongoDB, PostgreSQL, MySQL, Redis, and more
-- **🌐 API-First Design** - Automatic REST API generation with OpenAPI documentation
-- **⚡ High Performance** - Async/await throughout, with caching and optimization
-- **🧪 Testing Framework** - Built-in testing utilities for plugins
-- **📈 Monitoring & Metrics** - Health checks, metrics collection, and observability
+Welcome to the **Nexus Framework Project** - a comprehensive, plugin-based application platform for building modular, scalable applications.
 
 ## 📁 Project Structure
 
+This repository contains the complete Nexus Framework ecosystem:
+
 ```
-nexus-app/
-├── app/
-│   ├── main.py                 # Application entry point
-│   ├── nexus/                  # Core framework modules
-│   │   ├── core.py            # Core components (EventBus, ServiceRegistry, etc.)
-│   │   ├── plugins.py         # Plugin base classes and interfaces
-│   │   ├── auth.py            # Authentication system
-│   │   ├── api.py             # API routing and gateway
-│   │   ├── db.py              # Database adapters
-│   │   ├── middleware.py      # Application middleware
-│   │   ├── monitoring.py      # Health checks and metrics
-│   │   └── utils.py           # Utility functions
-│   └── plugins/                # Plugin directory
-│       └── example/           # Example plugins
-│           └── hello_world/   # Hello World demo plugin
-│               ├── plugin.py  # Plugin implementation
-│               └── manifest.json # Plugin metadata
-├── docs/                       # Comprehensive documentation
-│   ├── README.md              # Main documentation
-│   ├── ARCHITECTURE.md        # Architecture guide
-│   ├── PLUGIN_DEVELOPMENT.md  # Plugin development guide
-│   ├── AGENTS.md              # AI agents for development
-│   └── ...                    # Additional guides
-├── config/                     # Configuration files
+nexus-framework/
+├── README.md                    # Framework documentation and quick start
+├── src/                        # Framework source code
+│   └── app/
+│       └── nexus/              # Core framework modules
+├── docs/                       # Complete documentation
+├── examples/                   # Usage examples and tutorials
 ├── tests/                      # Test suites
-└── pyproject.toml             # Python dependencies and project config
+├── tools/                      # Development and testing tools
+├── config/                     # Configuration templates
+├── plugin_template/            # Plugin development template
+├── dist/                       # Built packages
+├── pyproject.toml             # Package configuration
+├── poetry.lock                # Dependency lock file
+├── Makefile                   # Development automation
+├── LICENSE                    # MIT License
+└── CHANGELOG.md               # Version history
 ```
 
-## 🎯 Quick Start
-
-### Prerequisites
-
-- Python 3.11 or higher
-- Poetry package manager
-- Virtual environment (Poetry handles this automatically)
+## 🚀 Quick Start
 
 ### Installation
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/your-org/nexus-framework.git
-   cd nexus-framework
-   ```
+```bash
+# Install from PyPI (recommended)
+pip install nexus-framework
 
-2. **Install Poetry** (if not already installed)
-   ```bash
-   curl -sSL https://install.python-poetry.org | python3 -
-   ```
+# Verify installation
+nexus --version
+```
 
-3. **Install dependencies**
-   ```bash
-   poetry install
-   ```
-
-4. **Run the application**
-   ```bash
-   poetry run python app/main.py
-   ```
-
-5. **Access the application**
-   - API Documentation: http://localhost:8000/api/docs
-   - Health Check: http://localhost:8000/health
-   - Example Plugin: http://localhost:8000/api/example/hello_world/
-
-## 🔌 Creating Your First Plugin
-
-### 1. Create Plugin Structure
+### Create Your First Application
 
 ```bash
-mkdir -p app/plugins/business/my_plugin
-cd app/plugins/business/my_plugin
+# Create a new project
+mkdir my-nexus-app
+cd my-nexus-app
+nexus init
+
+# Start the application
+python main.py
 ```
 
-### 2. Create Plugin Class
+Visit http://localhost:8000/docs to see your API documentation.
 
-```python
-# plugin.py
-from nexus.plugins import BasePlugin
-from fastapi import APIRouter
+## 📖 Documentation
 
-class MyPlugin(BasePlugin):
-    def __init__(self):
-        super().__init__()
-        self.name = "my_plugin"
-        self.category = "business"
-        self.version = "1.0.0"
-        
-    async def initialize(self) -> bool:
-        self.logger.info("My Plugin initialized!")
-        return True
-        
-    async def shutdown(self) -> None:
-        self.logger.info("My Plugin shutting down!")
-        
-    def get_api_routes(self):
-        router = APIRouter()
-        
-        @router.get("/hello")
-        async def hello():
-            return {"message": "Hello from My Plugin!"}
-            
-        return [router]
-        
-    def get_database_schema(self):
-        return {"data": {}}
-```
+Complete documentation is available in the [`nexus-framework/`](nexus-framework/) directory:
 
-### 3. Create Manifest
+- **[Installation Guide](nexus-framework/docs/INSTALLATION.md)** - Complete installation instructions
+- **[Quick Start Tutorial](nexus-framework/docs/TUTORIAL.md)** - Build your first application
+- **[Plugin Development](nexus-framework/docs/PLUGIN_DEVELOPMENT.md)** - Create custom plugins
+- **[API Reference](nexus-framework/docs/API_REFERENCE.md)** - Complete API documentation
+- **[Architecture Guide](nexus-framework/docs/ARCHITECTURE.md)** - Framework design principles
+- **[Deployment Guide](nexus-framework/docs/DEPLOYMENT.md)** - Production deployment
+- **[Complete Documentation](nexus-framework/docs/README.md)** - Documentation hub
 
-```json
-{
-  "name": "my_plugin",
-  "display_name": "My Plugin",
-  "category": "business",
-  "version": "1.0.0",
-  "description": "My first Nexus plugin",
-  "author": "Your Name",
-  "dependencies": {
-    "nexus": ">=1.0.0",
-    "python": ">=3.11"
-  }
-}
-```
+## 🎯 What is Nexus Framework?
 
-### 4. Test Your Plugin
+Nexus Framework is a next-generation application development platform that enables you to build applications as a collection of focused, reusable plugins. Instead of monolithic applications, Nexus promotes **complete modularity** where every feature is a plugin.
 
-The plugin will be automatically discovered and loaded when you start the application!
+### Key Features
 
-## 📚 Documentation
+- **🔌 Plugin Architecture** - Everything is a plugin for maximum modularity
+- **🚀 FastAPI Integration** - Modern async web framework with auto-documentation
+- **🔐 Built-in Authentication** - JWT-based auth with role-based access control
+- **📊 Database Support** - SQLAlchemy integration with multiple databases
+- **⚡ High Performance** - Async/await throughout with optimized request handling
+- **🛠️ CLI Tools** - Comprehensive command-line interface (`nexus` and `nexus-admin`)
+- **📈 Monitoring** - Health checks, metrics collection, and observability
+- **🧪 Testing Framework** - Comprehensive testing utilities
 
-### Core Documentation
+## 💡 Examples
 
-- **[Architecture Guide](docs/ARCHITECTURE.md)** - Understand the framework architecture
-- **[Plugin Development](docs/PLUGIN_DEVELOPMENT.md)** - Complete plugin development guide
-- **[API Reference](docs/API_REFERENCE.md)** - API documentation
-- **[Configuration Guide](docs/CONFIGURATION.md)** - Configuration options
-- **[Deployment Guide](docs/DEPLOYMENT.md)** - Production deployment
+Explore real-world examples in [`nexus-framework/examples/`](nexus-framework/examples/):
 
-### AI-Assisted Development
+- **[Complete Application](nexus-framework/examples/complete_app.py)** - Full-featured demo app
+- **[Basic Usage](nexus-framework/examples/README.md)** - Step-by-step examples
+- **Plugin Examples** - Various plugin implementations
 
-- **[AI Agents Guide](docs/AGENTS.md)** - Use AI to accelerate development
-- Includes prompts for:
-  - Plugin generation
-  - Code review
-  - Test creation
-  - Documentation
-  - Security analysis
+## 🏗️ Development
 
-## 🌟 Example Plugin
+### For Framework Users
 
-The framework includes a complete example plugin (`hello_world`) that demonstrates:
+If you want to **use** Nexus Framework to build applications:
 
-- API endpoint creation
-- Database operations
-- Event publishing/subscribing
-- Configuration management
-- Health checks
-- Metrics collection
-- Multi-language support
-- Message board functionality
+1. Install via pip: `pip install nexus-framework`
+2. Follow the [Tutorial](nexus-framework/docs/TUTORIAL.md)
+3. Create plugins with [Plugin Development Guide](nexus-framework/docs/PLUGIN_DEVELOPMENT.md)
 
-Explore the code at: `app/plugins/example/hello_world/`
+### For Framework Contributors
 
-## 🛠️ Development
-
-### Running in Development Mode
+If you want to **contribute** to the Nexus Framework itself:
 
 ```bash
-# Enable hot-reload
-export NEXUS_RELOAD=true
-python app/main.py
+# Clone the repository
+git clone https://github.com/nexus-framework/nexus.git
+cd nexus/nexus-framework
+
+# Set up development environment
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+
+# Install in development mode
+pip install -e .
+
+# Run tests
+make test
+
+# See all available commands
+make help
 ```
 
-### Running Tests
+### Development Tools
+
+The [`nexus-framework/tools/`](nexus-framework/tools/) directory contains:
+
+- **Testing Scripts** - Framework validation and testing tools
+- **Demo Applications** - Complete demo applications
+- **Validation Tools** - Package validation and verification scripts
+
+## 🔧 CLI Tools
+
+After installation, you get two powerful CLI tools:
+
+### `nexus` - Main CLI
+```bash
+nexus init                      # Initialize new project
+nexus run --port 8000          # Run application
+nexus plugin create my_plugin  # Create new plugin
+nexus status                    # Check application status
+nexus health                    # Run health checks
+```
+
+### `nexus-admin` - Administrative CLI
+```bash
+nexus-admin user create admin           # Create users
+nexus-admin system info                 # System information
+nexus-admin plugin status               # Plugin status
+nexus-admin backup create               # Create backups
+```
+
+## 🧪 Testing
+
+Run the test suite to verify everything works:
 
 ```bash
-# Run all tests
-pytest
-
-# Run specific test file
-pytest tests/test_plugin.py
-
-# Run with coverage
-pytest --cov=app --cov-report=html
+cd nexus-framework
+make test
 ```
 
-### Code Quality
+## 📦 Package Distribution
 
-```bash
-# Format code
-black app/
+This project is distributed as a pip package:
 
-# Sort imports
-isort app/
+- **PyPI Package**: https://pypi.org/project/nexus-framework/
+- **Installation**: `pip install nexus-framework`
+- **Source Code**: Available in [`nexus-framework/src/`](nexus-framework/src/)
 
-# Type checking
-mypy app/
+For package maintainers, see the [Package Distribution Guide](nexus-framework/docs/PACKAGE_DISTRIBUTION.md).
 
-# Linting
-flake8 app/
-```
+## 🌟 Use Cases
 
-## 🐳 Docker Support
+Nexus Framework is perfect for building:
 
-### Build Image
-
-```bash
-docker build -t nexus-app .
-```
-
-### Run Container
-
-```bash
-docker run -d \
-  -p 8000:8000 \
-  -v $(pwd)/plugins:/app/plugins \
-  -e NEXUS_HOST=0.0.0.0 \
-  nexus-app
-```
-
-### Docker Compose
-
-```bash
-docker-compose up -d
-```
-
-## 🚀 Deployment
-
-### Production Configuration
-
-1. **Environment Variables**
-   ```bash
-   export NEXUS_HOST=0.0.0.0
-   export NEXUS_PORT=8000
-   export NEXUS_DB_URL=postgresql://user:pass@localhost/nexus
-   export NEXUS_SECRET_KEY=your-secret-key-here
-   export NEXUS_CORS_ORIGINS='["https://yourdomain.com"]'
-   ```
-
-2. **Database Setup**
-   ```bash
-   # Run migrations
-   python -m nexus.db.migrate
-   ```
-
-3. **Start with Gunicorn**
-   ```bash
-   gunicorn app.main:app -w 4 -k uvicorn.workers.UvicornWorker
-   ```
-
-## 📊 Plugin Categories
-
-Nexus Framework supports unlimited plugin categories. Common patterns:
-
-- **Business** (`plugins.business.*`) - Core business logic
-- **Integration** (`plugins.integration.*`) - External service integration
-- **Analytics** (`plugins.analytics.*`) - Data analysis and reporting
-- **Security** (`plugins.security.*`) - Security enhancements
-- **UI** (`plugins.ui.*`) - User interface components
-- **Notification** (`plugins.notification.*`) - Alert systems
-- **Storage** (`plugins.storage.*`) - Data storage solutions
-- **Workflow** (`plugins.workflow.*`) - Process automation
+- **🏢 Enterprise Applications** - CRM, ERP, business systems
+- **🛒 E-commerce Platforms** - Online stores and marketplaces  
+- **📊 Analytics Platforms** - Business intelligence and reporting
+- **🔄 Integration Hubs** - API gateways and service orchestration
+- **🤖 IoT Platforms** - Device management and data collection
+- **📱 API Backends** - Backend services for web and mobile apps
 
 ## 🤝 Contributing
 
-We welcome contributions! Here's how you can help:
+We welcome contributions! Please see our [Contributing Guide](nexus-framework/docs/CONTRIBUTING.md) for details.
 
-1. **Fork the repository**
-2. **Create a feature branch** (`git checkout -b feature/amazing-feature`)
-3. **Commit your changes** (`git commit -m 'Add amazing feature'`)
-4. **Push to the branch** (`git push origin feature/amazing-feature`)
-5. **Open a Pull Request**
+### Ways to Contribute
 
-### Development Guidelines
+- 🐛 **Report Bugs** - Help us identify and fix issues
+- 💡 **Suggest Features** - Share ideas for improvements
+- 📝 **Improve Documentation** - Help make docs clearer
+- 🔌 **Create Plugins** - Build and share plugins
+- 🔧 **Submit Pull Requests** - Contribute code improvements
 
-- Follow PEP 8 style guide
-- Add type hints to all functions
-- Write comprehensive docstrings
-- Include unit tests for new features
-- Update documentation as needed
+## 📞 Support & Community
 
-## 📈 Performance
+### Getting Help
+- **Documentation**: [Complete docs](nexus-framework/docs/README.md)
+- **GitHub Issues**: [Report bugs](https://github.com/nexus-framework/nexus/issues)
+- **Discord Community**: [Join discussions](https://discord.gg/nexus-framework)
+- **Stack Overflow**: Tag questions with `nexus-framework`
 
-Nexus Framework is designed for high performance:
+### Community Resources
+- **Examples**: [Real-world examples](nexus-framework/examples/)
+- **Plugin Collection**: [Community plugins](https://github.com/nexus-framework/plugins)
+- **Blog**: [Technical articles](https://blog.nexus-framework.dev)
+- **Twitter**: [@nexus_framework](https://twitter.com/nexus_framework)
 
-- **Async/Await** - Non-blocking I/O operations
-- **Connection Pooling** - Efficient database connections
-- **Caching** - Multi-level caching strategy
-- **Lazy Loading** - Plugins load on demand
-- **Resource Management** - Automatic cleanup and optimization
+## 📄 License
 
-### Benchmarks
+This project is licensed under the MIT License - see the [LICENSE](nexus-framework/LICENSE) file for details.
 
-- **Requests/Second**: 10,000+ (single instance)
-- **Plugin Load Time**: <100ms
-- **Hot-Reload Time**: <500ms
-- **Memory Usage**: ~50MB base + plugins
+## 🚀 Quick Links
 
-## 🔒 Security
-
-Built-in security features:
-
-- **JWT Authentication** - Secure token-based auth
-- **RBAC** - Role-based access control
-- **Rate Limiting** - API rate limiting
-- **CORS** - Cross-origin resource sharing
-- **Input Validation** - Automatic request validation
-- **SQL Injection Protection** - Parameterized queries
-- **XSS Protection** - Output encoding
-- **CSRF Protection** - Token validation
-
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- Built with [FastAPI](https://fastapi.tiangolo.com/)
-- Inspired by clean architecture principles
-- Powered by the Python community
-
-## 📞 Support
-
-- **Documentation**: [docs/](docs/)
-- **Issues**: GitHub Issues
-- **Discord**: Join our community
-- **Email**: support@nexus-framework.dev
-
-## 🚦 Status
-
-- **Version**: 1.0.0
-- **Status**: Production Ready
-- **Python**: 3.11+
-- **License**: MIT
+- **[Install Now](https://pypi.org/project/nexus-framework/)** - `pip install nexus-framework`
+- **[Documentation](nexus-framework/docs/README.md)** - Complete guides and references
+- **[Examples](nexus-framework/examples/)** - Learn by example
+- **[GitHub](https://github.com/nexus-framework/nexus)** - Source code and issues
+- **[Community](https://discord.gg/nexus-framework)** - Join the conversation
 
 ---
 
-**Start building modular applications today with Nexus Framework!** 🚀
+**Ready to build something amazing?** 
+
+Start with `pip install nexus-framework` and follow our [Quick Start Tutorial](nexus-framework/docs/TUTORIAL.md)! 🎉
+
+*Made with ❤️ by the Nexus Framework Team*
