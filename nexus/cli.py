@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Nexus Framework CLI
-Command-line interface for the Nexus Framework
+Nexus CLI
+Command-line interface for Nexus
 """
 
 import os
@@ -22,12 +22,12 @@ logger = logging.getLogger("nexus.cli")
 
 
 @click.group()
-@click.version_option(version=__version__, prog_name="Nexus Framework")
+@click.version_option(version=__version__, prog_name="Nexus")
 @click.option('--verbose', '-v', is_flag=True, help='Enable verbose output')
 @click.option('--config', '-c', type=click.Path(exists=True), help='Configuration file path')
 @click.pass_context
 def cli(ctx, verbose, config):
-    """Nexus Framework - The Ultimate Plugin-Based Application Platform"""
+    """Nexus - The Ultimate Plugin-Based Application Platform"""
     ctx.ensure_object(dict)
     ctx.obj['verbose'] = verbose
     ctx.obj['config_path'] = config

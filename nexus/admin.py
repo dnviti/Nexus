@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Nexus Framework Admin CLI
-Administrative command-line interface for the Nexus Framework
+Nexus Admin CLI
+Administrative command-line interface for Nexus
 """
 
 import os
@@ -25,12 +25,12 @@ logger = logging.getLogger("nexus.admin")
 
 
 @click.group()
-@click.version_option(version=__version__, prog_name="Nexus Framework Admin")
+@click.version_option(version=__version__, prog_name="Nexus Admin")
 @click.option('--verbose', '-v', is_flag=True, help='Enable verbose output')
 @click.option('--config', '-c', type=click.Path(exists=True), help='Configuration file path')
 @click.pass_context
 def admin(ctx, verbose, config):
-    """Nexus Framework Admin - Administrative tools and utilities"""
+    """Nexus Admin - Administrative tools and utilities"""
     ctx.ensure_object(dict)
     ctx.obj['verbose'] = verbose
     ctx.obj['config_path'] = config

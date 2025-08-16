@@ -1,12 +1,12 @@
 """
-Nexus Framework - The Ultimate Plugin-Based Application Platform
+Nexus - The Ultimate Plugin-Based Application Platform
 
-A cutting-edge, plugin-based application framework that enables developers to create
+A cutting-edge, plugin-based application platform that enables developers to create
 highly modular, maintainable, and scalable applications.
 """
 
 __version__ = "2.0.0"
-__author__ = "Nexus Framework Team"
+__author__ = "Nexus Team"
 __license__ = "MIT"
 
 import asyncio
@@ -131,14 +131,14 @@ class NexusApp:
         self.event_bus = EventBus()
         self.service_registry = ServiceRegistry()
         self.plugin_manager = PluginManager(
-            plugin_directory=self.config.plugins.directory,
-            auto_load=self.config.plugins.auto_load
+            event_bus=self.event_bus,
+            service_registry=self.service_registry
         )
 
         # Initialize database adapter if configured
         self.database: Optional[DatabaseAdapter] = None
-        if self.config.database:
-            self.database = DatabaseAdapter(self.config.database)
+        # Database adapter will be initialized by plugins that need it
+        if self.config.database and self.database:
             self.plugin_manager.set_database(self.database)
 
         # Create FastAPI application with lifespan management
