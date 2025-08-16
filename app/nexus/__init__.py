@@ -11,7 +11,7 @@ __license__ = "MIT"
 
 import asyncio
 import logging
-from typing import Optional, Dict, Any, List, Type, Callable
+from typing import Optional, Dict, Any, List, Type, Callable, Union
 from pathlib import Path
 
 # Core imports

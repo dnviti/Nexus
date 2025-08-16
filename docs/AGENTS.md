@@ -31,6 +31,7 @@ AI Agents can dramatically accelerate your development with Nexus Framework. Thi
 **Role**: System design and architecture decisions
 
 **Prompt Template**:
+
 ```
 You are a senior software architect specializing in plugin-based architectures.
 I'm building a [DOMAIN] plugin for Nexus Framework that needs to [REQUIREMENTS].
@@ -55,6 +56,7 @@ Context:
 **Role**: Code generation and implementation
 
 **Prompt Template**:
+
 ```
 You are an expert Python developer working with Nexus Framework.
 Generate a complete plugin implementation for [PLUGIN_NAME] that:
@@ -84,6 +86,7 @@ Generate:
 **Role**: Test generation and quality assurance
 
 **Prompt Template**:
+
 ```
 You are a QA engineer specializing in Python testing.
 Generate comprehensive tests for the following Nexus Framework plugin:
@@ -110,6 +113,7 @@ Use pytest and follow these conventions:
 **Role**: Documentation and API specification
 
 **Prompt Template**:
+
 ```
 You are a technical writer specializing in developer documentation.
 Create comprehensive documentation for this Nexus Framework plugin:
@@ -136,6 +140,7 @@ Generate:
 **Role**: Security analysis and recommendations
 
 **Prompt Template**:
+
 ```
 You are a security expert reviewing Nexus Framework plugins.
 Analyze this plugin for security vulnerabilities:
@@ -164,6 +169,7 @@ Provide:
 ### Plugin Generation Prompts
 
 #### Basic Plugin
+
 ```
 Create a basic Nexus Framework plugin called "hello_world" that:
 - Has a single endpoint returning a greeting
@@ -173,6 +179,7 @@ Create a basic Nexus Framework plugin called "hello_world" that:
 ```
 
 #### Business Logic Plugin
+
 ```
 Create a complete e-commerce order management plugin for Nexus Framework with:
 - Order CRUD operations
@@ -185,6 +192,7 @@ Create a complete e-commerce order management plugin for Nexus Framework with:
 ```
 
 #### Integration Plugin
+
 ```
 Create a Stripe payment integration plugin for Nexus Framework that:
 - Handles payment processing
@@ -248,30 +256,35 @@ graph TD
 **Step-by-Step Process**:
 
 1. **Define Requirements**
+
    ```
    I need a plugin for [DOMAIN] that handles [FEATURES].
    Users should be able to [USER_STORIES].
    ```
 
 2. **Architecture Design**
+
    ```
    Based on these requirements, design the architecture for a Nexus plugin.
    Include database schema, API structure, and component interactions.
    ```
 
 3. **Code Generation**
+
    ```
    Implement the plugin based on this architecture.
    Follow Nexus Framework best practices and include all necessary files.
    ```
 
 4. **Test Creation**
+
    ```
    Generate comprehensive tests for this plugin implementation.
    Include unit, integration, and performance tests.
    ```
 
 5. **Security Review**
+
    ```
    Review the implementation for security issues.
    Provide fixes for any vulnerabilities found.
@@ -286,14 +299,14 @@ graph TD
 ### Workflow 2: Plugin Enhancement
 
 ```
-Current Plugin Analysis → Feature Addition → Code Refactoring → 
+Current Plugin Analysis → Feature Addition → Code Refactoring →
 Test Updates → Documentation Updates → Release
 ```
 
 ### Workflow 3: Bug Fixing
 
 ```
-Bug Report → Root Cause Analysis → Fix Generation → 
+Bug Report → Root Cause Analysis → Fix Generation →
 Test Case Addition → Verification → Documentation Update
 ```
 
@@ -410,7 +423,7 @@ Structure:
 nexus-plugin-[NAME]/
 ├── plugin.py
 ├── manifest.json
-├── requirements.txt
+├── pyproject.toml
 ├── README.md
 ├── LICENSE
 ├── models/
@@ -585,16 +598,16 @@ def generate_plugin(description):
     prompt = f"""
     Generate a complete Nexus Framework plugin based on:
     {description}
-    
+
     Include all necessary files and follow best practices.
     """
-    
+
     response = openai.Completion.create(
         engine="gpt-4",
         prompt=prompt,
         max_tokens=4000
     )
-    
+
     return response.choices[0].text
 
 # Usage
@@ -608,7 +621,7 @@ def generate_tests(plugin_code):
     prompt = f"""
     Generate comprehensive tests for this Nexus plugin:
     {plugin_code}
-    
+
     Create unit and integration tests with >90% coverage.
     """
     # AI generates tests
@@ -621,7 +634,7 @@ def generate_docs(plugin_path):
     prompt = f"""
     Generate complete documentation for the Nexus plugin at:
     {plugin_path}
-    
+
     Include API docs, user guide, and examples.
     """
     # AI generates documentation

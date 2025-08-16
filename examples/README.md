@@ -5,7 +5,9 @@ Welcome to the Nexus Framework examples! This directory contains comprehensive e
 ## 📚 Available Examples
 
 ### 1. Complete Application (`complete_app.py`)
+
 A full-featured application showcasing all major Nexus Framework capabilities:
+
 - **Task Management System** - Complete CRUD operations for tasks
 - **Advanced Authentication** - JWT, MFA, OAuth2, API keys
 - **Real-time Notifications** - WebSocket-based push notifications
@@ -17,6 +19,7 @@ A full-featured application showcasing all major Nexus Framework capabilities:
 ## 🚀 Quick Start
 
 ### Prerequisites
+
 - Python 3.11 or higher
 - pip package manager
 - Git (for cloning the repository)
@@ -24,12 +27,14 @@ A full-featured application showcasing all major Nexus Framework capabilities:
 ### Installation
 
 1. **Clone the repository:**
+
 ```bash
 git clone https://github.com/nexus-framework/nexus.git
 cd nexus
 ```
 
 2. **Create a virtual environment:**
+
 ```bash
 python -m venv venv
 
@@ -41,11 +46,13 @@ venv\Scripts\activate
 ```
 
 3. **Install dependencies:**
+
 ```bash
-pip install -r requirements.txt
+poetry install
 ```
 
 4. **Set up environment variables:**
+
 ```bash
 cp .env.example .env
 # Edit .env with your configuration
@@ -54,16 +61,19 @@ cp .env.example .env
 ### Running the Complete Example
 
 1. **Navigate to the examples directory:**
+
 ```bash
 cd examples
 ```
 
 2. **Run the application:**
+
 ```bash
 python complete_app.py
 ```
 
 3. **Access the application:**
+
 - **Home Page**: http://localhost:8000
 - **API Documentation**: http://localhost:8000/docs
 - **Alternative Docs**: http://localhost:8000/redoc
@@ -74,6 +84,7 @@ python complete_app.py
 ### 1. User Registration and Authentication
 
 **Register a new user:**
+
 ```bash
 curl -X POST http://localhost:8000/api/auth/register \
   -H "Content-Type: application/json" \
@@ -86,6 +97,7 @@ curl -X POST http://localhost:8000/api/auth/register \
 ```
 
 **Login and get access token:**
+
 ```bash
 curl -X POST http://localhost:8000/api/auth/login \
   -H "Content-Type: application/x-www-form-urlencoded" \
@@ -93,6 +105,7 @@ curl -X POST http://localhost:8000/api/auth/login \
 ```
 
 **Use the token for authenticated requests:**
+
 ```bash
 TOKEN="your-access-token-here"
 curl -H "Authorization: Bearer $TOKEN" http://localhost:8000/api/auth/me
@@ -101,6 +114,7 @@ curl -H "Authorization: Bearer $TOKEN" http://localhost:8000/api/auth/me
 ### 2. Task Management
 
 **Create a task:**
+
 ```bash
 curl -X POST http://localhost:8000/api/tasks \
   -H "Authorization: Bearer $TOKEN" \
@@ -115,11 +129,13 @@ curl -X POST http://localhost:8000/api/tasks \
 ```
 
 **Get all tasks:**
+
 ```bash
 curl -H "Authorization: Bearer $TOKEN" http://localhost:8000/api/tasks
 ```
 
 **Update task status:**
+
 ```bash
 curl -X PUT http://localhost:8000/api/tasks/{task_id} \
   -H "Authorization: Bearer $TOKEN" \
@@ -130,24 +146,26 @@ curl -X PUT http://localhost:8000/api/tasks/{task_id} \
 ### 3. Real-time Notifications (WebSocket)
 
 **Connect to WebSocket using JavaScript:**
+
 ```javascript
-const ws = new WebSocket('ws://localhost:8000/ws/notifications/user123');
+const ws = new WebSocket("ws://localhost:8000/ws/notifications/user123");
 
 ws.onopen = () => {
-    console.log('Connected to notifications');
+  console.log("Connected to notifications");
 };
 
 ws.onmessage = (event) => {
-    const notification = JSON.parse(event.data);
-    console.log('Received:', notification);
+  const notification = JSON.parse(event.data);
+  console.log("Received:", notification);
 };
 
 ws.onerror = (error) => {
-    console.error('WebSocket error:', error);
+  console.error("WebSocket error:", error);
 };
 ```
 
 **Using Python WebSocket client:**
+
 ```python
 import asyncio
 import websockets
@@ -167,6 +185,7 @@ asyncio.run(listen_notifications())
 ### 4. File Upload and Management
 
 **Upload a file:**
+
 ```bash
 curl -X POST http://localhost:8000/api/files/upload \
   -H "Authorization: Bearer $TOKEN" \
@@ -175,12 +194,14 @@ curl -X POST http://localhost:8000/api/files/upload \
 ```
 
 **List files in a category:**
+
 ```bash
 curl -H "Authorization: Bearer $TOKEN" \
   http://localhost:8000/api/files/list/documents
 ```
 
 **Download a file:**
+
 ```bash
 curl -H "Authorization: Bearer $TOKEN" \
   http://localhost:8000/api/files/documents/filename.pdf \
@@ -190,12 +211,14 @@ curl -H "Authorization: Bearer $TOKEN" \
 ### 5. Analytics Dashboard
 
 **Get analytics data:**
+
 ```bash
 curl -H "Authorization: Bearer $TOKEN" \
   http://localhost:8000/api/analytics/dashboard
 ```
 
 **Track custom event:**
+
 ```bash
 curl -X POST http://localhost:8000/api/analytics/track/event \
   -H "Authorization: Bearer $TOKEN" \
@@ -249,11 +272,13 @@ curl -X POST http://localhost:8000/api/analytics/track/event \
 ### Creating Your Own Plugin
 
 1. **Create plugin directory:**
+
 ```bash
 mkdir -p plugins/my_plugin
 ```
 
 2. **Create plugin manifest (`plugins/my_plugin/manifest.json`):**
+
 ```json
 {
   "name": "my_plugin",
@@ -267,6 +292,7 @@ mkdir -p plugins/my_plugin
 ```
 
 3. **Create plugin class (`plugins/my_plugin/plugin.py`):**
+
 ```python
 from nexus.plugins import BasePlugin, PluginMetadata
 from fastapi import APIRouter
@@ -279,24 +305,25 @@ class MyPlugin(BasePlugin):
             version="1.0.0",
             description="My custom plugin"
         )
-    
+
     async def initialize(self, context) -> bool:
         # Plugin initialization logic
         return True
-    
+
     def get_api_routes(self):
         router = APIRouter(prefix="/api/my_plugin")
-        
+
         @router.get("/")
         async def get_info():
             return {"plugin": "my_plugin", "status": "active"}
-        
+
         return [router]
 ```
 
 ## 📊 Testing the Examples
 
 ### Unit Tests
+
 ```bash
 # Run all tests
 pytest
@@ -309,6 +336,7 @@ pytest tests/test_complete_app.py
 ```
 
 ### Load Testing with Locust
+
 ```bash
 # Install locust
 pip install locust
@@ -320,6 +348,7 @@ locust -f tests/performance/locustfile.py --host=http://localhost:8000
 ```
 
 ### API Testing with HTTPie
+
 ```bash
 # Install HTTPie
 pip install httpie
@@ -339,6 +368,7 @@ http GET localhost:8000/api/tasks \
 ## 🐳 Docker Deployment
 
 ### Build and run with Docker:
+
 ```bash
 # Build image
 docker build -t nexus-example .
@@ -352,6 +382,7 @@ docker run -p 8000:8000 \
 ```
 
 ### Using Docker Compose:
+
 ```bash
 # Start all services
 docker-compose up -d
@@ -369,7 +400,7 @@ docker-compose down
 examples/
 ├── complete_app.py          # Main example application
 ├── README.md               # This file
-├── requirements.txt        # Python dependencies
+├── pyproject.toml          # Python dependencies and project config
 ├── .env.example           # Environment variables template
 ├── config/
 │   └── example.yaml       # Configuration example
@@ -403,7 +434,7 @@ app:
 
 # Database
 database:
-  type: "sqlite"  # or postgresql, mysql, mongodb
+  type: "sqlite" # or postgresql, mysql, mongodb
   connection:
     path: "./data/nexus.db"
 
@@ -424,6 +455,7 @@ plugins:
 ### Common Issues
 
 1. **Port already in use:**
+
    ```bash
    # Find process using port 8000
    lsof -i :8000

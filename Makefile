@@ -375,12 +375,7 @@ clean-all: clean ## Clean everything including virtual environment
 	@rm -rf .venv/
 	@echo "$(GREEN)All cleaned!$(NC)"
 
-export-requirements: ## Export requirements.txt files
-	@echo "$(BLUE)Exporting requirements files...$(NC)"
-	$(POETRY) export -f requirements.txt --output requirements.txt
-	$(POETRY) export -f requirements.txt --with dev --output dev-requirements.txt
-	$(POETRY) export -f requirements.txt --with production --output production-requirements.txt
-	@echo "$(GREEN)Requirements exported!$(NC)"
+
 
 env-info: ## Show Poetry environment info
 	@echo "$(BLUE)Poetry environment information:$(NC)"

@@ -21,6 +21,7 @@ Plugins are the heart of Nexus Framework applications. Every piece of business f
 ### What is a Plugin?
 
 A plugin is a self-contained module that:
+
 - **Encapsulates** a specific domain or functionality
 - **Provides** API endpoints, services, and UI components
 - **Integrates** seamlessly with the core framework
@@ -44,7 +45,7 @@ my-plugin/
 ├── __init__.py              # Plugin exports
 ├── plugin.py                # Main plugin class
 ├── manifest.json            # Plugin metadata
-├── requirements.txt         # Python dependencies
+├── pyproject.toml          # Python dependencies and project config
 ├── README.md               # Documentation
 ├── LICENSE                 # License file
 ├── config/                 # Configuration
@@ -104,11 +105,11 @@ import logging
 
 class MyAwesomePlugin(BasePlugin, BusinessPlugin):
     """A comprehensive business plugin example."""
-    
+
     def __init__(self):
         """Initialize the plugin."""
         super().__init__()
-        
+
         # Plugin metadata
         self.info = PluginInfo(
             name="my_awesome_plugin",
@@ -118,59 +119,59 @@ class MyAwesomePlugin(BasePlugin, BusinessPlugin):
             author="Your Name",
             category="business"
         )
-        
+
         # Initialize services
         self.service = None
         self.repository = None
-        
+
         # Setup logging
         self.logger = logging.getLogger(f"nexus.plugins.{self.info.name}")
-        
+
     async def initialize(self) -> bool:
         """Initialize plugin resources."""
         try:
             self.logger.info(f"Initializing {self.info.display_name}")
-            
+
             # Initialize database connection
             from .repositories import MyRepository
             self.repository = MyRepository(self.db_adapter)
-            
+
             # Initialize services
             from .services import MyDomainService
             self.service = MyDomainService(self.repository)
-            
+
             # Register event handlers
             await self._register_event_handlers()
-            
+
             # Perform health check
             if not await self._verify_dependencies():
                 return False
-                
+
             self.logger.info(f"{self.info.display_name} initialized successfully")
             return True
-            
+
         except Exception as e:
             self.logger.error(f"Failed to initialize: {e}")
             return False
-    
+
     async def shutdown(self) -> None:
         """Cleanup plugin resources."""
         self.logger.info(f"Shutting down {self.info.display_name}")
-        
+
         # Cleanup resources
         if self.repository:
             await self.repository.close()
-            
+
         # Unregister event handlers
         await self._unregister_event_handlers()
-        
+
         self.logger.info(f"{self.info.display_name} shut down successfully")
-    
+
     def get_api_routes(self) -> List[APIRouter]:
         """Return plugin API routes."""
         from .api.routes import router
         return [router]
-    
+
     def get_database_schema(self) -> Dict[str, Any]:
         """Return database schema."""
         return {
@@ -193,26 +194,26 @@ class MyAwesomePlugin(BasePlugin, BusinessPlugin):
                 ]
             }
         }
-    
+
     async def _register_event_handlers(self):
         """Register event subscriptions."""
         from .events.subscribers import handle_user_created
-        
+
         await self.event_bus.subscribe(
             "user.created",
             handle_user_created
         )
-    
+
     async def _verify_dependencies(self) -> bool:
         """Verify plugin dependencies are available."""
         # Check for required services
         required_services = ["auth_service", "email_service"]
-        
+
         for service_name in required_services:
             if not self.service_registry.has_service(service_name):
                 self.logger.error(f"Required service '{service_name}' not found")
                 return False
-        
+
         return True
 ```
 
@@ -239,25 +240,13 @@ class MyAwesomePlugin(BasePlugin, BusinessPlugin):
   "documentation": "https://docs.example.com/my-awesome-plugin",
   "keywords": ["business", "example", "awesome"],
   "icon": "icon.png",
-  "screenshots": [
-    "screenshots/dashboard.png",
-    "screenshots/settings.png"
-  ],
+  "screenshots": ["screenshots/dashboard.png", "screenshots/settings.png"],
   "dependencies": {
     "nexus": ">=1.0.0",
     "python": ">=3.11",
-    "packages": [
-      "pydantic>=2.0.0",
-      "httpx>=0.24.0",
-      "redis>=4.5.0"
-    ],
-    "plugins": [
-      "auth_plugin>=1.0.0",
-      "email_plugin>=1.0.0"
-    ],
-    "system": [
-      "redis-server>=6.0"
-    ]
+    "packages": ["pydantic>=2.0.0", "httpx>=0.24.0", "redis>=4.5.0"],
+    "plugins": ["auth_plugin>=1.0.0", "email_plugin>=1.0.0"],
+    "system": ["redis-server>=6.0"]
   },
   "permissions": [
     "database.read",
@@ -270,15 +259,8 @@ class MyAwesomePlugin(BasePlugin, BusinessPlugin):
   "configuration": {
     "schema": "config/schema.json",
     "defaults": "config/default.yaml",
-    "required": [
-      "api_key",
-      "database_name"
-    ],
-    "optional": [
-      "cache_ttl",
-      "max_retries",
-      "timeout"
-    ]
+    "required": ["api_key", "database_name"],
+    "optional": ["cache_ttl", "max_retries", "timeout"]
   },
   "api": {
     "prefix": "/api/awesome",
@@ -479,31 +461,31 @@ from fastapi import APIRouter
 
 class MyFirstPlugin(BasePlugin):
     """My first Nexus plugin."""
-    
+
     def __init__(self):
         super().__init__()
         self.name = "my_first_plugin"
         self.version = "0.1.0"
-        
+
     async def initialize(self) -> bool:
         """Initialize the plugin."""
         self.logger.info("My First Plugin is starting!")
         return True
-    
+
     async def shutdown(self) -> None:
         """Cleanup resources."""
         self.logger.info("My First Plugin is stopping!")
-    
+
     def get_api_routes(self) -> List[APIRouter]:
         """Define API routes."""
         router = APIRouter()
-        
+
         @router.get("/hello")
         async def hello_world():
             return {"message": "Hello from My First Plugin!"}
-        
+
         return [router]
-    
+
     def get_database_schema(self) -> Dict[str, Any]:
         """Define database schema."""
         return {
@@ -521,7 +503,7 @@ from my_first_plugin.plugin import MyFirstPlugin
 
 class TestMyFirstPlugin(PluginTestCase):
     """Test My First Plugin."""
-    
+
     @pytest.fixture
     async def plugin(self):
         """Create plugin instance."""
@@ -529,12 +511,12 @@ class TestMyFirstPlugin(PluginTestCase):
         await plugin.initialize()
         yield plugin
         await plugin.shutdown()
-    
+
     async def test_plugin_initializes(self, plugin):
         """Test plugin initialization."""
         assert plugin.name == "my_first_plugin"
         assert plugin.version == "0.1.0"
-    
+
     async def test_hello_endpoint(self, plugin, test_client):
         """Test hello endpoint."""
         response = await test_client.get("/api/my_first_plugin/hello")
@@ -574,45 +556,45 @@ graph LR
 ```python
 class PluginLifecycle:
     """Plugin lifecycle management."""
-    
+
     async def on_discover(self) -> Dict[str, Any]:
         """Called when plugin is discovered."""
         return {
             "capabilities": ["api", "ui", "events"],
             "requirements": ["database", "cache"]
         }
-    
+
     async def on_validate(self) -> bool:
         """Validate plugin requirements."""
         return await self.check_dependencies()
-    
+
     async def on_load(self) -> None:
         """Plugin is being loaded into memory."""
         await self.load_configuration()
-    
+
     async def on_initialize(self) -> bool:
         """Initialize plugin resources."""
         await self.connect_database()
         await self.register_services()
         return True
-    
+
     async def on_enable(self) -> None:
         """Plugin is being enabled."""
         await self.start_background_tasks()
-    
+
     async def on_disable(self) -> None:
         """Plugin is being disabled."""
         await self.stop_background_tasks()
-    
+
     async def on_shutdown(self) -> None:
         """Cleanup plugin resources."""
         await self.disconnect_database()
         await self.unregister_services()
-    
+
     async def on_unload(self) -> None:
         """Plugin is being removed from memory."""
         await self.cleanup_resources()
-    
+
     async def on_error(self, error: Exception) -> None:
         """Handle plugin errors."""
         await self.log_error(error)
@@ -630,18 +612,18 @@ from nexus.plugins.categories import BusinessPlugin
 
 class OrderManagementPlugin(BusinessPlugin):
     """Order management system."""
-    
+
     async def process_order(self, order_data: OrderSchema) -> Order:
         """Process a new order."""
         # Validate order
         await self.validate_order(order_data)
-        
+
         # Create order
         order = await self.create_order(order_data)
-        
+
         # Publish event
         await self.publish_event(OrderCreatedEvent(order))
-        
+
         return order
 ```
 
@@ -654,7 +636,7 @@ from nexus.plugins.categories import IntegrationPlugin
 
 class PaymentGatewayPlugin(IntegrationPlugin):
     """Payment gateway integration."""
-    
+
     async def process_payment(self, payment: PaymentRequest) -> PaymentResponse:
         """Process payment through external gateway."""
         async with httpx.AsyncClient() as client:
@@ -675,18 +657,18 @@ from nexus.plugins.categories import AnalyticsPlugin
 
 class ReportingPlugin(AnalyticsPlugin):
     """Reporting and analytics."""
-    
+
     async def generate_report(self, params: ReportParams) -> Report:
         """Generate analytical report."""
         # Collect data
         data = await self.collect_data(params)
-        
+
         # Process analytics
         analytics = await self.process_analytics(data)
-        
+
         # Generate visualizations
         charts = await self.create_charts(analytics)
-        
+
         return Report(data=analytics, charts=charts)
 ```
 
@@ -699,7 +681,7 @@ from nexus.plugins.categories import UIPlugin
 
 class DashboardPlugin(UIPlugin):
     """Dashboard UI components."""
-    
+
     def get_ui_components(self) -> Dict[str, Component]:
         """Register UI components."""
         return {
@@ -727,7 +709,7 @@ class DashboardPlugin(UIPlugin):
 class PublisherPlugin(BasePlugin):
     async def create_order(self, order_data):
         order = await self.service.create(order_data)
-        
+
         # Publish event for other plugins
         await self.event_bus.publish(
             "order.created",
@@ -748,13 +730,13 @@ class SubscriberPlugin(BasePlugin):
             "order.created",
             self.handle_order_created
         )
-    
+
     async def handle_order_created(self, event_data):
         """Handle order created event."""
         # Update inventory
         for item in event_data["items"]:
             await self.update_inventory(item["product_id"], -item["quantity"])
-        
+
         # Send notification
         await self.send_notification(
             event_data["customer_id"],
@@ -771,13 +753,13 @@ class ServiceConsumerPlugin(BasePlugin):
         self.payment_service = await self.service_registry.get_service(
             "payment_service"
         )
-        
+
         if not self.payment_service:
             self.logger.error("Payment service not available")
             return False
-        
+
         return True
-    
+
     async def process_payment(self, amount):
         """Use discovered service."""
         return await self.payment_service.charge(amount)
@@ -807,7 +789,7 @@ class ScheduledPlugin(BasePlugin):
                 schedule=Schedule.daily(hour=2, minute=0)
             )
         )
-        
+
         self.task_manager.register_task(
             BackgroundTask(
                 name="sync_data",
@@ -815,14 +797,14 @@ class ScheduledPlugin(BasePlugin):
                 schedule=Schedule.every_minutes(15)
             )
         )
-        
+
         return True
-    
+
     async def cleanup_old_data(self):
         """Clean up old data daily."""
         cutoff_date = datetime.now() - timedelta(days=30)
         await self.repository.delete_before(cutoff_date)
-    
+
     async def sync_data(self):
         """Sync data every 15 minutes."""
         await self.sync_with_external_api()
@@ -839,7 +821,7 @@ class CachedPlugin(BasePlugin):
         """Cache expensive operations."""
         # This will be cached for 5 minutes
         return await self.compute_expensive_operation(key)
-    
+
     async def invalidate_cache(self, key: str):
         """Invalidate cache when data changes."""
         await self.cache_manager.delete(f"get_expensive_data:{key}")
@@ -859,15 +841,15 @@ class TransactionalPlugin(BasePlugin):
                     raise ValueError("Insufficient funds")
                 from_acc.balance -= amount
                 await tx.update(f"accounts.{from_account}", from_acc)
-                
+
                 # Credit to account
                 to_acc = await tx.get(f"accounts.{to_account}")
                 to_acc.balance += amount
                 await tx.update(f"accounts.{to_account}", to_acc)
-                
+
                 # Commit transaction
                 await tx.commit()
-                
+
             except Exception as e:
                 # Rollback on error
                 await tx.rollback()
@@ -892,18 +874,18 @@ class TestItemService:
         repo.get = AsyncMock(return_value={"id": "1", "name": "Test"})
         repo.create = AsyncMock(return_value={"id": "2", "name": "New"})
         return repo
-    
+
     @pytest.fixture
     def service(self, mock_repository):
         """Create service with mock repository."""
         return ItemService(mock_repository)
-    
+
     async def test_get_item(self, service):
         """Test getting an item."""
         item = await service.get_item("1")
         assert item["id"] == "1"
         assert item["name"] == "Test"
-    
+
     async def test_create_item(self, service):
         """Test creating an item."""
         item = await service.create_item({"name": "New"})
@@ -952,17 +934,17 @@ class TestPluginPerformance(PerformanceTest):
         """Test handling concurrent requests."""
         tasks = []
         start_time = time.time()
-        
+
         # Create 100 concurrent requests
         for i in range(100):
             tasks.append(self.client.get(f"/api/my_plugin/items/{i}"))
-        
+
         responses = await asyncio.gather(*tasks)
         duration = time.time() - start_time
-        
+
         # Assert all successful
         assert all(r.status_code == 200 for r in responses)
-        
+
         # Assert performance threshold
         assert duration < 5.0  # Should complete within 5 seconds
 ```
@@ -1047,12 +1029,12 @@ from pydantic import BaseSettings, Field
 
 class PluginConfig(BaseSettings):
     """Plugin configuration with validation."""
-    
+
     api_key: str = Field(..., description="API key for external service")
     timeout: int = Field(30, description="Request timeout in seconds")
     retry_count: int = Field(3, ge=0, le=10)
     cache_ttl: int = Field(300, ge=0)
-    
+
     class Config:
         env_prefix = "MY_PLUGIN_"
         env_file = ".env"
@@ -1064,3 +1046,4 @@ class PluginConfig(BaseSettings):
 class WellLoggedPlugin(BasePlugin):
     async def process(self, data):
         """Example of
+```

@@ -47,7 +47,7 @@ nexus-app/
 │   └── ...                    # Additional guides
 ├── config/                     # Configuration files
 ├── tests/                      # Test suites
-└── requirements.txt           # Python dependencies
+└── pyproject.toml             # Python dependencies and project config
 ```
 
 ## 🎯 Quick Start
@@ -55,31 +55,30 @@ nexus-app/
 ### Prerequisites
 
 - Python 3.11 or higher
-- pip package manager
-- Virtual environment (recommended)
+- Poetry package manager
+- Virtual environment (Poetry handles this automatically)
 
 ### Installation
 
 1. **Clone the repository**
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/your-org/nexus-framework.git
    cd nexus-framework
    ```
 
-2. **Create a virtual environment**
+2. **Install Poetry** (if not already installed)
    ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   curl -sSL https://install.python-poetry.org | python3 -
    ```
 
 3. **Install dependencies**
    ```bash
-   pip install -r requirements.txt
+   poetry install
    ```
 
 4. **Run the application**
    ```bash
-   python app/main.py
+   poetry run python app/main.py
    ```
 
 5. **Access the application**

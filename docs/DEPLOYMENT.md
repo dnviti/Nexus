@@ -1,6 +1,7 @@
 # Nexus Framework Deployment Guide
 
 ## Table of Contents
+
 - [Overview](#overview)
 - [Pre-Deployment Checklist](#pre-deployment-checklist)
 - [Deployment Strategies](#deployment-strategies)
@@ -86,7 +87,7 @@ ElasticSearch
 
 ```yaml
 # docker-compose.blue-green.yml
-version: '3.8'
+version: "3.8"
 
 services:
   nexus-blue:
@@ -134,19 +135,19 @@ NEW_VERSION=$1
 
 for server in "${SERVERS[@]}"; do
     echo "Deploying to $server..."
-    
+
     # Remove from load balancer
     ./remove-from-lb.sh $server
-    
+
     # Deploy new version
     ssh $server "cd /app && git pull && docker-compose up -d"
-    
+
     # Health check
     ./health-check.sh $server
-    
+
     # Add back to load balancer
     ./add-to-lb.sh $server
-    
+
     # Wait before next server
     sleep 30
 done
@@ -173,10 +174,10 @@ spec:
         version: canary
     spec:
       containers:
-      - name: nexus
-        image: nexus-app:2.0.0-canary
-        ports:
-        - containerPort: 8000
+        - name: nexus
+          image: nexus-app:2.0.0-canary
+          ports:
+            - containerPort: 8000
 
 ---
 apiVersion: v1
@@ -187,8 +188,8 @@ spec:
   selector:
     app: nexus
   ports:
-  - port: 80
-    targetPort: 8000
+    - port: 80
+      targetPort: 8000
   sessionAffinity: ClientIP
 ```
 
@@ -210,12 +211,14 @@ RUN apt-get update && apt-get install -y \
 # Set working directory
 WORKDIR /app
 
-# Copy requirements
-COPY requirements.txt .
+# Copy Poetry files
+COPY pyproject.toml poetry.lock* ./
 
-# Install Python dependencies
+# Install Poetry and dependencies
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+    pip install poetry && \
+    poetry config virtualenvs.create false && \
+    poetry install --only=main --no-dev
 
 # Production stage
 FROM python:3.11-slim
@@ -259,7 +262,7 @@ CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 
 ```yaml
 # docker-compose.yml
-version: '3.8'
+version: "3.8"
 
 services:
   nexus:
@@ -341,7 +344,7 @@ networks:
 
 ```yaml
 # docker-stack.yml
-version: '3.8'
+version: "3.8"
 
 services:
   nexus:
@@ -448,52 +451,52 @@ spec:
         app: nexus
     spec:
       containers:
-      - name: nexus
-        image: nexus-app:latest
-        ports:
-        - containerPort: 8000
-        env:
-        - name: NEXUS_DATABASE_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: nexus-secrets
-              key: db-password
-        - name: NEXUS_AUTH_JWT_SECRET
-          valueFrom:
-            secretKeyRef:
-              name: nexus-secrets
-              key: jwt-secret
-        volumeMounts:
-        - name: config
-          mountPath: /app/config
-        - name: data
-          mountPath: /data
-        resources:
-          requests:
-            memory: "256Mi"
-            cpu: "250m"
-          limits:
-            memory: "512Mi"
-            cpu: "500m"
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 8000
-          initialDelaySeconds: 30
-          periodSeconds: 10
-        readinessProbe:
-          httpGet:
-            path: /ready
-            port: 8000
-          initialDelaySeconds: 5
-          periodSeconds: 5
+        - name: nexus
+          image: nexus-app:latest
+          ports:
+            - containerPort: 8000
+          env:
+            - name: NEXUS_DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: nexus-secrets
+                  key: db-password
+            - name: NEXUS_AUTH_JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: nexus-secrets
+                  key: jwt-secret
+          volumeMounts:
+            - name: config
+              mountPath: /app/config
+            - name: data
+              mountPath: /data
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 5
       volumes:
-      - name: config
-        configMap:
-          name: nexus-config
-      - name: data
-        persistentVolumeClaim:
-          claimName: nexus-pvc
+        - name: config
+          configMap:
+            name: nexus-config
+        - name: data
+          persistentVolumeClaim:
+            claimName: nexus-pvc
 
 ---
 # service.yaml
@@ -506,8 +509,8 @@ spec:
   selector:
     app: nexus
   ports:
-  - port: 80
-    targetPort: 8000
+    - port: 80
+      targetPort: 8000
   type: LoadBalancer
 
 ---
@@ -522,20 +525,20 @@ metadata:
     cert-manager.io/cluster-issuer: letsencrypt-prod
 spec:
   tls:
-  - hosts:
-    - nexus.example.com
-    secretName: nexus-tls
+    - hosts:
+        - nexus.example.com
+      secretName: nexus-tls
   rules:
-  - host: nexus.example.com
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: nexus-service
-            port:
-              number: 80
+    - host: nexus.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: nexus-service
+                port:
+                  number: 80
 
 ---
 # hpa.yaml
@@ -552,18 +555,18 @@ spec:
   minReplicas: 3
   maxReplicas: 10
   metrics:
-  - type: Resource
-    resource:
-      name: cpu
-      target:
-        type: Utilization
-        averageUtilization: 70
-  - type: Resource
-    resource:
-      name: memory
-      target:
-        type: Utilization
-        averageUtilization: 80
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80
 ```
 
 ### Helm Chart
@@ -730,7 +733,10 @@ Resources:
         }
       },
       "healthCheck": {
-        "command": ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"],
+        "command": [
+          "CMD-SHELL",
+          "curl -f http://localhost:8000/health || exit 1"
+        ],
         "interval": 30,
         "timeout": 5,
         "retries": 3
@@ -767,13 +773,13 @@ resources:
   disk_size_gb: 20
 
 handlers:
-- url: /static
-  static_dir: static
-  expiration: "30d"
+  - url: /static
+    static_dir: static
+    expiration: "30d"
 
-- url: /.*
-  script: auto
-  secure: always
+  - url: /.*
+    script: auto
+    secure: always
 ```
 
 ### Azure Deployment
@@ -1096,10 +1102,11 @@ plugin_count = Gauge(
 
 def setup_metrics(app: FastAPI):
     """Setup Prometheus metrics."""
-    
+
     @app.middleware("http")
     async def track_metrics(request, call_next):
         start_time = time.time()
-        
+
         # Track active connections
         active_connections.inc()
+```

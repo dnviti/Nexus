@@ -43,7 +43,8 @@ __version__ = "1.0.0"
 __author__ = "Nexus Framework Team"
 
 # Setup logging
-logger = setup_logging("nexus.main")
+setup_logging("INFO")
+logger = logging.getLogger("nexus.main")
 
 
 class NexusApplication:
@@ -72,7 +73,7 @@ class NexusApplication:
             service_registry=self.service_registry
         )
         self.auth_manager = AuthenticationManager()
-        self.health_check = HealthCheck()
+        # Remove this line - health checks are managed by metrics collector
         self.metrics = MetricsCollector()
 
         # Runtime state
@@ -163,7 +164,7 @@ class NexusApplication:
         self.service_registry.register("auth", self.auth_manager)
         self.service_registry.register("events", self.event_bus)
         self.service_registry.register("plugins", self.plugin_manager)
-        self.service_registry.register("health", self.health_check)
+        self.service_registry.register("health", self.metrics)
         self.service_registry.register("metrics", self.metrics)
 
     def create_app(self) -> FastAPI:
@@ -227,10 +228,11 @@ class NexusApplication:
         # Initialize plugin routes
         self._register_plugin_routes()
 
-        # Perform health check
-        health_status = await self.health_check.check_all()
-        if not health_status.healthy:
-            logger.warning(f"Application started with health issues: {health_status.issues}")
+        # Perform health checks
+        health_results = await self.metrics.run_health_checks()
+        overall_health = self.metrics.get_overall_health()
+        if overall_health != "healthy":
+            logger.warning(f"Application started with health issues: {overall_health}")
 
         self._startup_complete = True
         logger.info(f"Nexus Framework started successfully on {self.config.app.host}:{self.config.app.port}")
@@ -343,12 +345,13 @@ class NexusApplication:
         @self.app.get("/health", tags=["System"])
         async def health_check():
             """System health check endpoint."""
-            status = await self.health_check.check_all()
+            health_results = await self.metrics.run_health_checks()
+            overall_health = self.metrics.get_overall_health()
             return {
-                "status": "healthy" if status.healthy else "unhealthy",
+                "status": overall_health,
                 "version": __version__,
-                "components": status.components,
-                "timestamp": status.timestamp
+                "checks": {name: status.dict() for name, status in health_results.items()},
+                "timestamp": datetime.utcnow().isoformat()
             }
 
         # Metrics endpoint
@@ -359,11 +362,7 @@ class NexusApplication:
                 return await self.metrics.get_metrics()
 
         # Core API routes
-        api_router = create_api_router(
-            auth_manager=self.auth_manager,
-            plugin_manager=self.plugin_manager,
-            service_registry=self.service_registry
-        )
+        api_router = create_api_router()
 
         self.app.include_router(api_router, prefix="/api")
 

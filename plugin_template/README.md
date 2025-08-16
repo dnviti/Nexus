@@ -9,7 +9,7 @@ my_plugin/
 ├── __init__.py              # Plugin package initialization
 ├── plugin.py                # Main plugin class (required)
 ├── manifest.json            # Plugin metadata and configuration (required)
-├── requirements.txt         # Plugin-specific dependencies (required)
+├── pyproject.toml          # Plugin dependencies and project config (required)
 ├── README.md               # Plugin documentation
 ├── LICENSE                 # Plugin license file
 ├── .gitignore             # Git ignore rules
@@ -79,7 +79,7 @@ logger = logging.getLogger(__name__)
 
 class MyPlugin(BasePlugin):
     """Main plugin class."""
-    
+
     def __init__(self):
         super().__init__()
         self.metadata = PluginMetadata(
@@ -92,37 +92,37 @@ class MyPlugin(BasePlugin):
             dependencies=["required_plugin_1"],
             permissions=["permission.read", "permission.write"]
         )
-    
+
     async def initialize(self, context) -> bool:
         """Initialize the plugin."""
         try:
             logger.info(f"Initializing {self.metadata.name} v{self.metadata.version}")
-            
+
             # Get services from context
             self.db = context.get_service("database")
             self.event_bus = context.get_service("event_bus")
-            
+
             # Load configuration
             self.config = context.get_config(self.metadata.name, {})
-            
+
             # Initialize your plugin components here
-            
+
             logger.info(f"{self.metadata.name} initialized successfully")
             return True
-            
+
         except Exception as e:
             logger.error(f"Failed to initialize {self.metadata.name}: {e}")
             return False
-    
+
     async def cleanup(self):
         """Clean up plugin resources."""
         logger.info(f"Cleaning up {self.metadata.name}")
         # Cleanup code here
-    
+
     def get_api_routes(self):
         """Return API routes for the plugin."""
         router = APIRouter(prefix=f"/api/{self.metadata.name}", tags=[self.metadata.name])
-        
+
         @router.get("/")
         async def get_info():
             """Get plugin information."""
@@ -131,9 +131,9 @@ class MyPlugin(BasePlugin):
                 "version": self.metadata.version,
                 "status": "active"
             }
-        
+
         # Add more routes here
-        
+
         return [router]
 ```
 
@@ -155,10 +155,7 @@ class MyPlugin(BasePlugin):
     "nexus_framework": ">=2.0.0",
     "plugins": [],
     "python": ">=3.11",
-    "packages": [
-      "package1>=1.0.0",
-      "package2>=2.0.0"
-    ]
+    "packages": ["package1>=1.0.0", "package2>=2.0.0"]
   },
   "permissions": [
     "database.read",
@@ -178,14 +175,8 @@ class MyPlugin(BasePlugin):
     ]
   },
   "events": {
-    "publishes": [
-      "my_plugin.event1",
-      "my_plugin.event2"
-    ],
-    "subscribes": [
-      "system.startup",
-      "user.created"
-    ]
+    "publishes": ["my_plugin.event1", "my_plugin.event2"],
+    "subscribes": ["system.startup", "user.created"]
   },
   "configuration": {
     "schema": {
@@ -211,7 +202,7 @@ class MyPlugin(BasePlugin):
 }
 ```
 
-### 3. `requirements.txt` - Plugin Dependencies
+### 3. `pyproject.toml` - Plugin Dependencies and Configuration
 
 ```txt
 # My Plugin Requirements
@@ -249,14 +240,14 @@ cd plugins/my_new_plugin
 
 1. Edit `manifest.json` with your plugin details
 2. Rename and modify the main plugin class in `plugin.py`
-3. Update `requirements.txt` with your dependencies
+3. Update `pyproject.toml` with your dependencies
 4. Update `README.md` with documentation
 
 ### Step 3: Install Dependencies
 
 ```bash
-# Install plugin-specific dependencies
-pip install -r requirements.txt
+# Install plugin dependencies with Poetry
+poetry install
 ```
 
 ### Step 4: Implement Plugin Logic
@@ -349,7 +340,7 @@ from nexus.plugins import BasePlugin, PluginMetadata
 
 class MinimalPlugin(BasePlugin):
     """A minimal plugin example."""
-    
+
     def __init__(self):
         super().__init__()
         self.metadata = PluginMetadata(
@@ -357,7 +348,7 @@ class MinimalPlugin(BasePlugin):
             version="1.0.0",
             description="A minimal plugin"
         )
-    
+
     async def initialize(self, context) -> bool:
         return True
 ```
@@ -379,7 +370,7 @@ class MyModel(Base):
 
 class DatabasePlugin(BasePlugin):
     """Plugin with database operations."""
-    
+
     def __init__(self):
         super().__init__()
         self.metadata = PluginMetadata(
@@ -387,7 +378,7 @@ class DatabasePlugin(BasePlugin):
             version="1.0.0",
             description="Plugin with database"
         )
-    
+
     async def initialize(self, context) -> bool:
         self.db = context.get_service("database")
         # Create tables
@@ -424,17 +415,20 @@ async def test_plugin_initialization(plugin):
 ### Publishing Your Plugin
 
 1. **Package your plugin:**
+
 ```bash
 python setup.py sdist bdist_wheel
 ```
 
 2. **Upload to PyPI:**
+
 ```bash
 pip install twine
 twine upload dist/*
 ```
 
 3. **Or share via Git:**
+
 ```bash
 git init
 git add .

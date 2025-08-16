@@ -15,6 +15,114 @@ from pydantic import BaseModel, Field
 logger = logging.getLogger(__name__)
 
 
+# Plugin Metadata
+class PluginMetadata(BaseModel):
+    """Plugin metadata and configuration."""
+    name: str
+    version: str = "1.0.0"
+    description: str = ""
+    author: str = ""
+    email: str = ""
+    license: str = "MIT"
+    homepage: str = ""
+    repository: str = ""
+    documentation: str = ""
+    tags: List[str] = Field(default_factory=list)
+    category: str = "general"
+    dependencies: List[str] = Field(default_factory=list)
+    permissions: List[str] = Field(default_factory=list)
+    min_nexus_version: str = "1.0.0"
+    max_nexus_version: Optional[str] = None
+    enabled: bool = True
+    config_schema: Optional[Dict[str, Any]] = None
+
+
+# Plugin Lifecycle
+class PluginLifecycle:
+    """Plugin lifecycle states."""
+    DISCOVERED = "discovered"
+    LOADED = "loaded"
+    INITIALIZED = "initialized"
+    ENABLED = "enabled"
+    DISABLED = "disabled"
+    ERROR = "error"
+
+
+# Plugin Context
+class PluginContext:
+    """Plugin execution context."""
+    def __init__(self, app_config: Dict[str, Any], services: Dict[str, Any]):
+        self.app_config = app_config
+        self.services = services
+        self.logger = logging.getLogger(__name__)
+
+    def get_service(self, name: str) -> Any:
+        """Get a service by name."""
+        return self.services.get(name)
+
+    def get_config(self, plugin_name: str, default: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """Get plugin configuration."""
+        return self.app_config.get("plugins", {}).get(plugin_name, default or {})
+
+
+# Plugin Dependency
+class PluginDependency(BaseModel):
+    """Plugin dependency specification."""
+    name: str
+    version: Optional[str] = None
+    optional: bool = False
+
+
+# Plugin Permission
+class PluginPermission(BaseModel):
+    """Plugin permission specification."""
+    name: str
+    description: str = ""
+    required: bool = True
+
+
+# Plugin Hook
+class PluginHook:
+    """Plugin hook for event handling."""
+    def __init__(self, event_name: str, priority: int = 0):
+        self.event_name = event_name
+        self.priority = priority
+
+
+# Plugin Configuration Schema
+class PluginConfigSchema(BaseModel):
+    """Plugin configuration schema."""
+    type: str = "object"
+    properties: Dict[str, Any] = Field(default_factory=dict)
+    required: List[str] = Field(default_factory=list)
+    additionalProperties: bool = True
+
+
+# Plugin Decorators
+def plugin_hook(event_name: str, priority: int = 0):
+    """Decorator for plugin hook methods."""
+    def decorator(func):
+        func._plugin_hook = PluginHook(event_name, priority)
+        return func
+    return decorator
+
+
+def requires_permission(permission: str):
+    """Decorator for methods requiring permissions."""
+    def decorator(func):
+        func._required_permission = permission
+        return func
+    return decorator
+
+
+def requires_dependency(dependency: str, version: Optional[str] = None):
+    """Decorator for methods requiring dependencies."""
+    def decorator(func):
+        func._required_dependency = PluginDependency(name=dependency, version=version)
+        return func
+    return decorator
+
+
 # Plugin Health Status
 class HealthStatus(BaseModel):
     """Plugin health status."""
@@ -557,6 +665,16 @@ __all__ = [
     'NotificationPlugin',
     'StoragePlugin',
     'WorkflowPlugin',
+    'PluginMetadata',
+    'PluginLifecycle',
+    'PluginContext',
+    'PluginDependency',
+    'PluginPermission',
+    'PluginHook',
+    'PluginConfigSchema',
+    'plugin_hook',
+    'requires_permission',
+    'requires_dependency',
     'PluginError',
     'PluginInitializationError',
     'PluginConfigurationError',

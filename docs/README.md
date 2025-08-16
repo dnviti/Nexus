@@ -74,7 +74,7 @@ pip install nexus-framework
 # Or clone the repository
 git clone https://github.com/your-org/nexus-framework
 cd nexus-framework
-pip install -r requirements.txt
+poetry install
 ```
 
 ### 2. Create Your First Application
@@ -265,7 +265,7 @@ my-nexus-app/
 │   ├── integration/       # Integration tests
 │   └── plugins/           # Plugin tests
 ├── docs/                    # Documentation
-└── requirements.txt         # Python dependencies
+└── pyproject.toml           # Python dependencies and project config
 ```
 
 ## 🎯 Use Cases
