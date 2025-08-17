@@ -126,15 +126,32 @@ class PrePushChecker:
         if shutil.which("poetry") is None:
             self.print_error("Poetry is not installed or not in PATH!")
             self.print_info("Install poetry: https://python-poetry.org/docs/#installation")
+            self.print_info("On Windows: python -m pip install poetry")
+            self.print_info("On Unix: curl -sSL https://install.python-poetry.org | python3 -")
             return False
+
+        # Verify poetry is working
+        returncode, stdout, stderr = self.run_command(
+            ["poetry", "--version"], capture_output=True, check=False
+        )
+        if returncode != 0:
+            self.print_error("Poetry installation appears broken!")
+            self.print_info(f"Error: {stderr}")
+            return False
+
         return True
 
     def check_dependencies(self) -> bool:
         """Check and install dependencies."""
         self.print_step("Checking dependencies...")
 
+        # Configure Poetry for better Windows compatibility
+        self.print_step("Configuring Poetry...")
+        self.run_command(["poetry", "config", "virtualenvs.create", "true"], check=False)
+        self.run_command(["poetry", "config", "virtualenvs.in-project", "true"], check=False)
+
         # Check poetry configuration
-        returncode, _, stderr = self.run_command(
+        returncode, stdout, stderr = self.run_command(
             ["poetry", "check"], capture_output=True, check=False
         )
         if returncode != 0:
@@ -143,15 +160,22 @@ class PrePushChecker:
 
         # Install dependencies
         self.print_step("Installing/updating dependencies...")
-        returncode, _, _ = self.run_command(
-            ["poetry", "install", "--no-interaction", "--with", "dev,test"]
-        )
+
+        # On Windows, use --no-cache to avoid permission issues
+        if os.name == "nt":
+            cmd = ["poetry", "install", "--no-interaction", "--with", "dev,test", "--no-cache"]
+        else:
+            cmd = ["poetry", "install", "--no-interaction", "--with", "dev,test"]
+
+        returncode, stdout, stderr = self.run_command(cmd, capture_output=True, check=False)
 
         if returncode == 0:
             self.print_success("Dependencies ready")
             return True
         else:
             self.print_error("Failed to install dependencies")
+            if stderr:
+                print(f"Error output: {stderr}")
             return False
 
     def check_git_status(self) -> None:
@@ -337,6 +361,12 @@ class PrePushChecker:
                     "--cov-fail-under=20",
                 ]
             )
+
+        # Windows-specific environment setup
+        env = os.environ.copy()
+        if os.name == "nt":
+            env["PYTHONHASHSEED"] = "0"
+            env["PYTHONASYNCIODEBUG"] = "0"  # Disable on Windows to avoid issues
 
         returncode, _, _ = self.run_command(cmd, check=False)
 
@@ -682,6 +712,13 @@ Examples:
     except KeyboardInterrupt:
         print(f"\n{Colors.YELLOW}Script interrupted by user{Colors.NC}")
         sys.exit(130)
+    except Exception as e:
+        print(f"\n{Colors.RED}❌ Unexpected error: {e}{Colors.NC}")
+        if os.name == "nt":
+            print(
+                f"{Colors.BLUE}ℹ️  On Windows, try running as Administrator or use: python -m pip install --upgrade poetry{Colors.NC}"
+            )
+        sys.exit(1)
 
 
 if __name__ == "__main__":

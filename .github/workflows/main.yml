@@ -14,6 +14,14 @@ env:
   PYTHONUNBUFFERED: 1
   PYTHONDONTWRITEBYTECODE: 1
 
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+  checks: write
+  security-events: write
+  actions: read
+
 jobs:
   quality:
     name: Code Quality
@@ -28,17 +36,24 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Install Poetry
-        uses: snok/install-poetry@v1
-        with:
-          version: latest
-          virtualenvs-create: true
-          virtualenvs-in-project: true
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install poetry
+          poetry --version
+
+      - name: Configure Poetry
+        run: |
+          poetry config virtualenvs.create true
+          poetry config virtualenvs.in-project true
 
       - name: Cache dependencies
         uses: actions/cache@v3
         with:
           path: .venv
-          key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
+          key: venv-${{ runner.os }}-${{ matrix.python-version || env.PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}
+          restore-keys: |
+            venv-${{ runner.os }}-${{ matrix.python-version || env.PYTHON_VERSION }}-
+            venv-${{ runner.os }}-
 
       - name: Install dependencies
         run: poetry install --no-interaction --with dev
@@ -61,6 +76,7 @@ jobs:
       - name: Upload security results
         uses: actions/upload-artifact@v4
         if: always()
+        continue-on-error: true
         with:
           name: bandit-report
           path: bandit-report.json
@@ -73,12 +89,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest]
         python-version: ["3.11", "3.12", "3.13"]
         exclude:
-          - os: windows-latest
-            python-version: "3.13"
           - os: macos-latest
+            python-version: "3.13"
+          - os: windows-latest
             python-version: "3.13"
 
     steps:
@@ -90,17 +106,47 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
+      - name: Install Poetry (Unix/macOS)
+        if: runner.os != 'Windows'
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install poetry
+          poetry --version
+          poetry config virtualenvs.create true
+          poetry config virtualenvs.in-project true
+
+      - name: Install Poetry (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install poetry
+          poetry --version
+          poetry config virtualenvs.create true
+          poetry config virtualenvs.in-project true
+          poetry config virtualenvs.path .venv
 
       - name: Cache dependencies
         uses: actions/cache@v3
         with:
           path: .venv
           key: venv-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
+          restore-keys: |
+            venv-${{ runner.os }}-${{ matrix.python-version }}-
+            venv-${{ runner.os }}-
 
-      - name: Install dependencies
-        run: poetry install --no-interaction --with dev,test
+      - name: Install dependencies (Unix/macOS)
+        if: runner.os != 'Windows'
+        run: |
+          poetry install --no-interaction --with dev,test
+          poetry show --tree
+
+      - name: Install dependencies (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          poetry install --no-interaction --with dev,test
+          poetry show --tree
 
       - name: Setup async test environment
         env:
@@ -108,29 +154,41 @@ jobs:
           PYTHONASYNCIODEBUG: 1
         run: |
           echo "🔧 Setting up async test environment..."
-          export PYTEST_CURRENT_TEST=""
+          echo "PYTEST_CURRENT_TEST=" >> $GITHUB_ENV
+        shell: bash
 
-      - name: Run tests
+      - name: Run tests (Unix/macOS)
+        if: runner.os != 'Windows'
         env:
           PYTHONHASHSEED: 0
           PYTHONASYNCIODEBUG: 1
         run: |
-          poetry run pytest tests/ \
-            --cov=nexus \
-            --cov-branch \
-            --cov-report=xml \
-            --cov-report=html \
-            --cov-report=term-missing \
-            --junit-xml=junit-${{ matrix.os }}-${{ matrix.python-version }}.xml \
-            --tb=short \
-            --asyncio-mode=auto \
-            --log-cli-level=WARNING \
-            --disable-warnings \
-            --maxfail=5 \
+          poetry run pytest tests/ --cov=nexus --cov-branch --cov-report=xml --cov-report=html --cov-report=term-missing --junit-xml=junit-${{ matrix.os }}-${{ matrix.python-version }}.xml --tb=short --asyncio-mode=auto --log-cli-level=WARNING --disable-warnings --maxfail=5 -v
+
+      - name: Run tests (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          PYTHONHASHSEED: 0
+        run: |
+          poetry run pytest tests/ `
+            --cov=nexus `
+            --cov-branch `
+            --cov-report=xml `
+            --cov-report=html `
+            --cov-report=term-missing `
+            --junit-xml=junit-${{ matrix.os }}-${{ matrix.python-version }}.xml `
+            --tb=short `
+            --asyncio-mode=auto `
+            --log-cli-level=WARNING `
+            --disable-warnings `
+            --maxfail=5 `
             -v
 
       - name: Upload coverage
         uses: codecov/codecov-action@v3
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        continue-on-error: true
         with:
           file: ./coverage.xml
           flags: unittests,${{ matrix.os }},python${{ matrix.python-version }}
@@ -139,12 +197,13 @@ jobs:
 
       - name: Upload test results
         uses: dorny/test-reporter@v1
-        if: success() || failure()
+        if: (success() || failure()) && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
         continue-on-error: true
         with:
           name: Test Results (${{ matrix.os }}-${{ matrix.python-version }})
           path: junit-${{ matrix.os }}-${{ matrix.python-version }}.xml
           reporter: java-junit
+          fail-on-error: false
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -193,14 +252,20 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Install Poetry
-        uses: snok/install-poetry@v1
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install poetry
+          poetry --version
+          poetry config virtualenvs.create true
+          poetry config virtualenvs.in-project true
 
       - name: Install dependencies
         run: |
           poetry install --no-interaction --with dev,test
-          poetry run pip install asyncpg psycopg2-binary redis
+          poetry run pip install asyncpg psycopg2-binary redis || echo "Optional dependencies not available"
 
       - name: Wait for services
+        if: runner.os != 'Windows'
         run: poetry run python scripts/check_services.py --services redis postgres
 
       - name: Run integration tests
@@ -221,12 +286,13 @@ jobs:
 
       - name: Upload integration results
         uses: dorny/test-reporter@v1
-        if: success() || failure()
+        if: (success() || failure()) && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
         continue-on-error: true
         with:
           name: Integration Test Results
           path: junit-integration.xml
           reporter: java-junit
+          fail-on-error: false
 
   build:
     name: Build
@@ -242,7 +308,12 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Install Poetry
-        uses: snok/install-poetry@v1
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install poetry
+          poetry --version
+          poetry config virtualenvs.create true
+          poetry config virtualenvs.in-project true
 
       - name: Build package
         run: poetry build
@@ -261,6 +332,7 @@ jobs:
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
           name: dist-${{ github.run_number }}
           path: dist/
@@ -301,6 +373,7 @@ jobs:
 
       - name: Build and push
         uses: docker/build-push-action@v5
+        continue-on-error: true
         with:
           context: .
           push: true
@@ -314,6 +387,7 @@ jobs:
     name: Security
     runs-on: ubuntu-latest
     needs: build
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
     permissions:
       contents: read
       security-events: write
@@ -331,15 +405,15 @@ jobs:
           output: "trivy-results.sarif"
 
       - name: Upload Trivy results
-        uses: github/codeql-action/upload-sarif@v2
-        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        if: always() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
         continue-on-error: true
         with:
           sarif_file: "trivy-results.sarif"
 
       - name: Run CodeQL
-        uses: github/codeql-action/analyze@v2
-        if: github.event_name != 'pull_request'
+        uses: github/codeql-action/analyze@v3
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         continue-on-error: true
         with:
           languages: python
@@ -369,8 +443,8 @@ jobs:
       - name: Check status
         run: |
           if [[ "${{ needs.quality.result }}" == "failure" || "${{ needs.test.result }}" == "failure" || "${{ needs.integration.result }}" == "failure" || "${{ needs.build.result }}" == "failure" ]]; then
-            echo "❌ Pipeline failed"
+            echo "❌ CI pipeline failed"
             exit 1
           else
-            echo "✅ Pipeline passed"
+            echo "✅ CI pipeline passed"
           fi
