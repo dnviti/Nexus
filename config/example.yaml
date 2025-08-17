@@ -1,0 +1,418 @@
+# Nexus Framework Configuration Example
+# This file demonstrates all available configuration options
+
+# Application Settings
+app:
+  name: "Nexus Example Application"
+  version: "1.0.0"
+  description: "A complete example application built with Nexus Framework"
+  environment: "${ENVIRONMENT:development}"  # development, staging, production
+  debug: "${DEBUG:true}"
+  testing: false
+  timezone: "UTC"
+  locale: "en_US"
+
+# Server Configuration
+server:
+  host: "0.0.0.0"
+  port: ${PORT:8000}
+  workers: 0  # 0 = auto-detect CPU cores
+  reload: true  # Auto-reload on code changes (development only)
+  access_log: true
+  ssl_cert: null
+  ssl_key: null
+
+# Database Configuration
+database:
+  type: "${DATABASE_TYPE:sqlite}"  # postgresql, mysql, mongodb, sqlite
+
+  # Connection settings
+  connection:
+    # For PostgreSQL/MySQL
+    host: "${DB_HOST:localhost}"
+    port: ${DB_PORT:5432}
+    database: "${DB_NAME:nexus_db}"
+    username: "${DB_USER:nexus_user}"
+    password: "${DB_PASSWORD:}"
+
+    # For SQLite
+    path: "${SQLITE_PATH:./data/nexus.db}"
+
+    # For MongoDB
+    replica_set: null
+    auth_source: "admin"
+
+  # Connection pool settings
+  pool:
+    min_size: 10
+    max_size: 20
+    max_overflow: 10
+    pool_timeout: 30
+    pool_recycle: 3600
+    pool_pre_ping: true
+
+  # Query settings
+  echo: false  # Log SQL queries
+  echo_pool: false  # Log connection pool events
+
+# Cache Configuration
+cache:
+  type: "${CACHE_TYPE:redis}"  # redis, memcached, memory
+  redis_host: "${REDIS_HOST:localhost}"
+  redis_port: ${REDIS_PORT:6379}
+  redis_db: ${REDIS_DB:0}
+  redis_password: "${REDIS_PASSWORD:}"
+  default_ttl: 300  # Default cache TTL in seconds
+  max_entries: 10000  # Maximum entries for memory cache
+
+# Authentication Configuration
+auth:
+  # JWT Settings
+  jwt_secret: "${JWT_SECRET:change-me-in-production-use-strong-secret}"
+  jwt_algorithm: "HS256"
+  token_expiry: 3600  # Access token expiry in seconds (1 hour)
+  refresh_token_expiry: 604800  # Refresh token expiry in seconds (7 days)
+
+  # Session Settings
+  session_secret: "${SESSION_SECRET:}"
+  session_max_age: 86400  # Session max age in seconds (24 hours)
+
+  # Password Policy
+  password_min_length: 8
+  password_require_uppercase: true
+  password_require_lowercase: true
+  password_require_digits: true
+  password_require_special: true
+
+  # Account Security
+  max_login_attempts: 5
+  lockout_duration: 900  # Account lockout duration in seconds (15 minutes)
+  require_email_verification: false  # Set to true in production
+  email_verification_expiry: 86400  # Email verification link expiry (24 hours)
+
+  # Multi-Factor Authentication
+  mfa_enabled: false
+  mfa_issuer: "Nexus App"
+
+  # OAuth2 Providers (if enabled)
+  oauth2:
+    enabled: false
+    providers:
+      google:
+        client_id: "${GOOGLE_CLIENT_ID:}"
+        client_secret: "${GOOGLE_CLIENT_SECRET:}"
+        redirect_uri: "http://localhost:8000/api/auth/google/callback"
+      github:
+        client_id: "${GITHUB_CLIENT_ID:}"
+        client_secret: "${GITHUB_CLIENT_SECRET:}"
+        redirect_uri: "http://localhost:8000/api/auth/github/callback"
+
+# Security Configuration
+security:
+  # HTTPS Settings
+  https_redirect: false  # Redirect HTTP to HTTPS
+  hsts_enabled: false  # HTTP Strict Transport Security
+  hsts_max_age: 31536000  # HSTS max age in seconds (1 year)
+
+  # CSRF Protection
+  csrf_enabled: true
+  csrf_token_length: 32
+
+  # Rate Limiting
+  rate_limiting_enabled: true
+  rate_limit_requests: 1000  # Requests per window
+  rate_limit_window: 3600  # Window size in seconds (1 hour)
+
+  # Allowed Hosts
+  allowed_hosts: ["*"]  # Restrict in production
+  trusted_proxies: []
+
+  # Security Headers
+  x_frame_options: "DENY"
+  x_content_type_options: "nosniff"
+  x_xss_protection: "1; mode=block"
+
+# CORS Configuration
+cors:
+  enabled: true
+  origins: ["*"]  # Restrict in production: ["https://example.com"]
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"]
+  headers: ["*"]
+  credentials: true
+  max_age: 3600
+
+# Plugin Configuration
+plugins:
+  directory: "./plugins"
+  auto_load: true
+  hot_reload: true  # Enable hot-reload in development
+  lazy_load: false
+  scan_interval: 60  # Plugin directory scan interval in seconds
+  max_load_time: 30  # Maximum time to load a plugin in seconds
+  require_manifest: true  # Require plugin manifest file
+  sandbox_enabled: false  # Enable plugin sandboxing
+  allowed_imports: ["*"]  # Restrict plugin imports if needed
+
+  # Plugin-specific configurations
+  configs:
+    # Task Manager Plugin
+    task_manager:
+      enable_reminders: true
+      reminder_advance_hours: 24
+      max_tasks_per_user: 1000
+      enable_time_tracking: true
+      default_task_priority: "medium"
+
+    # Authentication Plugin
+    auth_advanced:
+      enable_registration: true
+      enable_mfa: false
+      enable_oauth: false
+      enable_api_keys: true
+      max_sessions_per_user: 5
+
+    # Notification Plugin
+    notifications:
+      enable_email: true
+      enable_sms: false
+      enable_push: false
+      enable_websocket: true
+      batch_size: 100
+      retry_attempts: 3
+
+    # Analytics Plugin
+    analytics:
+      enable_tracking: true
+      enable_reports: true
+      retention_days: 90
+      report_schedule: "daily"  # daily, weekly, monthly
+      export_formats: ["json", "csv", "pdf"]
+
+    # File Storage Plugin
+    file_storage:
+      storage_type: "local"  # local, s3, gcs, azure
+      max_file_size: 10485760  # 10MB
+      allowed_extensions: [".jpg", ".jpeg", ".png", ".pdf", ".doc", ".docx"]
+      storage_path: "./uploads"
+      # S3 settings (if storage_type is "s3")
+      s3_bucket: "${S3_BUCKET:}"
+      s3_region: "${S3_REGION:us-east-1}"
+      s3_access_key: "${S3_ACCESS_KEY:}"
+      s3_secret_key: "${S3_SECRET_KEY:}"
+
+# Logging Configuration
+logging:
+  level: "${LOG_LEVEL:INFO}"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  date_format: "%Y-%m-%d %H:%M:%S"
+
+  # Console logging
+  console_enabled: true
+  console_colorize: true
+
+  # File logging
+  file_enabled: true
+  file_path: "./logs/nexus.log"
+  file_max_size: 10485760  # 10MB
+  file_backup_count: 5
+
+  # External logging services
+  sentry:
+    enabled: false
+    dsn: "${SENTRY_DSN:}"
+    environment: "${ENVIRONMENT:development}"
+    traces_sample_rate: 0.1
+
+  # Log filtering
+  filters:
+    - name: "sqlalchemy.engine"
+      level: "WARNING"
+    - name: "urllib3.connectionpool"
+      level: "WARNING"
+
+# Email Configuration
+email:
+  enabled: false
+  backend: "smtp"  # smtp, sendgrid, ses, mailgun
+
+  # SMTP Settings
+  smtp:
+    host: "${SMTP_HOST:smtp.gmail.com}"
+    port: ${SMTP_PORT:587}
+    username: "${SMTP_USERNAME:}"
+    password: "${SMTP_PASSWORD:}"
+    use_tls: true
+    use_ssl: false
+    timeout: 10
+
+  # Default settings
+  from_email: "noreply@example.com"
+  from_name: "Nexus Application"
+  reply_to: "support@example.com"
+
+  # Templates
+  templates_dir: "./templates/email"
+
+# Background Jobs Configuration
+jobs:
+  enabled: true
+  backend: "celery"  # celery, rq, arq
+  broker_url: "${BROKER_URL:redis://localhost:6379/0}"
+  result_backend: "${RESULT_BACKEND:redis://localhost:6379/1}"
+
+  # Job settings
+  task_timeout: 300  # Task timeout in seconds
+  max_retries: 3
+  retry_delay: 60  # Retry delay in seconds
+
+  # Scheduled jobs
+  schedules:
+    cleanup_temp_files:
+      task: "cleanup.temp_files"
+      schedule: "0 * * * *"  # Every hour
+    generate_reports:
+      task: "analytics.generate_reports"
+      schedule: "0 2 * * *"  # Daily at 2 AM
+    backup_database:
+      task: "backup.database"
+      schedule: "0 3 * * 0"  # Weekly on Sunday at 3 AM
+
+# Monitoring Configuration
+monitoring:
+  enabled: false
+
+  # Prometheus metrics
+  prometheus:
+    enabled: false
+    port: 9090
+    path: "/metrics"
+
+  # Health checks
+  health_checks:
+    enabled: true
+    path: "/health"
+    include_details: true
+    checks:
+      - database
+      - cache
+      - plugins
+      - disk_space
+      - memory
+
+  # Performance monitoring
+  apm:
+    enabled: false
+    service_name: "nexus-app"
+    server_url: "${APM_SERVER_URL:}"
+    secret_token: "${APM_SECRET_TOKEN:}"
+
+# API Documentation
+api_docs:
+  enabled: true
+  title: "Nexus API Documentation"
+  version: "1.0.0"
+  description: "Complete API documentation for Nexus application"
+  terms_of_service: "https://example.com/terms"
+  contact:
+    name: "API Support"
+    email: "api@example.com"
+    url: "https://example.com/support"
+  license:
+    name: "MIT"
+    url: "https://opensource.org/licenses/MIT"
+
+  # Swagger UI settings
+  swagger_ui:
+    enabled: true
+    path: "/docs"
+    try_it_out: true
+    filter: true
+    deep_linking: true
+
+  # ReDoc settings
+  redoc:
+    enabled: true
+    path: "/redoc"
+
+# Custom Configuration Section
+# Add your own configuration values here
+custom:
+  feature_flags:
+    new_dashboard: true
+    beta_features: false
+    experimental_api: false
+
+  business_rules:
+    max_items_per_page: 100
+    default_currency: "USD"
+    tax_rate: 0.08
+
+  integrations:
+    slack:
+      enabled: false
+      webhook_url: "${SLACK_WEBHOOK_URL:}"
+
+    stripe:
+      enabled: false
+      public_key: "${STRIPE_PUBLIC_KEY:}"
+      secret_key: "${STRIPE_SECRET_KEY:}"
+
+    twilio:
+      enabled: false
+      account_sid: "${TWILIO_ACCOUNT_SID:}"
+      auth_token: "${TWILIO_AUTH_TOKEN:}"
+      from_number: "${TWILIO_FROM_NUMBER:}"
+
+# Environment-specific overrides
+# These sections override the above settings based on environment
+environments:
+  development:
+    app:
+      debug: true
+    server:
+      reload: true
+    database:
+      echo: true
+    logging:
+      level: "DEBUG"
+    plugins:
+      hot_reload: true
+
+  production:
+    app:
+      debug: false
+    server:
+      workers: 4
+      reload: false
+    database:
+      echo: false
+      pool:
+        min_size: 20
+        max_size: 100
+    security:
+      https_redirect: true
+      hsts_enabled: true
+      rate_limiting_enabled: true
+    logging:
+      level: "WARNING"
+      file_enabled: true
+    plugins:
+      hot_reload: false
+    auth:
+      require_email_verification: true
+    cors:
+      origins: ["https://example.com", "https://app.example.com"]
+
+  testing:
+    app:
+      testing: true
+    database:
+      type: "sqlite"
+      connection:
+        path: ":memory:"
+    logging:
+      level: "DEBUG"
+      file_enabled: false
+    auth:
+      jwt_secret: "test-secret-key"
+      require_email_verification: false
