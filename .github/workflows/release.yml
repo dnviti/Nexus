@@ -154,7 +154,7 @@ jobs:
         git add pyproject.toml nexus/__init__.py CHANGELOG.md
         git commit -m "Release version $VERSION"
         git tag "v$VERSION"
-        git push origin main
+        git push origin master
         git push origin "v$VERSION"
 
   build-release:
@@ -213,6 +213,7 @@ jobs:
         password: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Login to Docker Hub
+      if: github.event_name != 'pull_request'
       uses: docker/login-action@v3
       with:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -246,7 +247,7 @@ jobs:
     name: Publish to PyPI
     runs-on: ubuntu-latest
     needs: [validate-release, build-release]
-    environment: pypi
+    environment: production
 
     steps:
     - name: Checkout code
@@ -278,8 +279,8 @@ jobs:
         echo "Waiting for package to be available on PyPI..."
         sleep 60
 
-        pip install nexus==$VERSION
-        python -c "import nexus; print(f'✅ nexus {nexus.__version__} successfully installed from PyPI')"
+        pip install nexus-platform==$VERSION
+        python -c "import nexus; print(f'✅ nexus-platform {getattr(nexus, \"__version__\", \"unknown\")} successfully installed from PyPI')"
 
   create-github-release:
     name: Create GitHub Release
@@ -358,7 +359,7 @@ $NOTES
     - name: Checkout code
       uses: actions/checkout@v4
       with:
-        ref: main
+        ref: master
 
     - name: Trigger documentation update
       run: |
@@ -384,10 +385,10 @@ $NOTES
         if [[ "$IS_PRERELEASE" == "true" ]]; then
           echo "🚀 Pre-release $VERSION is now available!"
         else
-          echo "🎉 Nexus $VERSION has been released!"
+          echo "🎉 Nexus Platform $VERSION has been released!"
         fi
 
-        echo "📦 PyPI: https://pypi.org/project/nexus/$VERSION/"
+        echo "📦 PyPI: https://pypi.org/project/nexus-platform/$VERSION/"
         echo "🐳 Docker: ghcr.io/${{ github.repository }}:$VERSION"
         echo "📖 Release Notes: https://github.com/${{ github.repository }}/releases/tag/v$VERSION"
 
@@ -423,6 +424,6 @@ $NOTES
         echo "- ✅ Docker Registry" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### Links:" >> $GITHUB_STEP_SUMMARY
-        echo "- [PyPI Package](https://pypi.org/project/nexus/${{ needs.validate-release.outputs.version }}/)" >> $GITHUB_STEP_SUMMARY
+        echo "- [PyPI Package](https://pypi.org/project/nexus-platform/${{ needs.validate-release.outputs.version }}/)" >> $GITHUB_STEP_SUMMARY
         echo "- [GitHub Release](https://github.com/${{ github.repository }}/releases/tag/v${{ needs.validate-release.outputs.version }})" >> $GITHUB_STEP_SUMMARY
         echo "- [Docker Image](https://ghcr.io/${{ github.repository }}:${{ needs.validate-release.outputs.version }})" >> $GITHUB_STEP_SUMMARY
