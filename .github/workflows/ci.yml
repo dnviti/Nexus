@@ -384,79 +384,10 @@ jobs:
           # Ensure pytest-asyncio is properly configured
           poetry run python -c "import pytest_asyncio; print(f'pytest-asyncio {pytest_asyncio.__version__} installed')"
 
-      - name: Create service health check script
-        run: |
-          cat > check_services.py << 'EOF'
-          import time
-          import sys
-          import subprocess
-          import redis
-          from sqlalchemy import create_engine, text
 
-          def check_postgres():
-              try:
-                  # Try using pg_isready first
-                  result = subprocess.run(['pg_isready', '-h', 'localhost', '-p', '5432'],
-                                        capture_output=True, text=True)
-                  if result.returncode == 0:
-                      return True
-              except FileNotFoundError:
-                  pass
-
-              # Fallback to SQLAlchemy connection
-              try:
-                  engine = create_engine("postgresql://postgres:postgres@localhost:5432/nexus_test")
-                  with engine.begin() as conn:
-                      conn.execute(text("SELECT 1"))
-                  engine.dispose()
-                  return True
-              except Exception:
-                  return False
-
-          def check_redis():
-              try:
-                  r = redis.Redis(host='localhost', port=6379, socket_connect_timeout=1)
-                  r.ping()
-                  return True
-              except Exception:
-                  return False
-
-          def wait_for_services(max_attempts=30):
-              postgres_ready = False
-              redis_ready = False
-
-              for attempt in range(max_attempts):
-                  if not postgres_ready:
-                      postgres_ready = check_postgres()
-                      if postgres_ready:
-                          print("✓ PostgreSQL is ready")
-                      else:
-                          print(f"⏳ Waiting for PostgreSQL... (attempt {attempt + 1}/{max_attempts})")
-
-                  if not redis_ready:
-                      redis_ready = check_redis()
-                      if redis_ready:
-                          print("✓ Redis is ready")
-                      else:
-                          print(f"⏳ Waiting for Redis... (attempt {attempt + 1}/{max_attempts})")
-
-                  if postgres_ready and redis_ready:
-                      print("🎉 All services are ready!")
-                      return True
-
-                  if attempt < max_attempts - 1:
-                      time.sleep(2)
-
-              print("❌ Services failed to become ready in time")
-              return False
-
-          if __name__ == "__main__":
-              if not wait_for_services():
-                  sys.exit(1)
-          EOF
 
       - name: Wait for services
-        run: poetry run python check_services.py
+        run: poetry run python scripts/check_services.py --services redis postgres
 
       - name: Create integration test files
         run: |

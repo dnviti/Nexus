@@ -325,14 +325,7 @@ jobs:
           poetry run pip install asyncpg psycopg2-binary redis aiomysql pymysql
 
       - name: Wait for services
-        run: |
-          echo "Waiting for PostgreSQL..."
-          until pg_isready -h localhost -p 5432; do sleep 1; done
-          echo "Waiting for Redis..."
-          until redis-cli -h localhost -p 6379 ping; do sleep 1; done
-          echo "Waiting for MySQL..."
-          until mysqladmin ping -h"127.0.0.1" -P3306 -uroot -proot --silent; do sleep 1; done
-          echo "All services are ready!"
+        run: poetry run python scripts/check_services.py --services redis postgres mysql
 
       - name: Create integration test files
         run: |
