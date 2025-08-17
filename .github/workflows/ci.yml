@@ -80,6 +80,10 @@ jobs:
   test:
     name: Unit Tests
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
     strategy:
       fail-fast: false
       matrix:
@@ -197,10 +201,33 @@ jobs:
       - name: Upload test results
         uses: dorny/test-reporter@v1
         if: success() || failure()
+        continue-on-error: true
         with:
           name: Unit Test Results (${{ matrix.os }}-${{ matrix.python-version }})
           path: junit-${{ matrix.os }}-${{ matrix.python-version }}.xml
           reporter: java-junit
+
+      - name: Add test summary (fallback)
+        if: success() || failure()
+        run: |
+          echo "## Test Results (${{ matrix.os }}-${{ matrix.python-version }})" >> $GITHUB_STEP_SUMMARY
+          if [ -f "junit-${{ matrix.os }}-${{ matrix.python-version }}.xml" ]; then
+            echo "✅ JUnit XML report generated successfully" >> $GITHUB_STEP_SUMMARY
+            echo "Test artifact: junit-${{ matrix.os }}-${{ matrix.python-version }}.xml" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ JUnit XML report not found" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload test artifacts
+        uses: actions/upload-artifact@v4
+        if: success() || failure()
+        with:
+          name: test-artifacts-${{ matrix.os }}-${{ matrix.python-version }}
+          path: |
+            junit-${{ matrix.os }}-${{ matrix.python-version }}.xml
+            coverage.xml
+            htmlcov/
+          retention-days: 30
 
       - name: Upload coverage HTML report
         uses: actions/upload-artifact@v4
@@ -214,6 +241,10 @@ jobs:
     name: Integration Tests
     runs-on: ubuntu-latest
     needs: [lint]
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
 
     services:
       postgres:
@@ -494,13 +525,35 @@ jobs:
 
           echo "✅ Integration tests completed"
 
+      - name: Upload integration test artifacts
+        uses: actions/upload-artifact@v4
+        if: success() || failure()
+        with:
+          name: integration-test-artifacts
+          path: |
+            junit-integration.xml
+            check_services.py
+          retention-days: 30
+
       - name: Upload integration test results
         uses: dorny/test-reporter@v1
         if: success() || failure()
+        continue-on-error: true
         with:
           name: Integration Test Results
           path: junit-integration.xml
           reporter: java-junit
+
+      - name: Add integration test summary (fallback)
+        if: success() || failure()
+        run: |
+          echo "## Integration Test Results" >> $GITHUB_STEP_SUMMARY
+          if [ -f "junit-integration.xml" ]; then
+            echo "✅ Integration tests completed - JUnit XML report generated" >> $GITHUB_STEP_SUMMARY
+            echo "Test artifact: junit-integration.xml" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Integration test JUnit XML report not found" >> $GITHUB_STEP_SUMMARY
+          fi
 
   build:
     name: Build Package
@@ -545,6 +598,9 @@ jobs:
     name: Build Docker Image
     runs-on: ubuntu-latest
     needs: [build]
+    permissions:
+      contents: read
+      packages: write
 
     steps:
       - name: Checkout code
@@ -589,6 +645,10 @@ jobs:
     name: Security Scan
     runs-on: ubuntu-latest
     needs: [build]
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
 
     steps:
       - name: Checkout code
@@ -605,12 +665,14 @@ jobs:
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v2
         if: always()
+        continue-on-error: true
         with:
           sarif_file: "trivy-results.sarif"
 
       - name: Run CodeQL Analysis
         uses: github/codeql-action/analyze@v2
         if: github.event_name != 'pull_request'
+        continue-on-error: true
         with:
           languages: python
 
@@ -619,6 +681,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: [lint, test, integration-test, build, docker-build, security]
     if: always()
+    permissions:
+      contents: read
 
     steps:
       - name: Check workflow results
@@ -637,10 +701,31 @@ jobs:
           echo "- **Docker:** ${{ needs.docker-build.result == 'success' && '✅ Passed' || needs.docker-build.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Security:** ${{ needs.security.result == 'success' && '✅ Passed' || '❌ Failed' }}" >> $GITHUB_STEP_SUMMARY
 
+      - name: Create detailed summary
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Detailed Results:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Job | Status | Notes |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|--------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Code Quality | ${{ needs.lint.result == 'success' && '✅ Passed' || '❌ Failed' }} | Code formatting, linting, type checking |" >> $GITHUB_STEP_SUMMARY
+          echo "| Unit Tests | ${{ needs.test.result == 'success' && '✅ Passed' || '❌ Failed' }} | Cross-platform testing (Linux, Windows, macOS) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Integration Tests | ${{ needs.integration-test.result == 'success' && '✅ Passed' || '❌ Failed' }} | Database and service integration |" >> $GITHUB_STEP_SUMMARY
+          echo "| Package Build | ${{ needs.build.result == 'success' && '✅ Passed' || '❌ Failed' }} | Python package creation and validation |" >> $GITHUB_STEP_SUMMARY
+          echo "| Docker Build | ${{ needs.docker-build.result == 'success' && '✅ Passed' || needs.docker-build.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} | Container image build and push |" >> $GITHUB_STEP_SUMMARY
+          echo "| Security Scan | ${{ needs.security.result == 'success' && '✅ Passed' || '❌ Failed' }} | Vulnerability and code analysis |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Artifacts:" >> $GITHUB_STEP_SUMMARY
+          echo "- Test reports and coverage data available in job artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "- Security scan results uploaded to Security tab" >> $GITHUB_STEP_SUMMARY
+          if [[ "${{ github.event_name }}" != "pull_request" ]]; then
+            echo "- Docker image pushed to GitHub Container Registry" >> $GITHUB_STEP_SUMMARY
+          fi
+
       - name: Final status
         run: |
           if [[ "${{ needs.lint.result }}" == "failure" || "${{ needs.test.result }}" == "failure" || "${{ needs.integration-test.result }}" == "failure" || "${{ needs.build.result }}" == "failure" ]]; then
-            echo "❌ CI Pipeline failed"
+            echo "❌ CI Pipeline failed - check individual job logs for details"
             exit 1
           else
             echo "✅ CI Pipeline passed successfully"
