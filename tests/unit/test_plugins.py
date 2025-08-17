@@ -242,7 +242,7 @@ class TestPluginDecorators:
 
         # Decorator should add metadata to function
         assert hasattr(test_handler, "_nexus_hook")
-        assert getattr(test_handler, "_nexus_hook") == "test_event"
+        assert test_handler._nexus_hook == "test_event"  # type: ignore
 
     def test_plugin_hook_decorator_with_priority(self):
         """Test plugin_hook decorator with priority."""
@@ -253,8 +253,8 @@ class TestPluginDecorators:
 
         assert hasattr(priority_handler, "_nexus_hook")
         assert hasattr(priority_handler, "_nexus_priority")
-        assert getattr(priority_handler, "_nexus_hook") == "priority_event"
-        assert getattr(priority_handler, "_nexus_priority") == 5
+        assert priority_handler._nexus_hook == "priority_event"  # type: ignore
+        assert priority_handler._nexus_priority == 5  # type: ignore
 
     def test_requires_permission_decorator(self):
         """Test requires_permission decorator."""
@@ -264,7 +264,7 @@ class TestPluginDecorators:
             return "admin_action"
 
         assert hasattr(admin_function, "_required_permission")
-        assert getattr(admin_function, "_required_permission") == "admin"
+        assert admin_function._required_permission == "admin"  # type: ignore
 
     def test_requires_dependency_decorator(self):
         """Test requires_dependency decorator."""
@@ -274,7 +274,7 @@ class TestPluginDecorators:
             return "db_action"
 
         assert hasattr(db_function, "_required_dependency")
-        assert getattr(db_function, "_required_dependency") == "database"
+        assert db_function._required_dependency == "database"  # type: ignore
 
     def test_requires_dependency_decorator_with_version(self):
         """Test requires_dependency decorator with version."""
@@ -285,8 +285,8 @@ class TestPluginDecorators:
 
         assert hasattr(cache_function, "_required_dependency")
         assert hasattr(cache_function, "_dependency_version")
-        assert getattr(cache_function, "_required_dependency") == "cache"
-        assert getattr(cache_function, "_dependency_version") == ">=2.0.0"
+        assert cache_function._required_dependency == "cache"  # type: ignore
+        assert cache_function._dependency_version == ">=2.0.0"  # type: ignore
 
 
 class TestHealthStatus:

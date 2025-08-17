@@ -57,6 +57,32 @@ export PYTHONHASHSEED=0
 pytest --asyncio-mode=auto --timeout=300
 ```
 
+### Windows-Specific Test Issues
+
+**File Permission Errors:**
+
+```
+PermissionError: [WinError 32] The process cannot access the file because it is being used by another process
+```
+
+**Solution:**
+
+- Fixed in codebase with proper file cleanup utilities
+- Tests now use Windows-compatible temporary file handling
+- Automatic retry mechanism for file operations
+
+**Token Generation Race Conditions:**
+
+```
+AssertionError: assert 'token_user_1_123.456' != 'token_user_1_123.456'
+```
+
+**Solution:**
+
+- Enhanced token generation with random components
+- Added small delays between rapid successive calls
+- Ensures uniqueness across all platforms
+
 ### Cache Issues
 
 **Fix:**

@@ -391,8 +391,8 @@ class TestDatabaseAdapter:
         """Test that DatabaseAdapter is abstract."""
         # Test that we cannot instantiate the abstract class directly
         try:
-            adapter = DatabaseAdapter()  # type: ignore
-            assert False, "Should not be able to instantiate abstract class"
+            DatabaseAdapter()  # type: ignore
+            raise AssertionError("Should not be able to instantiate abstract class")
         except TypeError:
             pass  # Expected behavior
 

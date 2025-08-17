@@ -11,7 +11,7 @@ import socket
 import subprocess
 import sys
 import time
-from typing import Dict, Optional
+from typing import Any, Dict
 
 
 def check_tcp_connection(host: str, port: int, timeout: int = 5) -> bool:
@@ -26,7 +26,7 @@ def check_tcp_connection(host: str, port: int, timeout: int = 5) -> bool:
 def check_redis(host: str = "localhost", port: int = 6379, timeout: int = 5) -> bool:
     """Check Redis connectivity using Python redis library."""
     try:
-        import redis  # type: ignore
+        import redis  # type: ignore[import-untyped]
 
         r = redis.Redis(host=host, port=port, socket_connect_timeout=timeout)
         r.ping()
@@ -104,7 +104,7 @@ def check_mysql(host: str = "localhost", port: int = 3306, timeout: int = 5) -> 
 
 
 def wait_for_service(
-    service_name: str, check_func, max_attempts: int = 30, interval: int = 2, **kwargs
+    service_name: str, check_func: Any, max_attempts: int = 30, interval: int = 2, **kwargs: Any
 ) -> bool:
     """Wait for a service to become available."""
     print(f"Waiting for {service_name}...")
@@ -122,7 +122,7 @@ def wait_for_service(
     return False
 
 
-def wait_for_services(services: Dict[str, Dict]) -> bool:
+def wait_for_services(services: Dict[str, Dict[str, Any]]) -> bool:
     """Wait for multiple services to become available."""
     all_ready = True
 
@@ -134,7 +134,7 @@ def wait_for_services(services: Dict[str, Dict]) -> bool:
     return all_ready
 
 
-def main():
+def main() -> int:
     """Main function to check service availability."""
     import argparse
 

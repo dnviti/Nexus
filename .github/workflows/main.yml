@@ -170,6 +170,8 @@ jobs:
         shell: pwsh
         env:
           PYTHONHASHSEED: 0
+          TEMP: ${{ runner.temp }}
+          TMP: ${{ runner.temp }}
         run: |
           poetry run pytest tests/ `
             --cov=nexus `

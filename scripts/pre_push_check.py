@@ -67,23 +67,23 @@ class PrePushChecker:
 
     def print_step(self, text: str) -> None:
         """Print a step message."""
-        print(f"{Colors.YELLOW}▶ {text}{Colors.NC}")
+        print(f"{Colors.YELLOW}> {text}{Colors.NC}")
 
     def print_success(self, text: str) -> None:
         """Print a success message."""
-        print(f"{Colors.GREEN}✅ {text}{Colors.NC}")
+        print(f"{Colors.GREEN}[OK] {text}{Colors.NC}")
 
     def print_error(self, text: str) -> None:
         """Print an error message."""
-        print(f"{Colors.RED}❌ {text}{Colors.NC}")
+        print(f"{Colors.RED}[ERROR] {text}{Colors.NC}")
 
     def print_warning(self, text: str) -> None:
         """Print a warning message."""
-        print(f"{Colors.YELLOW}⚠️  {text}{Colors.NC}")
+        print(f"{Colors.YELLOW}[WARNING] {text}{Colors.NC}")
 
     def print_info(self, text: str) -> None:
         """Print an info message."""
-        print(f"{Colors.BLUE}ℹ️  {text}{Colors.NC}")
+        print(f"{Colors.BLUE}[INFO] {text}{Colors.NC}")
 
     def run_command(
         self,
@@ -531,8 +531,8 @@ class PrePushChecker:
 echo "Running pre-commit checks..."
 if ! python scripts/pre_push_check.py; then
     echo ""
-    echo "❌ Pre-commit checks failed!"
-    echo "💡 Fix issues or run: python scripts/pre_push_check.py --fix"
+    echo "[ERROR] Pre-commit checks failed!"
+    echo "TIP: Fix issues or run: python scripts/pre_push_check.py --fix"
     exit 1
 fi
 """
@@ -545,7 +545,7 @@ fi
             pre_commit_hook.chmod(0o755)
 
         self.print_success("Git hooks configured")
-        self.print_info("💡 Hooks are also available in .githooks/ directory for version control")
+        self.print_info("💡: Hooks are also available in .githooks/ directory for version control")
         self.print_info("   You can also run: git config core.hooksPath .githooks")
 
     def calculate_metrics(self) -> None:
@@ -569,20 +569,20 @@ fi
 
         print()
         self.print_info("Project Metrics:")
-        print(f"  📁 Source files: {len(source_files)}")
-        print(f"  📝 Source lines: {source_lines}")
-        print(f"  🧪 Test files: {len(test_files)}")
-        print(f"  📋 Test lines: {test_lines}")
+        print(f"  Source files: {len(source_files)}")
+        print(f"  Source lines: {source_lines}")
+        print(f"  Test files: {len(test_files)}")
+        print(f"  Test lines: {test_lines}")
         if source_lines > 0:
             test_ratio = (test_lines * 100) / source_lines
-            print(f"  📊 Test ratio: {test_ratio:.1f}%")
+            print(f"  Test ratio: {test_ratio:.1f}%")
 
     def run_all_checks(self) -> bool:
         """Run all validation checks."""
         start_time = time.time()
 
         # Header
-        print(f"{Colors.BOLD}{Colors.GREEN}🚀 Nexus Framework - Pre-Push Validation{Colors.NC}")
+        print(f"{Colors.BOLD}{Colors.GREEN}Nexus Framework - Pre-Push Validation{Colors.NC}")
         print(f"{Colors.BLUE}Started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}{Colors.NC}")
         mode = "Auto-fix" if self.fix_mode else "Check-only"
         if self.fast_mode:
@@ -649,8 +649,8 @@ fi
         self.print_header("SUMMARY")
 
         if not self.failed_checks:
-            self.print_success("All checks passed! ✨")
-            self.print_success("Ready to push to git! 🚀")
+            self.print_success("All checks passed!")
+            self.print_success("Ready to push to git!")
             print()
             self.print_info(f"Total time: {duration}s")
 
@@ -682,7 +682,7 @@ fi
             return False
 
 
-def main():
+def main() -> None:
     """Main entry point."""
     parser = argparse.ArgumentParser(
         description="Nexus Framework Pre-Push Validation Script",
@@ -715,10 +715,10 @@ Examples:
         print(f"\n{Colors.YELLOW}Script interrupted by user{Colors.NC}")
         sys.exit(130)
     except Exception as e:
-        print(f"\n{Colors.RED}❌ Unexpected error: {e}{Colors.NC}")
+        print(f"\n{Colors.RED}[ERROR] Unexpected error: {e}{Colors.NC}")
         if os.name == "nt":
             print(
-                f"{Colors.BLUE}ℹ️  On Windows, try running as Administrator or use: python -m pip install --upgrade poetry{Colors.NC}"
+                f"{Colors.BLUE}[INFO] On Windows, try running as Administrator or use: python -m pip install --upgrade poetry{Colors.NC}"
             )
         sys.exit(1)
 

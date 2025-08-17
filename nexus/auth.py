@@ -4,6 +4,7 @@ Basic authentication and authorization functionality.
 """
 
 import logging
+import secrets
 from datetime import datetime
 from typing import Dict, List, Optional
 
@@ -81,7 +82,10 @@ class AuthenticationManager:
 
     async def create_session(self, user: User) -> str:
         """Create authentication session."""
-        token = f"token_{user.id}_{datetime.utcnow().timestamp()}"
+        # Use timestamp + random component for uniqueness
+        timestamp = datetime.utcnow().timestamp()
+        random_part = secrets.token_hex(8)
+        token = f"token_{user.id}_{timestamp}_{random_part}"
         self.sessions[token] = user.id
         user.last_login = datetime.utcnow()
         return token

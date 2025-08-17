@@ -205,7 +205,7 @@ class TestRunner:
                         details = f"Found {len(high_severity)} high-severity security issues"
                     else:
                         details = f"Found {len(result_data['results'])} low/medium severity issues"
-            except:
+            except Exception:
                 details = "Security scan completed with warnings"
 
         self.print_status("Security scan", scan_result, details)
@@ -375,7 +375,7 @@ class TestRunner:
         return overall_success
 
 
-def main():
+def main() -> None:
     """Main entry point."""
     parser = argparse.ArgumentParser(
         description="Run CI tests locally before pushing",

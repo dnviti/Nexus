@@ -6,25 +6,31 @@ Tests cover CLI commands, configuration loading, and basic functionality.
 
 import os
 import tempfile
+import time
 from unittest.mock import MagicMock, patch
 
 import pytest
 from click.testing import CliRunner
 
-from nexus.cli import (
-    cli,
-    health,
-    init,
-    main,
-    plugin,
-    plugin_create,
-    plugin_info,
-    plugin_list,
-    run,
-    status,
-    validate,
-)
+from nexus.cli import cli, main, plugin
 from nexus.core import AppConfig
+
+
+def safe_file_cleanup(filepath):
+    """Safely cleanup temporary files, handling Windows file locking issues."""
+    max_attempts = 5
+    for attempt in range(max_attempts):
+        try:
+            if os.path.exists(filepath):
+                os.unlink(filepath)
+            break
+        except (OSError, PermissionError) as e:
+            if attempt == max_attempts - 1:
+                # Last attempt, log the error but don't fail the test
+                print(f"Warning: Could not delete temp file {filepath}: {e}")
+            else:
+                # Wait a bit and try again
+                time.sleep(0.1)
 
 
 class TestCLIBasic:
@@ -56,12 +62,13 @@ class TestCLIBasic:
         with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
             f.write("app:\n  name: TestApp\n")
             f.flush()
+            temp_name = f.name
 
-            try:
-                result = self.runner.invoke(cli, ["--config", f.name, "--help"])
-                assert result.exit_code == 0
-            finally:
-                os.unlink(f.name)
+        try:
+            result = self.runner.invoke(cli, ["--config", temp_name, "status"])
+            assert result.exit_code == 0
+        finally:
+            safe_file_cleanup(temp_name)
 
 
 class TestRunCommand:
@@ -315,17 +322,17 @@ class TestValidateCommand:
             assert "Validating Configuration" in result.output
 
     def test_validate_with_config_file(self):
-        """Test validate command with specific config file."""
+        """Test validate command with config file."""
         with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
             f.write("app:\n  name: TestApp\n")
             f.flush()
+            temp_name = f.name
 
-            try:
-                result = self.runner.invoke(cli, ["validate", "--config-file", f.name])
-                # Should validate the specified file
-                assert result.exit_code == 0
-            finally:
-                os.unlink(f.name)
+        try:
+            result = self.runner.invoke(cli, ["validate", "--config-file", temp_name])
+            assert result.exit_code == 0
+        finally:
+            safe_file_cleanup(temp_name)
 
 
 class TestMainFunction:
@@ -383,36 +390,27 @@ server:
             f.write(yaml_config)
             f.flush()
 
-            try:
-                # Test that config file can be loaded
-                result = self.runner.invoke(cli, ["--config", f.name, "--help"])
-                assert result.exit_code == 0
-            finally:
-                os.unlink(f.name)
+            temp_name = f.name
+
+        try:
+            # Test that config file can be loaded
+            result = self.runner.invoke(cli, ["--config", temp_name, "status"])
+            assert result.exit_code == 0
+        finally:
+            safe_file_cleanup(temp_name)
 
     def test_config_loading_json(self):
         """Test loading JSON configuration."""
-        json_config = """
-{
-  "app": {
-    "name": "CLI Test App",
-    "version": "1.0.0"
-  },
-  "server": {
-    "host": "localhost",
-    "port": 8080
-  }
-}
-"""
         with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
-            f.write(json_config)
+            f.write('{"app": {"name": "TestApp"}}')
             f.flush()
+            temp_name = f.name
 
-            try:
-                result = self.runner.invoke(cli, ["--config", f.name, "--help"])
-                assert result.exit_code == 0
-            finally:
-                os.unlink(f.name)
+        try:
+            result = self.runner.invoke(cli, ["--config", temp_name, "status"])
+            assert result.exit_code == 0
+        finally:
+            safe_file_cleanup(temp_name)
 
 
 class TestCLIEnvironment:
@@ -459,7 +457,7 @@ class TestCLIErrorHandling:
         mock_setup_logging.side_effect = Exception("Logging setup failed")
 
         # Should handle logging setup errors gracefully
-        result = self.runner.invoke(cli, ["--verbose", "--help"])
+        self.runner.invoke(cli, ["--verbose", "--help"])
         # The exact behavior depends on implementation
 
 
@@ -504,7 +502,7 @@ server:
             f.flush()
 
             try:
-                result = self.runner.invoke(cli, ["--config", f.name, "run"])
+                self.runner.invoke(cli, ["--config", f.name, "run"])
                 mock_create_app.assert_called_once()
             finally:
                 os.unlink(f.name)

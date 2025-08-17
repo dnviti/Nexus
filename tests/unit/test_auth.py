@@ -5,7 +5,6 @@ Tests cover authentication, authorization, user management, and basic auth funct
 """
 
 from datetime import datetime
-from unittest.mock import AsyncMock
 
 import pytest
 
@@ -385,6 +384,10 @@ class TestAuthenticationIntegration:
 
         # Create multiple sessions
         token1 = await self.auth_manager.create_session(user)
+        # Small delay to ensure different timestamps on Windows
+        import asyncio
+
+        await asyncio.sleep(0.001)
         token2 = await self.auth_manager.create_session(user)
 
         assert token1 != token2
