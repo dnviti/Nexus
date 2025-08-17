@@ -6,16 +6,16 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to release (e.g., 1.2.3)'
+        description: "Version to release (e.g., 1.2.3)"
         required: true
         type: string
       prerelease:
-        description: 'Is this a pre-release?'
+        description: "Is this a pre-release?"
         required: false
         type: boolean
         default: false
       test_pypi:
-        description: 'Publish to Test PyPI instead of PyPI'
+        description: "Publish to Test PyPI instead of PyPI"
         required: false
         type: boolean
         default: false
@@ -99,7 +99,7 @@ jobs:
         uses: snok/install-poetry@v1
 
       - name: Install dependencies
-        run: poetry install --no-interaction
+        run: poetry install --only=main --no-interaction
 
       - name: Update version
         run: |
@@ -294,7 +294,15 @@ jobs:
   summary:
     name: Summary
     runs-on: ubuntu-latest
-    needs: [validate, build, test-package, publish-test, publish-pypi, create-release]
+    needs:
+      [
+        validate,
+        build,
+        test-package,
+        publish-test,
+        publish-pypi,
+        create-release,
+      ]
     if: always()
     steps:
       - name: Generate summary
