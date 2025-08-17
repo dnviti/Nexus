@@ -49,6 +49,7 @@ if __name__ == "__main__":
 ```
 
 Your application runs at `http://localhost:8000` with:
+
 - **API Docs**: `http://localhost:8000/docs`
 - **Health Check**: `http://localhost:8000/health`
 
@@ -67,18 +68,18 @@ class MyPlugin(BasePlugin):
         super().__init__()
         self.name = "my_plugin"
         self.version = "1.0.0"
-    
+
     async def initialize(self) -> bool:
         self.logger.info("Plugin initialized!")
         return True
-    
+
     def get_api_routes(self):
         router = APIRouter(prefix="/my-plugin", tags=["my-plugin"])
-        
+
         @router.get("/")
         async def get_info():
             return {"plugin": self.name, "status": "active"}
-        
+
         return [router]
 
 def create_plugin():
@@ -88,18 +89,21 @@ def create_plugin():
 ## 📚 Documentation
 
 ### 🚀 Getting Started
+
 - **[Installation](docs/getting-started/installation.md)** - Install Nexus in 2 minutes
 - **[Quick Start](docs/getting-started/quickstart.md)** - Build your first app in 5 minutes
 - **[First Plugin](docs/getting-started/first-plugin.md)** - Create your first plugin
 - **[Configuration](docs/getting-started/configuration.md)** - Configure your application
 
 ### 🏗️ Architecture & Development
+
 - **[Architecture Overview](docs/architecture/overview.md)** - System design and principles
 - **[Plugin Basics](docs/plugins/basics.md)** - Build powerful plugins
 - **[API Routes](docs/plugins/api-routes.md)** - Create REST endpoints
 - **[Database Integration](docs/plugins/database.md)** - Data persistence
 
 ### 📚 Complete Documentation
+
 - **[Documentation Index](docs/README.md)** - Full documentation structure
 - **[API Reference](docs/api/README.md)** - Complete framework reference
 - **[Deployment Guide](docs/deployment/README.md)** - Production deployment
@@ -112,15 +116,15 @@ graph TD
     A --> C[Event Bus]
     A --> D[Service Registry]
     A --> E[FastAPI Core]
-    
+
     B --> F[Plugin 1]
     B --> G[Plugin 2]
     B --> H[Plugin N...]
-    
+
     F --> C
     G --> C
     H --> C
-    
+
     F --> D
     G --> D
     H --> D
@@ -162,23 +166,30 @@ my-nexus-app/
 ## 🌟 Core Components
 
 ### Plugin Manager
+
 Handles plugin lifecycle, loading, and dependency management with hot-reload support.
 
 ### Event Bus
+
 Asynchronous publish-subscribe system for loose coupling between plugins.
 
 ### Service Registry
+
 Dependency injection container for sharing services between plugins.
 
 ### Authentication Manager
+
 JWT-based authentication with role-based access control.
 
 ### Database Adapter
+
 Multi-database support with connection pooling and transaction management.
 
 ## 🤝 Contributing
 
 We welcome contributions! Here's how to get started:
+
+### Development Setup
 
 ```bash
 # Clone repository
@@ -190,11 +201,60 @@ python -m venv .venv
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 
 # Install dependencies
-poetry install
+poetry install --with dev,test
 
-# Run development server
-python main.py
+# Set up git hooks for quality assurance (RECOMMENDED)
+python scripts/pre_push_check.py
+
+# Verify setup
+python scripts/test_ci_locally.py --fast
 ```
+
+### Quality Assurance
+
+**⚠️ IMPORTANT**: Contributors should use git hooks to ensure code quality and reduce CI failures.
+
+**Automatic Setup (Recommended):**
+
+```bash
+python scripts/pre_push_check.py  # Sets up pre-commit hooks automatically
+```
+
+**Manual Setup:**
+
+```bash
+git config core.hooksPath .githooks
+chmod +x .githooks/*
+```
+
+**What the hooks validate on each commit:**
+
+- ✅ Code formatting (Black)
+- ✅ Import sorting (isort)
+- ✅ Linting (Flake8)
+- ✅ Type checking (MyPy)
+- ✅ Security scanning (Bandit)
+- ✅ Full test suite (496 unit + 16 integration tests)
+- ✅ Code coverage analysis
+- ✅ Build validation
+
+### Development Workflow
+
+```bash
+# Quick development validation
+python scripts/pre_push_check.py --fast
+
+# Make changes, then commit (triggers full validation)
+git add .
+git commit -m "Your meaningful commit message"
+
+# Push after successful validation
+git push
+```
+
+**Note**: Git hooks ensure every commit meets the same quality standards as our CI pipeline, significantly reducing development friction and CI failures.
+
+See [`.githooks/README.md`](.githooks/README.md) for detailed hook documentation.
 
 ## 📄 License
 
@@ -217,4 +277,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **Made with ❤️ by the Nexus Team**
 
-*Start building your next great application with Nexus today!*
+_Start building your next great application with Nexus today!_

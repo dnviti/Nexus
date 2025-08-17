@@ -545,6 +545,8 @@ fi
             pre_commit_hook.chmod(0o755)
 
         self.print_success("Git hooks configured")
+        self.print_info("💡 Hooks are also available in .githooks/ directory for version control")
+        self.print_info("   You can also run: git config core.hooksPath .githooks")
 
     def calculate_metrics(self) -> None:
         """Calculate and display project metrics."""
