@@ -25,8 +25,10 @@ logger = logging.getLogger(__name__)
 # Pydantic Models for API
 # ============================================================================
 
+
 class ItemCreate(BaseModel):
     """Schema for creating an item."""
+
     name: str = Field(..., min_length=1, max_length=100)
     description: Optional[str] = Field(None, max_length=500)
     value: float = Field(..., ge=0)
@@ -35,6 +37,7 @@ class ItemCreate(BaseModel):
 
 class ItemUpdate(BaseModel):
     """Schema for updating an item."""
+
     name: Optional[str] = Field(None, min_length=1, max_length=100)
     description: Optional[str] = Field(None, max_length=500)
     value: Optional[float] = Field(None, ge=0)
@@ -43,6 +46,7 @@ class ItemUpdate(BaseModel):
 
 class Item(BaseModel):
     """Complete item schema."""
+
     id: str
     name: str
     description: Optional[str]
@@ -55,6 +59,7 @@ class Item(BaseModel):
 # ============================================================================
 # Main Plugin Class
 # ============================================================================
+
 
 class TemplatePlugin(BasePlugin):
     """
@@ -89,8 +94,8 @@ class TemplatePlugin(BasePlugin):
                 "database.read",
                 "database.write",
                 "events.publish",
-                "api.register_routes"
-            ]
+                "api.register_routes",
+            ],
         )
 
         # Initialize plugin state
@@ -146,11 +151,13 @@ class TemplatePlugin(BasePlugin):
 
             # Publish initialization event
             if self.event_bus:
-                await self.event_bus.publish(Event(
-                    type=f"{self.metadata.name}.initialized",
-                    data={"version": self.metadata.version},
-                    priority=EventPriority.LOW
-                ))
+                await self.event_bus.publish(
+                    Event(
+                        type=f"{self.metadata.name}.initialized",
+                        data={"version": self.metadata.version},
+                        priority=EventPriority.LOW,
+                    )
+                )
 
             return True
 
@@ -169,11 +176,13 @@ class TemplatePlugin(BasePlugin):
 
             # Publish shutdown event
             if self.event_bus:
-                await self.event_bus.publish(Event(
-                    type=f"{self.metadata.name}.shutdown",
-                    data={"timestamp": datetime.utcnow().isoformat()},
-                    priority=EventPriority.LOW
-                ))
+                await self.event_bus.publish(
+                    Event(
+                        type=f"{self.metadata.name}.shutdown",
+                        data={"timestamp": datetime.utcnow().isoformat()},
+                        priority=EventPriority.LOW,
+                    )
+                )
 
             # Clean up resources
             # Close database connections, cancel tasks, etc.
@@ -202,7 +211,7 @@ class TemplatePlugin(BasePlugin):
             "cache_ttl": 300,
             "enable_notifications": True,
             "api_rate_limit": 100,
-            "custom_setting": "default_value"
+            "custom_setting": "default_value",
         }
 
     def _validate_services(self) -> bool:
@@ -280,10 +289,7 @@ class TemplatePlugin(BasePlugin):
         Returns:
             List of FastAPI routers with plugin endpoints
         """
-        router = APIRouter(
-            prefix=f"/api/{self.metadata.name}",
-            tags=[self.metadata.name]
-        )
+        router = APIRouter(prefix=f"/api/{self.metadata.name}", tags=[self.metadata.name])
 
         @router.get("/", summary="Get plugin information")
         async def get_plugin_info():
@@ -293,7 +299,7 @@ class TemplatePlugin(BasePlugin):
                 "version": self.metadata.version,
                 "description": self.metadata.description,
                 "status": "active" if self.initialized else "inactive",
-                "config": {k: v for k, v in self.config.items() if not k.startswith("_")}
+                "config": {k: v for k, v in self.config.items() if not k.startswith("_")},
             }
 
         @router.get("/health", summary="Health check")
@@ -304,8 +310,8 @@ class TemplatePlugin(BasePlugin):
                 "checks": {
                     "database": self.db is not None,
                     "event_bus": self.event_bus is not None,
-                    "cache": self.cache is not None
-                }
+                    "cache": self.cache is not None,
+                },
             }
 
         @router.post("/items", response_model=Item, status_code=status.HTTP_201_CREATED)
@@ -323,7 +329,7 @@ class TemplatePlugin(BasePlugin):
                 "value": item_data.value,
                 "tags": item_data.tags,
                 "created_at": now,
-                "updated_at": now
+                "updated_at": now,
             }
 
             # Store item
@@ -331,20 +337,18 @@ class TemplatePlugin(BasePlugin):
 
             # Publish event
             if self.event_bus:
-                await self.event_bus.publish(Event(
-                    type=f"{self.metadata.name}.item_created",
-                    data={"item_id": item_id, "name": item_data.name},
-                    priority=EventPriority.NORMAL
-                ))
+                await self.event_bus.publish(
+                    Event(
+                        type=f"{self.metadata.name}.item_created",
+                        data={"item_id": item_id, "name": item_data.name},
+                        priority=EventPriority.NORMAL,
+                    )
+                )
 
             return Item(**item)
 
         @router.get("/items", response_model=List[Item])
-        async def list_items(
-            skip: int = 0,
-            limit: int = 100,
-            tag: Optional[str] = None
-        ):
+        async def list_items(skip: int = 0, limit: int = 100, tag: Optional[str] = None):
             """List all items with optional filtering."""
             items = list(self.items.values())
 
@@ -353,7 +357,7 @@ class TemplatePlugin(BasePlugin):
                 items = [item for item in items if tag in item.get("tags", [])]
 
             # Apply pagination
-            items = items[skip:skip + limit]
+            items = items[skip : skip + limit]
 
             return [Item(**item) for item in items]
 
@@ -362,8 +366,7 @@ class TemplatePlugin(BasePlugin):
             """Get a specific item by ID."""
             if item_id not in self.items:
                 raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail=f"Item {item_id} not found"
+                    status_code=status.HTTP_404_NOT_FOUND, detail=f"Item {item_id} not found"
                 )
 
             return Item(**self.items[item_id])
@@ -373,8 +376,7 @@ class TemplatePlugin(BasePlugin):
             """Update an existing item."""
             if item_id not in self.items:
                 raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail=f"Item {item_id} not found"
+                    status_code=status.HTTP_404_NOT_FOUND, detail=f"Item {item_id} not found"
                 )
 
             # Update item fields
@@ -388,11 +390,13 @@ class TemplatePlugin(BasePlugin):
 
             # Publish event
             if self.event_bus:
-                await self.event_bus.publish(Event(
-                    type=f"{self.metadata.name}.item_updated",
-                    data={"item_id": item_id, "changes": update_data},
-                    priority=EventPriority.NORMAL
-                ))
+                await self.event_bus.publish(
+                    Event(
+                        type=f"{self.metadata.name}.item_updated",
+                        data={"item_id": item_id, "changes": update_data},
+                        priority=EventPriority.NORMAL,
+                    )
+                )
 
             return Item(**item)
 
@@ -401,8 +405,7 @@ class TemplatePlugin(BasePlugin):
             """Delete an item."""
             if item_id not in self.items:
                 raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail=f"Item {item_id} not found"
+                    status_code=status.HTTP_404_NOT_FOUND, detail=f"Item {item_id} not found"
                 )
 
             # Delete item
@@ -410,11 +413,13 @@ class TemplatePlugin(BasePlugin):
 
             # Publish event
             if self.event_bus:
-                await self.event_bus.publish(Event(
-                    type=f"{self.metadata.name}.item_deleted",
-                    data={"item_id": item_id},
-                    priority=EventPriority.NORMAL
-                ))
+                await self.event_bus.publish(
+                    Event(
+                        type=f"{self.metadata.name}.item_deleted",
+                        data={"item_id": item_id},
+                        priority=EventPriority.NORMAL,
+                    )
+                )
 
             return None
 
@@ -433,7 +438,7 @@ class TemplatePlugin(BasePlugin):
                 "total_value": total_value,
                 "unique_tags": len(all_tags),
                 "tags": list(all_tags),
-                "average_value": total_value / total_items if total_items > 0 else 0
+                "average_value": total_value / total_items if total_items > 0 else 0,
             }
 
         return [router]
@@ -461,7 +466,7 @@ class TemplatePlugin(BasePlugin):
             "processed": True,
             "timestamp": datetime.utcnow().isoformat(),
             "input_keys": list(data.keys()),
-            "plugin": self.metadata.name
+            "plugin": self.metadata.name,
         }
 
         return result

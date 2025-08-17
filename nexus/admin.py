@@ -26,14 +26,14 @@ logger = logging.getLogger("nexus.admin")
 
 @click.group()
 @click.version_option(version=__version__, prog_name="Nexus Admin")
-@click.option('--verbose', '-v', is_flag=True, help='Enable verbose output')
-@click.option('--config', '-c', type=click.Path(exists=True), help='Configuration file path')
+@click.option("--verbose", "-v", is_flag=True, help="Enable verbose output")
+@click.option("--config", "-c", type=click.Path(exists=True), help="Configuration file path")
 @click.pass_context
 def admin(ctx, verbose, config):
     """Nexus Admin - Administrative tools and utilities"""
     ctx.ensure_object(dict)
-    ctx.obj['verbose'] = verbose
-    ctx.obj['config_path'] = config
+    ctx.obj["verbose"] = verbose
+    ctx.obj["config_path"] = config
 
     # Setup logging level
     log_level = "DEBUG" if verbose else "INFO"
@@ -46,24 +46,21 @@ def user():
     pass
 
 
-@user.command('create')
-@click.argument('username')
-@click.option('--password', prompt=True, hide_input=True, help='User password')
-@click.option('--email', prompt=True, help='User email address')
-@click.option('--admin', is_flag=True, help='Create admin user')
+@user.command("create")
+@click.argument("username")
+@click.option("--password", prompt=True, hide_input=True, help="User password")
+@click.option("--email", prompt=True, help="User email address")
+@click.option("--admin", is_flag=True, help="Create admin user")
 @click.pass_context
 def user_create(ctx, username, password, email, admin):
     """Create a new user"""
     click.echo(f"👤 Creating user: {username}")
 
     try:
+
         async def create_user_async():
             auth_manager = AuthenticationManager()
-            user = await auth_manager.create_user(
-                username=username,
-                password=password,
-                email=email
-            )
+            user = await auth_manager.create_user(username=username, password=password, email=email)
 
             if user:
                 click.echo(f"✅ User '{username}' created successfully")
@@ -84,15 +81,21 @@ def user_create(ctx, username, password, email, admin):
         sys.exit(1)
 
 
-@user.command('list')
-@click.option('--format', 'output_format', default='table',
-              type=click.Choice(['table', 'json']), help='Output format')
+@user.command("list")
+@click.option(
+    "--format",
+    "output_format",
+    default="table",
+    type=click.Choice(["table", "json"]),
+    help="Output format",
+)
 @click.pass_context
 def user_list(ctx, output_format):
     """List all users"""
     click.echo("📋 User List")
 
     try:
+
         async def list_users_async():
             auth_manager = AuthenticationManager()
             # In a real implementation, this would get all users
@@ -101,7 +104,7 @@ def user_list(ctx, output_format):
                 {"username": "user1", "email": "user1@example.com", "created": "2024-01-02"},
             ]
 
-            if output_format == 'json':
+            if output_format == "json":
                 click.echo(json.dumps(users, indent=2))
             else:
                 click.echo("Username | Email                | Created")
@@ -115,9 +118,9 @@ def user_list(ctx, output_format):
         click.echo(f"❌ Error listing users: {e}", err=True)
 
 
-@user.command('delete')
-@click.argument('username')
-@click.option('--confirm', is_flag=True, help='Skip confirmation prompt')
+@user.command("delete")
+@click.argument("username")
+@click.option("--confirm", is_flag=True, help="Skip confirmation prompt")
 @click.pass_context
 def user_delete(ctx, username, confirm):
     """Delete a user"""
@@ -143,14 +146,15 @@ def plugin():
     pass
 
 
-@plugin.command('status')
-@click.option('--detailed', is_flag=True, help='Show detailed plugin information')
+@plugin.command("status")
+@click.option("--detailed", is_flag=True, help="Show detailed plugin information")
 @click.pass_context
 def plugin_status(ctx, detailed):
     """Show plugin status"""
     click.echo("🔌 Plugin Status")
 
     try:
+
         async def get_plugin_status():
             config = create_default_config()
             service_registry = ServiceRegistry()
@@ -163,13 +167,17 @@ def plugin_status(ctx, detailed):
                 return
 
             for plugin_id, plugin in plugins.items():
-                status_icon = "✅" if hasattr(plugin, 'is_active') and plugin.is_active else "⚠️"
+                status_icon = "✅" if hasattr(plugin, "is_active") and plugin.is_active else "⚠️"
                 click.echo(f"{status_icon} {plugin_id}")
 
                 if detailed:
                     click.echo(f"   Version: {getattr(plugin, 'version', 'Unknown')}")
-                    click.echo(f"   Status: {'Active' if hasattr(plugin, 'is_active') and plugin.is_active else 'Inactive'}")
-                    click.echo(f"   Description: {getattr(plugin, 'description', 'No description')}")
+                    click.echo(
+                        f"   Status: {'Active' if hasattr(plugin, 'is_active') and plugin.is_active else 'Inactive'}"
+                    )
+                    click.echo(
+                        f"   Description: {getattr(plugin, 'description', 'No description')}"
+                    )
                     click.echo("")
 
         asyncio.run(get_plugin_status())
@@ -178,8 +186,8 @@ def plugin_status(ctx, detailed):
         click.echo(f"❌ Error getting plugin status: {e}", err=True)
 
 
-@plugin.command('enable')
-@click.argument('plugin_name')
+@plugin.command("enable")
+@click.argument("plugin_name")
 @click.pass_context
 def plugin_enable(ctx, plugin_name):
     """Enable a plugin"""
@@ -194,8 +202,8 @@ def plugin_enable(ctx, plugin_name):
         sys.exit(1)
 
 
-@plugin.command('disable')
-@click.argument('plugin_name')
+@plugin.command("disable")
+@click.argument("plugin_name")
 @click.pass_context
 def plugin_disable(ctx, plugin_name):
     """Disable a plugin"""
@@ -216,15 +224,21 @@ def system():
     pass
 
 
-@system.command('info')
-@click.option('--format', 'output_format', default='text',
-              type=click.Choice(['text', 'json']), help='Output format')
+@system.command("info")
+@click.option(
+    "--format",
+    "output_format",
+    default="text",
+    type=click.Choice(["text", "json"]),
+    help="Output format",
+)
 @click.pass_context
 def system_info(ctx, output_format):
     """Show system information"""
     click.echo("💻 System Information")
 
     try:
+
         async def get_system_info():
             metrics_collector = MetricsCollector()
             system_metrics = metrics_collector.get_system_metrics()
@@ -239,16 +253,16 @@ def system_info(ctx, output_format):
                     "memory_used_mb": system_metrics.memory_used_mb,
                     "memory_total_mb": system_metrics.memory_total_mb,
                     "disk_usage_percent": system_metrics.disk_usage_percent,
-                    "uptime_seconds": system_metrics.uptime_seconds
+                    "uptime_seconds": system_metrics.uptime_seconds,
                 },
                 "application": {
                     "total_requests": app_metrics.total_requests,
                     "failed_requests": app_metrics.failed_requests,
-                    "average_response_time": app_metrics.average_response_time_ms
-                }
+                    "average_response_time": app_metrics.average_response_time_ms,
+                },
             }
 
-            if output_format == 'json':
+            if output_format == "json":
                 click.echo(json.dumps(info, indent=2))
             else:
                 click.echo(f"Nexus Version: {info['nexus_version']}")
@@ -265,15 +279,21 @@ def system_info(ctx, output_format):
         click.echo(f"❌ Error getting system info: {e}", err=True)
 
 
-@system.command('health')
-@click.option('--format', 'output_format', default='text',
-              type=click.Choice(['text', 'json']), help='Output format')
+@system.command("health")
+@click.option(
+    "--format",
+    "output_format",
+    default="text",
+    type=click.Choice(["text", "json"]),
+    help="Output format",
+)
 @click.pass_context
 def system_health(ctx, output_format):
     """Perform comprehensive health check"""
     click.echo("🏥 System Health Check")
 
     try:
+
         async def run_health_checks():
             metrics_collector = MetricsCollector()
             health_checks = create_default_health_checks()
@@ -287,17 +307,17 @@ def system_health(ctx, output_format):
             health_data = {
                 "overall_status": overall_status,
                 "timestamp": datetime.utcnow().isoformat(),
-                "checks": {}
+                "checks": {},
             }
 
             for check_name, status in results.items():
                 health_data["checks"][check_name] = {
                     "status": status.status,
                     "message": status.message,
-                    "response_time_ms": status.response_time_ms
+                    "response_time_ms": status.response_time_ms,
                 }
 
-            if output_format == 'json':
+            if output_format == "json":
                 click.echo(json.dumps(health_data, indent=2))
             else:
                 status_icon = "✅" if overall_status == "healthy" else "❌"
@@ -318,11 +338,12 @@ def system_health(ctx, output_format):
         click.echo(f"❌ Error running health checks: {e}", err=True)
 
 
-@system.command('logs')
-@click.option('--lines', '-n', default=50, type=int, help='Number of lines to show')
-@click.option('--follow', '-f', is_flag=True, help='Follow log output')
-@click.option('--level', type=click.Choice(['DEBUG', 'INFO', 'WARNING', 'ERROR']),
-              help='Filter by log level')
+@system.command("logs")
+@click.option("--lines", "-n", default=50, type=int, help="Number of lines to show")
+@click.option("--follow", "-f", is_flag=True, help="Follow log output")
+@click.option(
+    "--level", type=click.Choice(["DEBUG", "INFO", "WARNING", "ERROR"]), help="Filter by log level"
+)
 @click.pass_context
 def system_logs(ctx, lines, follow, level):
     """Show system logs"""
@@ -335,7 +356,7 @@ def system_logs(ctx, lines, follow, level):
             "2024-01-01 10:00:01 INFO: Plugin manager initialized",
             "2024-01-01 10:00:02 INFO: Authentication system ready",
             "2024-01-01 10:00:03 INFO: Web server listening on port 8000",
-            "2024-01-01 10:00:04 DEBUG: Health checks configured"
+            "2024-01-01 10:00:04 DEBUG: Health checks configured",
         ]
 
         filtered_logs = sample_logs
@@ -359,9 +380,9 @@ def backup():
     pass
 
 
-@backup.command('create')
-@click.option('--output', '-o', type=click.Path(), help='Backup file path')
-@click.option('--include-plugins', is_flag=True, help='Include plugin data')
+@backup.command("create")
+@click.option("--output", "-o", type=click.Path(), help="Backup file path")
+@click.option("--include-plugins", is_flag=True, help="Include plugin data")
 @click.pass_context
 def backup_create(ctx, output, include_plugins):
     """Create system backup"""
@@ -377,7 +398,7 @@ def backup_create(ctx, output, include_plugins):
             "timestamp": datetime.utcnow().isoformat(),
             "version": __version__,
             "includes_plugins": include_plugins,
-            "files": ["config/", "logs/", "data/"]
+            "files": ["config/", "logs/", "data/"],
         }
 
         if include_plugins:
@@ -391,14 +412,16 @@ def backup_create(ctx, output, include_plugins):
         sys.exit(1)
 
 
-@backup.command('restore')
-@click.argument('backup_file', type=click.Path(exists=True))
-@click.option('--confirm', is_flag=True, help='Skip confirmation prompt')
+@backup.command("restore")
+@click.argument("backup_file", type=click.Path(exists=True))
+@click.option("--confirm", is_flag=True, help="Skip confirmation prompt")
 @click.pass_context
 def backup_restore(ctx, backup_file, confirm):
     """Restore from backup"""
     if not confirm:
-        if not click.confirm(f"This will restore from '{backup_file}' and may overwrite existing data. Continue?"):
+        if not click.confirm(
+            f"This will restore from '{backup_file}' and may overwrite existing data. Continue?"
+        ):
             click.echo("Operation cancelled")
             return
 
@@ -415,7 +438,7 @@ def backup_restore(ctx, backup_file, confirm):
 
 
 @admin.command()
-@click.option('--dry-run', is_flag=True, help='Show what would be done without making changes')
+@click.option("--dry-run", is_flag=True, help="Show what would be done without making changes")
 @click.pass_context
 def maintenance(ctx, dry_run):
     """Perform system maintenance tasks"""
@@ -427,7 +450,7 @@ def maintenance(ctx, dry_run):
             "Optimizing database",
             "Rotating log files",
             "Checking plugin integrity",
-            "Updating system metrics"
+            "Updating system metrics",
         ]
 
         if dry_run:
@@ -462,5 +485,5 @@ def main():
         sys.exit(1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -37,8 +37,8 @@ class ErrorHandlerMiddleware:
                     "success": False,
                     "error": "Internal Server Error",
                     "message": "An unexpected error occurred",
-                    "timestamp": datetime.utcnow().isoformat()
-                }
+                    "timestamp": datetime.utcnow().isoformat(),
+                },
             )
             await response(scope, receive, send)
 
@@ -92,7 +92,8 @@ class RateLimitMiddleware:
         # Clean old requests
         if client_ip in self.request_counts:
             self.request_counts[client_ip] = [
-                req_time for req_time in self.request_counts[client_ip]
+                req_time
+                for req_time in self.request_counts[client_ip]
                 if current_time - req_time < 60  # Keep requests from last minute
             ]
         else:
@@ -106,8 +107,8 @@ class RateLimitMiddleware:
                     "success": False,
                     "error": "Rate Limit Exceeded",
                     "message": f"Maximum {self.requests_per_minute} requests per minute",
-                    "timestamp": datetime.utcnow().isoformat()
-                }
+                    "timestamp": datetime.utcnow().isoformat(),
+                },
             )
             await response(scope, receive, send)
             return
@@ -126,7 +127,7 @@ class CORSMiddleware:
         app,
         allow_origins: list = None,
         allow_methods: list = None,
-        allow_headers: list = None
+        allow_headers: list = None,
     ):
         self.app = app
         self.allow_origins = allow_origins or ["*"]
@@ -240,11 +241,11 @@ class RequestIDMiddleware:
 
 
 __all__ = [
-    'ErrorHandlerMiddleware',
-    'LoggingMiddleware',
-    'RateLimitMiddleware',
-    'CORSMiddleware',
-    'SecurityMiddleware',
-    'TimingMiddleware',
-    'RequestIDMiddleware'
+    "ErrorHandlerMiddleware",
+    "LoggingMiddleware",
+    "RateLimitMiddleware",
+    "CORSMiddleware",
+    "SecurityMiddleware",
+    "TimingMiddleware",
+    "RequestIDMiddleware",
 ]

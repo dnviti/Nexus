@@ -14,12 +14,14 @@ from nexus.plugins import BasePlugin, HealthStatus
 # Request/Response Models
 class GreetingRequest(BaseModel):
     """Request model for greeting endpoint."""
+
     name: str = Field(..., min_length=1, max_length=100, description="Name to greet")
     language: str = Field(default="en", description="Language for greeting")
 
 
 class GreetingResponse(BaseModel):
     """Response model for greeting endpoint."""
+
     message: str
     timestamp: datetime
     language: str
@@ -28,6 +30,7 @@ class GreetingResponse(BaseModel):
 
 class MessageCreate(BaseModel):
     """Model for creating a message."""
+
     content: str = Field(..., min_length=1, max_length=500)
     author: str = Field(..., min_length=1, max_length=100)
     tags: List[str] = Field(default_factory=list)
@@ -35,6 +38,7 @@ class MessageCreate(BaseModel):
 
 class Message(BaseModel):
     """Message model."""
+
     id: str
     content: str
     author: str
@@ -78,7 +82,7 @@ class HelloWorldPlugin(BasePlugin):
             "ja": "こんにちは",
             "zh": "你好",
             "ru": "Привет",
-            "ar": "مرحبا"
+            "ar": "مرحبا",
         }
 
         self.message_counter = 0
@@ -107,7 +111,7 @@ class HelloWorldPlugin(BasePlugin):
             # Publish initialization event
             await self.publish_event(
                 "hello_world.initialized",
-                {"version": self.version, "timestamp": datetime.utcnow().isoformat()}
+                {"version": self.version, "timestamp": datetime.utcnow().isoformat()},
             )
 
             return True
@@ -133,7 +137,7 @@ class HelloWorldPlugin(BasePlugin):
         # Publish shutdown event
         await self.publish_event(
             "hello_world.shutdown",
-            {"version": self.version, "timestamp": datetime.utcnow().isoformat()}
+            {"version": self.version, "timestamp": datetime.utcnow().isoformat()},
         )
 
         self.logger.info(f"{self.name} plugin shut down successfully")
@@ -150,7 +154,7 @@ class HelloWorldPlugin(BasePlugin):
         @router.get("/greet", response_model=GreetingResponse)
         async def greet(
             name: str = Query(..., description="Name to greet"),
-            language: str = Query("en", description="Language code")
+            language: str = Query("en", description="Language code"),
         ):
             """Greet someone in their preferred language."""
             self.greeting_counter += 1
@@ -165,15 +169,15 @@ class HelloWorldPlugin(BasePlugin):
                     "name": name,
                     "language": language,
                     "message": message,
-                    "count": self.greeting_counter
-                }
+                    "count": self.greeting_counter,
+                },
             )
 
             return GreetingResponse(
                 message=message,
                 timestamp=datetime.utcnow(),
                 language=language,
-                plugin_version=self.version
+                plugin_version=self.version,
             )
 
         @router.post("/greet", response_model=GreetingResponse)
@@ -188,7 +192,7 @@ class HelloWorldPlugin(BasePlugin):
                 message=message,
                 timestamp=datetime.utcnow(),
                 language=request.language,
-                plugin_version=self.version
+                plugin_version=self.version,
             )
 
         @router.get("/languages", response_model=Dict[str, str])
@@ -205,13 +209,10 @@ class HelloWorldPlugin(BasePlugin):
             return {"message": f"Added greeting for language: {code}"}
 
         @router.get("/messages", response_model=List[Message])
-        async def list_messages(
-            limit: int = Query(10, ge=1, le=100),
-            offset: int = Query(0, ge=0)
-        ):
+        async def list_messages(limit: int = Query(10, ge=1, le=100), offset: int = Query(0, ge=0)):
             """List all messages."""
             messages = await self.get_data("messages", [])
-            return messages[offset:offset + limit]
+            return messages[offset : offset + limit]
 
         @router.post("/messages", response_model=Message, status_code=status.HTTP_201_CREATED)
         async def create_message(message_data: MessageCreate):
@@ -224,7 +225,7 @@ class HelloWorldPlugin(BasePlugin):
                 author=message_data.author,
                 tags=message_data.tags,
                 created_at=datetime.utcnow(),
-                likes=0
+                likes=0,
             )
 
             # Store message
@@ -233,10 +234,7 @@ class HelloWorldPlugin(BasePlugin):
             await self.set_data("messages", messages)
 
             # Publish message created event
-            await self.publish_event(
-                "hello_world.message_created",
-                message.dict()
-            )
+            await self.publish_event("hello_world.message_created", message.dict())
 
             return message
 
@@ -253,14 +251,13 @@ class HelloWorldPlugin(BasePlugin):
                     # Publish like event
                     await self.publish_event(
                         "hello_world.message_liked",
-                        {"message_id": message_id, "likes": msg["likes"]}
+                        {"message_id": message_id, "likes": msg["likes"]},
                     )
 
                     return {"message": "Message liked", "likes": msg["likes"]}
 
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Message {message_id} not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail=f"Message {message_id} not found"
             )
 
         @router.get("/stats")
@@ -273,7 +270,7 @@ class HelloWorldPlugin(BasePlugin):
                 "message_count": len(messages),
                 "total_likes": sum(msg.get("likes", 0) for msg in messages),
                 "languages_supported": len(self.greetings),
-                "uptime_seconds": self.get_metrics()["uptime_seconds"]
+                "uptime_seconds": self.get_metrics()["uptime_seconds"],
             }
 
         @router.get("/health")
@@ -292,7 +289,7 @@ class HelloWorldPlugin(BasePlugin):
                     "indexes": [
                         {"field": "id", "unique": True},
                         {"field": "author"},
-                        {"field": "created_at"}
+                        {"field": "created_at"},
                     ]
                 }
             },
@@ -304,14 +301,11 @@ class HelloWorldPlugin(BasePlugin):
                         "author": "System",
                         "tags": ["welcome", "system"],
                         "created_at": datetime.utcnow().isoformat(),
-                        "likes": 0
+                        "likes": 0,
                     }
                 ],
-                "config": {
-                    "max_message_length": 500,
-                    "enable_notifications": True
-                }
-            }
+                "config": {"max_message_length": 500, "enable_notifications": True},
+            },
         }
 
     async def health_check(self) -> HealthStatus:
@@ -321,22 +315,18 @@ class HelloWorldPlugin(BasePlugin):
         # Add custom health checks
         try:
             messages = await self.get_data("messages", [])
-            health.components["messages"] = {
-                "status": "healthy",
-                "count": len(messages)
-            }
+            health.components["messages"] = {"status": "healthy", "count": len(messages)}
         except Exception as e:
-            health.components["messages"] = {
-                "status": "unhealthy",
-                "error": str(e)
-            }
+            health.components["messages"] = {"status": "unhealthy", "error": str(e)}
             health.healthy = False
 
-        health.metrics.update({
-            "greeting_count": self.greeting_counter,
-            "message_count": self.message_counter,
-            "languages": len(self.greetings)
-        })
+        health.metrics.update(
+            {
+                "greeting_count": self.greeting_counter,
+                "message_count": self.message_counter,
+                "languages": len(self.greetings),
+            }
+        )
 
         return health
 
@@ -344,11 +334,13 @@ class HelloWorldPlugin(BasePlugin):
         """Get plugin metrics."""
         metrics = super().get_metrics()
 
-        metrics.update({
-            "greetings_total": float(self.greeting_counter),
-            "messages_total": float(self.message_counter),
-            "languages_supported": float(len(self.greetings))
-        })
+        metrics.update(
+            {
+                "greetings_total": float(self.greeting_counter),
+                "messages_total": float(self.message_counter),
+                "languages_supported": float(len(self.greetings)),
+            }
+        )
 
         return metrics
 
@@ -384,7 +376,7 @@ class HelloWorldPlugin(BasePlugin):
                 "author": "System",
                 "tags": ["welcome", "system"],
                 "created_at": datetime.utcnow().isoformat(),
-                "likes": 0
+                "likes": 0,
             }
             await self.set_data("messages", [welcome_message])
             self.logger.info("Created initial welcome message")
@@ -408,7 +400,7 @@ class HelloWorldPlugin(BasePlugin):
             "author": "System",
             "tags": ["welcome", "auto-generated"],
             "created_at": datetime.utcnow().isoformat(),
-            "likes": 0
+            "likes": 0,
         }
 
         messages = await self.get_data("messages", [])

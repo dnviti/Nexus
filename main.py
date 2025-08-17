@@ -69,8 +69,7 @@ class NexusApplication:
         self.event_bus = EventBus()
         self.service_registry = ServiceRegistry()
         self.plugin_manager = PluginManager(
-            event_bus=self.event_bus,
-            service_registry=self.service_registry
+            event_bus=self.event_bus, service_registry=self.service_registry
         )
         self.auth_manager = AuthenticationManager()
         # Remove this line - health checks are managed by metrics collector
@@ -185,7 +184,7 @@ class NexusApplication:
             docs_url="/api/docs",
             redoc_url="/api/redoc",
             openapi_url="/api/openapi.json",
-            lifespan=self._lifespan_manager
+            lifespan=self._lifespan_manager,
         )
 
         # Configure middleware
@@ -235,7 +234,9 @@ class NexusApplication:
             logger.warning(f"Application started with health issues: {overall_health}")
 
         self._startup_complete = True
-        logger.info(f"Nexus Framework started successfully on {self.config.app.host}:{self.config.app.port}")
+        logger.info(
+            f"Nexus Framework started successfully on {self.config.app.host}:{self.config.app.port}"
+        )
 
     async def shutdown(self) -> None:
         """Handle application shutdown."""
@@ -289,7 +290,9 @@ class NexusApplication:
                     try:
                         health = await plugin.health_check()
                         if not health.healthy:
-                            logger.warning(f"Plugin {plugin_id} health check failed: {health.message}")
+                            logger.warning(
+                                f"Plugin {plugin_id} health check failed: {health.message}"
+                            )
                     except Exception as e:
                         logger.error(f"Error checking health of plugin {plugin_id}: {e}")
 
@@ -313,8 +316,7 @@ class NexusApplication:
         # Trusted host middleware
         if self.config.security.trusted_hosts:
             self.app.add_middleware(
-                TrustedHostMiddleware,
-                allowed_hosts=self.config.security.trusted_hosts
+                TrustedHostMiddleware, allowed_hosts=self.config.security.trusted_hosts
             )
 
         # Compression middleware
@@ -329,13 +331,14 @@ class NexusApplication:
             self.app.add_middleware(
                 RateLimitMiddleware,
                 requests=self.config.security.rate_limit_requests,
-                period=self.config.security.rate_limit_period
+                period=self.config.security.rate_limit_period,
             )
 
         self.app.add_middleware(ErrorHandlerMiddleware)
 
     def _configure_routes(self) -> None:
         """Configure application routes."""
+
         # Root redirect
         @self.app.get("/", include_in_schema=False)
         async def root():
@@ -351,11 +354,12 @@ class NexusApplication:
                 "status": overall_health,
                 "version": __version__,
                 "checks": {name: status.dict() for name, status in health_results.items()},
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.utcnow().isoformat(),
             }
 
         # Metrics endpoint
         if self.config.monitoring.metrics_enabled:
+
             @self.app.get("/metrics", tags=["System"])
             async def metrics():
                 """System metrics endpoint."""
@@ -389,7 +393,9 @@ class NexusApplication:
             plugin_static = Path(f"plugins/{plugin.category}/{plugin.name}/static")
             if plugin_static.exists():
                 mount_path = f"/static/plugins/{plugin.category}/{plugin.name}"
-                self.app.mount(mount_path, StaticFiles(directory=plugin_static), name=f"static-{plugin_id}")
+                self.app.mount(
+                    mount_path, StaticFiles(directory=plugin_static), name=f"static-{plugin_id}"
+                )
 
     def _configure_exception_handlers(self) -> None:
         """Configure global exception handlers."""
@@ -401,8 +407,8 @@ class NexusApplication:
                 content={
                     "error": exc.detail,
                     "status_code": exc.status_code,
-                    "request_id": getattr(request.state, "request_id", None)
-                }
+                    "request_id": getattr(request.state, "request_id", None),
+                },
             )
 
         @self.app.exception_handler(Exception)
@@ -413,8 +419,8 @@ class NexusApplication:
                 content={
                     "error": "Internal server error",
                     "status_code": 500,
-                    "request_id": getattr(request.state, "request_id", None)
-                }
+                    "request_id": getattr(request.state, "request_id", None),
+                },
             )
 
 
@@ -422,7 +428,7 @@ def create_nexus_app(
     config: Optional[AppConfig] = None,
     title: Optional[str] = None,
     description: Optional[str] = None,
-    version: Optional[str] = None
+    version: Optional[str] = None,
 ) -> FastAPI:
     """
     Factory function to create a Nexus Framework application.
@@ -473,7 +479,7 @@ def main():
         port=config.app.port,
         reload=config.app.reload,
         log_level=config.logging.level.lower(),
-        access_log=config.logging.access_log
+        access_log=config.logging.access_log,
     )
 
 

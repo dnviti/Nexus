@@ -26,23 +26,25 @@ class TestBasicImports:
     def test_import_nexus(self):
         """Test that nexus can be imported without errors."""
         import nexus
+
         assert nexus is not None
 
     def test_nexus_version(self):
         """Test that nexus has a valid version."""
-        assert hasattr(nexus, '__version__')
+        assert hasattr(nexus, "__version__")
         assert nexus.__version__ is not None
         assert isinstance(nexus.__version__, str)
 
     def test_version_format(self):
         """Test version follows semantic versioning format."""
         import re
-        version_pattern = r'^\d+\.\d+\.\d+.*$'
+
+        version_pattern = r"^\d+\.\d+\.\d+.*$"
         assert re.match(version_pattern, nexus.__version__)
 
     def test_nexus_author(self):
         """Test that nexus has author information."""
-        assert hasattr(nexus, '__author__')
+        assert hasattr(nexus, "__author__")
         assert nexus.__author__ is not None
         assert isinstance(nexus.__author__, str)
 
@@ -57,14 +59,10 @@ class TestAppCreation:
 
     def test_create_nexus_app_with_params(self):
         """Test app creation with various parameters."""
-        app = create_nexus_app(
-            title="Test App",
-            description="Test Description",
-            version="1.0.0"
-        )
+        app = create_nexus_app(title="Test App", description="Test Description", version="1.0.0")
         assert app is not None
         # Check if it's a FastAPI app
-        assert hasattr(app, 'title')
+        assert hasattr(app, "title")
         assert app.title == "Test App"
 
     def test_app_has_health_endpoint(self):
@@ -94,11 +92,13 @@ class TestCoreComponents:
     def test_base_plugin_import(self):
         """Test BasePlugin can be imported."""
         from nexus import BasePlugin
+
         assert BasePlugin is not None
 
     def test_create_nexus_app_import(self):
         """Test create_nexus_app function can be imported."""
         from nexus import create_nexus_app
+
         assert create_nexus_app is not None
         assert callable(create_nexus_app)
 
@@ -106,6 +106,7 @@ class TestCoreComponents:
         """Test configuration components are available."""
         try:
             from nexus.core import AppConfig, create_default_config
+
             assert AppConfig is not None
             assert create_default_config is not None
         except ImportError:
@@ -134,10 +135,10 @@ class TestFrameworkMetadata:
     def test_framework_constants(self):
         """Test framework has expected constants."""
         # Version should be present
-        assert hasattr(nexus, '__version__')
+        assert hasattr(nexus, "__version__")
 
         # Check if other metadata is available
-        metadata_attrs = ['__author__', '__license__']
+        metadata_attrs = ["__author__", "__license__"]
         for attr in metadata_attrs:
             if hasattr(nexus, attr):
                 assert getattr(nexus, attr) is not None
@@ -149,7 +150,7 @@ class TestFrameworkMetadata:
 
     def test_version_components(self):
         """Test version has recognizable components."""
-        version_parts = nexus.__version__.split('.')
+        version_parts = nexus.__version__.split(".")
         assert len(version_parts) >= 3  # At least major.minor.patch
 
         # First three parts should be numeric

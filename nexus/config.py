@@ -26,6 +26,7 @@ logger = logging.getLogger(__name__)
 
 class Environment(str, Enum):
     """Application environment types."""
+
     DEVELOPMENT = "development"
     STAGING = "staging"
     PRODUCTION = "production"
@@ -34,6 +35,7 @@ class Environment(str, Enum):
 
 class DatabaseType(str, Enum):
     """Supported database types."""
+
     POSTGRESQL = "postgresql"
     MYSQL = "mysql"
     MONGODB = "mongodb"
@@ -43,6 +45,7 @@ class DatabaseType(str, Enum):
 
 class LogLevel(str, Enum):
     """Logging levels."""
+
     DEBUG = "DEBUG"
     INFO = "INFO"
     WARNING = "WARNING"
@@ -52,8 +55,10 @@ class LogLevel(str, Enum):
 
 # Pydantic models for configuration validation
 
+
 class CORSConfig(BaseModel):
     """CORS configuration."""
+
     enabled: bool = True
     origins: List[str] = ["*"]
     methods: List[str] = ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"]
@@ -64,6 +69,7 @@ class CORSConfig(BaseModel):
 
 class ServerConfig(BaseModel):
     """Server configuration."""
+
     host: str = "0.0.0.0"
     port: int = Field(8000, ge=1, le=65535)
     workers: int = Field(1, ge=1)
@@ -75,6 +81,7 @@ class ServerConfig(BaseModel):
 
 class DatabaseConnectionConfig(BaseModel):
     """Database connection configuration."""
+
     host: str = "localhost"
     port: int = Field(5432, ge=1, le=65535)
     database: str = "nexus_db"
@@ -96,6 +103,7 @@ class DatabaseConnectionConfig(BaseModel):
 
 class DatabasePoolConfig(BaseModel):
     """Database connection pool configuration."""
+
     min_size: int = Field(10, ge=1)
     max_size: int = Field(20, ge=1)
     max_overflow: int = Field(10, ge=0)
@@ -114,6 +122,7 @@ class DatabasePoolConfig(BaseModel):
 
 class DatabaseConfig(BaseModel):
     """Complete database configuration."""
+
     type: DatabaseType = DatabaseType.POSTGRESQL
     connection: DatabaseConnectionConfig = Field(default_factory=DatabaseConnectionConfig)
     pool: Optional[DatabasePoolConfig] = Field(default_factory=DatabasePoolConfig)
@@ -165,6 +174,7 @@ class DatabaseConfig(BaseModel):
 
 class CacheConfig(BaseModel):
     """Cache configuration."""
+
     type: str = "redis"  # redis, memcached, memory
     redis_host: str = "localhost"
     redis_port: int = 6379
@@ -182,6 +192,7 @@ class CacheConfig(BaseModel):
 
 class AuthConfig(BaseModel):
     """Authentication configuration."""
+
     jwt_secret: str = Field("change-me-in-production", min_length=32)
     jwt_algorithm: str = "HS256"
     token_expiry: int = 3600  # 1 hour
@@ -206,6 +217,7 @@ class AuthConfig(BaseModel):
 
 class SecurityConfig(BaseModel):
     """Security configuration."""
+
     https_redirect: bool = False
     hsts_enabled: bool = False
     hsts_max_age: int = 31536000  # 1 year
@@ -220,6 +232,7 @@ class SecurityConfig(BaseModel):
 
 class LoggingConfig(BaseModel):
     """Logging configuration."""
+
     level: LogLevel = LogLevel.INFO
     format: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     date_format: str = "%Y-%m-%d %H:%M:%S"
@@ -275,6 +288,7 @@ class LoggingConfig(BaseModel):
 
 class PluginConfig(BaseModel):
     """Plugin system configuration."""
+
     directory: str = "./plugins"
     auto_load: bool = True
     hot_reload: bool = False
@@ -288,6 +302,7 @@ class PluginConfig(BaseModel):
 
 class AppSettings(BaseModel):
     """Main application settings."""
+
     name: str = "Nexus Application"
     version: str = "1.0.0"
     description: str = "A Nexus Framework application"
@@ -308,6 +323,7 @@ class AppSettings(BaseModel):
 
 class AppConfig(BaseModel):
     """Complete application configuration."""
+
     app: AppSettings = Field(default_factory=AppSettings)
     server: ServerConfig = Field(default_factory=ServerConfig)
     database: Optional[DatabaseConfig] = Field(default_factory=DatabaseConfig)
@@ -323,6 +339,7 @@ class AppConfig(BaseModel):
 
     class Config:
         """Pydantic configuration."""
+
         use_enum_values = True
         validate_assignment = True
 
@@ -348,7 +365,7 @@ class AppConfig(BaseModel):
 class ConfigLoader:
     """Configuration loader with environment variable substitution."""
 
-    ENV_VAR_PATTERN = re.compile(r'\$\{([^}:]+)(?::([^}]*))?\}')
+    ENV_VAR_PATTERN = re.compile(r"\$\{([^}:]+)(?::([^}]*))?\}")
 
     @classmethod
     def load_file(cls, path: Union[str, Path]) -> Dict[str, Any]:
@@ -359,13 +376,13 @@ class ConfigLoader:
             raise FileNotFoundError(f"Configuration file not found: {path}")
 
         # Determine file type and load
-        if path.suffix in ['.yaml', '.yml']:
+        if path.suffix in [".yaml", ".yml"]:
             with open(path) as f:
                 data = yaml.safe_load(f)
-        elif path.suffix == '.json':
+        elif path.suffix == ".json":
             with open(path) as f:
                 data = json.load(f)
-        elif path.suffix == '.toml':
+        elif path.suffix == ".toml":
             with open(path) as f:
                 data = toml.load(f)
         else:
@@ -382,6 +399,7 @@ class ConfigLoader:
         elif isinstance(data, list):
             return [cls._substitute_env_vars(item) for item in data]
         elif isinstance(data, str):
+
             def replacer(match):
                 var_name = match.group(1)
                 default_value = match.group(2)
@@ -389,7 +407,9 @@ class ConfigLoader:
                 if value is None:
                     if default_value is not None:
                         return default_value
-                    raise ValueError(f"Environment variable {var_name} not set and no default provided")
+                    raise ValueError(
+                        f"Environment variable {var_name} not set and no default provided"
+                    )
                 return value
 
             return cls.ENV_VAR_PATTERN.sub(replacer, data)
@@ -405,7 +425,7 @@ class ConfigLoader:
         for key, value in os.environ.items():
             if key.startswith(prefix):
                 # Remove prefix and convert to lowercase
-                config_key = key[len(prefix):].lower()
+                config_key = key[len(prefix) :].lower()
 
                 # Convert underscores to nested dict notation
                 parts = config_key.split("__")
@@ -429,7 +449,7 @@ class ConfigLoader:
 def load_config(
     path: Optional[Union[str, Path]] = None,
     env_prefix: str = "NEXUS",
-    defaults: Optional[Dict[str, Any]] = None
+    defaults: Optional[Dict[str, Any]] = None,
 ) -> AppConfig:
     """
     Load configuration from multiple sources.
@@ -499,9 +519,7 @@ DEVELOPMENT_CONFIG = {
     },
     "database": {
         "type": "sqlite",
-        "connection": {
-            "path": "./dev.db"
-        },
+        "connection": {"path": "./dev.db"},
         "echo": True,
     },
     "logging": {
@@ -549,9 +567,7 @@ TESTING_CONFIG = {
     },
     "database": {
         "type": "sqlite",
-        "connection": {
-            "path": ":memory:"
-        },
+        "connection": {"path": ":memory:"},
     },
     "auth": {
         "jwt_secret": "test-secret-key-for-testing-only",

@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 class APIResponse(BaseModel):
     """Standard API response model."""
+
     success: bool = True
     message: str = "OK"
     data: Optional[Any] = None
@@ -24,6 +25,7 @@ class APIResponse(BaseModel):
 
 class HealthResponse(BaseModel):
     """Health check response model."""
+
     status: str = "healthy"
     version: str = "2.0.0"
     timestamp: datetime = datetime.utcnow()
@@ -33,6 +35,7 @@ class HealthResponse(BaseModel):
 
 class ErrorResponse(BaseModel):
     """Error response model."""
+
     success: bool = False
     error: str
     message: str
@@ -50,11 +53,7 @@ def create_api_router() -> APIRouter:
         return HealthResponse(
             status="healthy",
             version="2.0.0",
-            services={
-                "database": "connected",
-                "plugins": "loaded",
-                "auth": "ready"
-            }
+            services={"database": "connected", "plugins": "loaded", "auth": "ready"},
         )
 
     @router.get("/info", response_model=APIResponse)
@@ -66,7 +65,7 @@ def create_api_router() -> APIRouter:
                 "version": "2.0.0",
                 "description": "The Ultimate Plugin-Based Application Platform",
                 "documentation": "https://docs.nexus-framework.dev",
-                "repository": "https://github.com/nexus-framework/nexus"
+                "repository": "https://github.com/nexus-framework/nexus",
             }
         )
 
@@ -80,7 +79,7 @@ def create_api_router() -> APIRouter:
                 "plugins_loaded": 0,  # Would count actual plugins
                 "active_connections": 0,  # Would count actual connections
                 "memory_usage": "N/A",  # Would get actual memory usage
-                "cpu_usage": "N/A"  # Would get actual CPU usage
+                "cpu_usage": "N/A",  # Would get actual CPU usage
             }
         )
 
@@ -93,7 +92,7 @@ def create_api_router() -> APIRouter:
                 "build": "stable",
                 "release_date": "2024-12-21",
                 "python_version": "3.11+",
-                "framework": "FastAPI"
+                "framework": "FastAPI",
             }
         )
 
@@ -102,28 +101,15 @@ def create_api_router() -> APIRouter:
 
 def create_plugin_router(plugin_name: str) -> APIRouter:
     """Create a router for a plugin."""
-    return APIRouter(
-        prefix=f"/api/plugins/{plugin_name}",
-        tags=[f"plugin-{plugin_name}"]
-    )
+    return APIRouter(prefix=f"/api/plugins/{plugin_name}", tags=[f"plugin-{plugin_name}"])
 
 
 def create_error_response(
-    error: str,
-    message: str,
-    status_code: int = 500,
-    details: Optional[Dict[str, Any]] = None
+    error: str, message: str, status_code: int = 500, details: Optional[Dict[str, Any]] = None
 ) -> JSONResponse:
     """Create standardized error response."""
-    response = ErrorResponse(
-        error=error,
-        message=message,
-        details=details
-    )
-    return JSONResponse(
-        status_code=status_code,
-        content=response.dict()
-    )
+    response = ErrorResponse(error=error, message=message, details=details)
+    return JSONResponse(status_code=status_code, content=response.dict())
 
 
 def validate_api_key(api_key: Optional[str] = None) -> bool:
@@ -138,18 +124,17 @@ async def require_api_key(api_key: Optional[str] = None):
     """Dependency to require valid API key."""
     if not validate_api_key(api_key):
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or missing API key"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or missing API key"
         )
 
 
 __all__ = [
-    'APIResponse',
-    'HealthResponse',
-    'ErrorResponse',
-    'create_api_router',
-    'create_plugin_router',
-    'create_error_response',
-    'validate_api_key',
-    'require_api_key'
+    "APIResponse",
+    "HealthResponse",
+    "ErrorResponse",
+    "create_api_router",
+    "create_plugin_router",
+    "create_error_response",
+    "validate_api_key",
+    "require_api_key",
 ]

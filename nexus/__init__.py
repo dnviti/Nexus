@@ -60,7 +60,6 @@ __all__ = [
     "__version__",
     "__author__",
     "__license__",
-
     # Core classes
     "NexusApp",
     "BasePlugin",
@@ -71,25 +70,20 @@ __all__ = [
     "EventBus",
     "ServiceRegistry",
     "DatabaseAdapter",
-
     # Configuration
     "AppConfig",
     "DatabaseConfig",
     "create_default_config",
-
     # Decorators and utilities
     "plugin_hook",
     "requires_permission",
     "requires_dependency",
-
     # Factory functions
     "create_nexus_app",
     "create_plugin",
-
     # Events
     "Event",
     "EventPriority",
-
     # Plugin info
     "PluginInfo",
     "PluginStatus",
@@ -110,7 +104,7 @@ class NexusApp:
         version: str = "1.0.0",
         description: str = "A Nexus Framework Application",
         config: Optional[AppConfig] = None,
-        **kwargs
+        **kwargs,
     ):
         """
         Initialize a new Nexus application.
@@ -131,8 +125,7 @@ class NexusApp:
         self.event_bus = EventBus()
         self.service_registry = ServiceRegistry()
         self.plugin_manager = PluginManager(
-            event_bus=self.event_bus,
-            service_registry=self.service_registry
+            event_bus=self.event_bus, service_registry=self.service_registry
         )
 
         # Initialize database adapter if configured
@@ -147,7 +140,7 @@ class NexusApp:
             version=self.version,
             description=self.description,
             lifespan=self._lifespan,
-            **kwargs
+            **kwargs,
         )
 
         # Setup middleware
@@ -200,10 +193,9 @@ class NexusApp:
                 handler()
 
         # Publish startup event
-        await self.event_bus.publish(Event(
-            type="app.started",
-            data={"app": self.title, "version": self.version}
-        ))
+        await self.event_bus.publish(
+            Event(type="app.started", data={"app": self.title, "version": self.version})
+        )
 
         logger.info(f"{self.title} started successfully")
 
@@ -212,10 +204,7 @@ class NexusApp:
         logger.info(f"Shutting down {self.title}...")
 
         # Publish shutdown event
-        await self.event_bus.publish(Event(
-            type="app.stopping",
-            data={"app": self.title}
-        ))
+        await self.event_bus.publish(Event(type="app.stopping", data={"app": self.title}))
 
         # Run custom shutdown handlers
         for handler in self._shutdown_handlers:
@@ -262,7 +251,7 @@ class NexusApp:
                         "message": exc.detail,
                         "path": str(request.url.path),
                     }
-                }
+                },
             )
 
         # Global exception handler
@@ -277,7 +266,7 @@ class NexusApp:
                         "message": "Internal server error",
                         "path": str(request.url.path),
                     }
-                }
+                },
             )
 
     def _setup_core_routes(self):
@@ -290,7 +279,7 @@ class NexusApp:
                 "status": "healthy",
                 "app": self.title,
                 "version": self.version,
-                "plugins": len(self.plugin_manager.get_loaded_plugins())
+                "plugins": len(self.plugin_manager.get_loaded_plugins()),
             }
 
         @self.app.get("/api/system/info")
@@ -308,12 +297,17 @@ class NexusApp:
                 },
                 "plugins": {
                     "loaded": len(self.plugin_manager.get_loaded_plugins()),
-                    "enabled": len([p for p in self.plugin_manager.get_loaded_plugins()
-                                  if self.plugin_manager.get_plugin_status(p) == PluginStatus.ACTIVE]),
+                    "enabled": len(
+                        [
+                            p
+                            for p in self.plugin_manager.get_loaded_plugins()
+                            if self.plugin_manager.get_plugin_status(p) == PluginStatus.ACTIVE
+                        ]
+                    ),
                 },
                 "services": {
                     "registered": len(self.service_registry.list_services()),
-                }
+                },
             }
 
         @self.app.get("/api/plugins")
@@ -324,15 +318,17 @@ class NexusApp:
                 info = self.plugin_manager.get_plugin_info(plugin_name)
                 status = self.plugin_manager.get_plugin_status(plugin_name)
                 if info:
-                    plugins.append({
-                        "name": info.name,
-                        "version": info.version,
-                        "description": info.description,
-                        "author": info.author,
-                        "status": status.value if status else "unknown",
-                        "dependencies": info.dependencies,
-                        "permissions": info.permissions,
-                    })
+                    plugins.append(
+                        {
+                            "name": info.name,
+                            "version": info.version,
+                            "description": info.description,
+                            "author": info.author,
+                            "status": status.value if status else "unknown",
+                            "dependencies": info.dependencies,
+                            "permissions": info.permissions,
+                        }
+                    )
             return {"plugins": plugins}
 
         @self.app.post("/api/plugins/{plugin_name}/enable")
@@ -355,20 +351,16 @@ class NexusApp:
         """Register routes from all loaded plugins."""
         for plugin_name in self.plugin_manager.get_loaded_plugins():
             plugin = self.plugin_manager.plugins.get(plugin_name)
-            if plugin and hasattr(plugin, 'get_api_routes'):
+            if plugin and hasattr(plugin, "get_api_routes"):
                 routes = plugin.get_api_routes()
                 if routes:
                     for router in routes:
                         # Add plugin prefix to router
                         prefix = f"/api/plugins/{plugin_name}"
-                        if hasattr(router, 'prefix') and router.prefix:
+                        if hasattr(router, "prefix") and router.prefix:
                             prefix = router.prefix
 
-                        self.app.include_router(
-                            router,
-                            prefix=prefix,
-                            tags=[plugin_name]
-                        )
+                        self.app.include_router(router, prefix=prefix, tags=[plugin_name])
                         logger.info(f"Registered routes for plugin: {plugin_name}")
 
     def on_startup(self, func: Callable):
@@ -381,13 +373,11 @@ class NexusApp:
         self._shutdown_handlers.append(func)
         return func
 
-    async def emit_event(self, event_type: str, data: Any = None, priority: EventPriority = EventPriority.NORMAL):
+    async def emit_event(
+        self, event_type: str, data: Any = None, priority: EventPriority = EventPriority.NORMAL
+    ):
         """Emit an event to the event bus."""
-        await self.event_bus.publish(Event(
-            type=event_type,
-            data=data,
-            priority=priority
-        ))
+        await self.event_bus.publish(Event(type=event_type, data=data, priority=priority))
 
     def register_service(self, name: str, service: Any, interface: Optional[Type] = None):
         """Register a service in the service registry."""
@@ -411,12 +401,7 @@ class NexusApp:
 
     def run(self, host: str = "0.0.0.0", port: int = 8000, **kwargs):
         """Run the application using uvicorn."""
-        uvicorn.run(
-            self.app,
-            host=host,
-            port=port,
-            **kwargs
-        )
+        uvicorn.run(self.app, host=host, port=port, **kwargs)
 
 
 def create_nexus_app(
@@ -424,7 +409,7 @@ def create_nexus_app(
     version: str = "1.0.0",
     description: str = "A Nexus Framework Application",
     config: Optional[Union[AppConfig, Dict[str, Any], str]] = None,
-    **kwargs
+    **kwargs,
 ) -> NexusApp:
     """
     Factory function to create a Nexus application.
@@ -453,26 +438,17 @@ def create_nexus_app(
     elif isinstance(config, str):
         # Load from file
         from .config import load_config
+
         config = load_config(config)
     elif isinstance(config, dict):
         # Create from dictionary
         config = AppConfig(**config)
 
-    return NexusApp(
-        title=title,
-        version=version,
-        description=description,
-        config=config,
-        **kwargs
-    )
+    return NexusApp(title=title, version=version, description=description, config=config, **kwargs)
 
 
 def create_plugin(
-    name: str,
-    version: str = "1.0.0",
-    description: str = "",
-    author: str = "",
-    **kwargs
+    name: str, version: str = "1.0.0", description: str = "", author: str = "", **kwargs
 ) -> Type[BasePlugin]:
     """
     Factory function to create a plugin class.
@@ -495,15 +471,12 @@ def create_plugin(
         ... )
         >>> plugin = MyPlugin()
     """
+
     class DynamicPlugin(BasePlugin):
         def __init__(self):
             super().__init__()
             self.metadata = PluginMetadata(
-                name=name,
-                version=version,
-                description=description,
-                author=author,
-                **kwargs
+                name=name, version=version, description=description, author=author, **kwargs
             )
 
     DynamicPlugin.__name__ = f"{name.title().replace('_', '')}Plugin"
@@ -542,10 +515,11 @@ from pydantic import BaseModel, Field, validator
 
 # Version check
 import sys
+
 if sys.version_info < (3, 11):
     import warnings
+
     warnings.warn(
-        "Nexus Framework requires Python 3.11 or higher. "
-        "Some features may not work correctly.",
-        RuntimeWarning
+        "Nexus Framework requires Python 3.11 or higher. " "Some features may not work correctly.",
+        RuntimeWarning,
     )

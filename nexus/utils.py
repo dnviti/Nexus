@@ -16,7 +16,7 @@ def setup_logging(
     level: str = "INFO",
     format_string: Optional[str] = None,
     log_file: Optional[str] = None,
-    enable_json: bool = False
+    enable_json: bool = False,
 ):
     """Setup application logging configuration."""
 
@@ -28,11 +28,7 @@ def setup_logging(
             format_string = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
     # Configure root logger
-    logging.basicConfig(
-        level=getattr(logging, level.upper()),
-        format=format_string,
-        handlers=[]
-    )
+    logging.basicConfig(level=getattr(logging, level.upper()), format=format_string, handlers=[])
 
     # Create formatters
     if enable_json:
@@ -68,7 +64,7 @@ class JsonFormatter(logging.Formatter):
             "message": record.getMessage(),
             "module": record.module,
             "function": record.funcName,
-            "line": record.lineno
+            "line": record.lineno,
         }
 
         # Add exception info if present
@@ -77,10 +73,28 @@ class JsonFormatter(logging.Formatter):
 
         # Add extra fields
         for key, value in record.__dict__.items():
-            if key not in ['name', 'msg', 'args', 'levelname', 'levelno', 'pathname',
-                          'filename', 'module', 'lineno', 'funcName', 'created',
-                          'msecs', 'relativeCreated', 'thread', 'threadName',
-                          'processName', 'process', 'exc_info', 'exc_text', 'stack_info']:
+            if key not in [
+                "name",
+                "msg",
+                "args",
+                "levelname",
+                "levelno",
+                "pathname",
+                "filename",
+                "module",
+                "lineno",
+                "funcName",
+                "created",
+                "msecs",
+                "relativeCreated",
+                "thread",
+                "threadName",
+                "processName",
+                "process",
+                "exc_info",
+                "exc_text",
+                "stack_info",
+            ]:
                 log_entry[key] = value
 
         return json.dumps(log_entry, default=str)
@@ -93,10 +107,10 @@ def load_config_file(file_path: str) -> Dict[str, Any]:
     if not file_path.exists():
         raise FileNotFoundError(f"Configuration file not found: {file_path}")
 
-    with open(file_path, 'r') as f:
-        if file_path.suffix.lower() in ['.yaml', '.yml']:
+    with open(file_path, "r") as f:
+        if file_path.suffix.lower() in [".yaml", ".yml"]:
             return yaml.safe_load(f) or {}
-        elif file_path.suffix.lower() == '.json':
+        elif file_path.suffix.lower() == ".json":
             return json.load(f)
         else:
             raise ValueError(f"Unsupported configuration file format: {file_path.suffix}")
@@ -107,10 +121,10 @@ def save_config_file(config: Dict[str, Any], file_path: str):
     file_path = Path(file_path)
     file_path.parent.mkdir(parents=True, exist_ok=True)
 
-    with open(file_path, 'w') as f:
-        if file_path.suffix.lower() in ['.yaml', '.yml']:
+    with open(file_path, "w") as f:
+        if file_path.suffix.lower() in [".yaml", ".yml"]:
             yaml.safe_dump(config, f, default_flow_style=False, indent=2)
-        elif file_path.suffix.lower() == '.json':
+        elif file_path.suffix.lower() == ".json":
             json.dump(config, f, indent=2)
         else:
             raise ValueError(f"Unsupported configuration file format: {file_path.suffix}")
@@ -126,8 +140,8 @@ def get_env_var(name: str, default: Any = None, required: bool = False) -> Any:
     # Type conversion for common types
     if isinstance(value, str):
         # Boolean conversion
-        if value.lower() in ['true', 'false']:
-            return value.lower() == 'true'
+        if value.lower() in ["true", "false"]:
+            return value.lower() == "true"
 
         # Integer conversion
         if value.isdigit():
@@ -161,7 +175,7 @@ def get_app_root() -> Path:
 
 def format_bytes(bytes_value: int) -> str:
     """Format bytes into human readable format."""
-    for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
+    for unit in ["B", "KB", "MB", "GB", "TB"]:
         if bytes_value < 1024.0:
             return f"{bytes_value:.1f} {unit}"
         bytes_value /= 1024.0
@@ -189,11 +203,11 @@ def sanitize_string(value: str, max_length: int = 100) -> str:
         return str(value)
 
     # Remove control characters
-    sanitized = ''.join(char for char in value if ord(char) >= 32)
+    sanitized = "".join(char for char in value if ord(char) >= 32)
 
     # Truncate if too long
     if len(sanitized) > max_length:
-        sanitized = sanitized[:max_length-3] + "..."
+        sanitized = sanitized[: max_length - 3] + "..."
 
     return sanitized
 
@@ -214,7 +228,8 @@ def deep_merge_dicts(base: Dict[str, Any], override: Dict[str, Any]) -> Dict[str
 def validate_email(email: str) -> bool:
     """Basic email validation."""
     import re
-    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+
+    pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
     return bool(re.match(pattern, email))
 
 
@@ -224,7 +239,7 @@ def generate_id(prefix: str = "", length: int = 8) -> str:
     import random
 
     chars = string.ascii_lowercase + string.digits
-    random_part = ''.join(random.choices(chars, k=length))
+    random_part = "".join(random.choices(chars, k=length))
 
     if prefix:
         return f"{prefix}_{random_part}"
@@ -232,18 +247,18 @@ def generate_id(prefix: str = "", length: int = 8) -> str:
 
 
 __all__ = [
-    'setup_logging',
-    'JsonFormatter',
-    'load_config_file',
-    'save_config_file',
-    'get_env_var',
-    'ensure_directory',
-    'get_project_root',
-    'get_app_root',
-    'format_bytes',
-    'format_duration',
-    'sanitize_string',
-    'deep_merge_dicts',
-    'validate_email',
-    'generate_id'
+    "setup_logging",
+    "JsonFormatter",
+    "load_config_file",
+    "save_config_file",
+    "get_env_var",
+    "ensure_directory",
+    "get_project_root",
+    "get_app_root",
+    "format_bytes",
+    "format_duration",
+    "sanitize_string",
+    "deep_merge_dicts",
+    "validate_email",
+    "generate_id",
 ]

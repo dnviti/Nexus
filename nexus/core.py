@@ -22,6 +22,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class DatabaseConfig:
     """Database configuration."""
+
     type: str = "sqlite"  # sqlite, postgresql, mongodb, redis
     url: str = "sqlite:///./nexus.db"
     host: str = "localhost"
@@ -114,6 +115,7 @@ def create_default_config() -> AppConfig:
 # Event System
 class Event(BaseModel):
     """Base event class."""
+
     name: str
     data: Dict[str, Any] = Field(default_factory=dict)
     timestamp: datetime = Field(default_factory=datetime.utcnow)
@@ -123,6 +125,7 @@ class Event(BaseModel):
 
 class EventPriority(Enum):
     """Event priority levels."""
+
     LOW = 1
     NORMAL = 5
     HIGH = 10
@@ -143,14 +146,10 @@ class EventBus:
         event_name: str,
         data: Dict[str, Any] = None,
         priority: EventPriority = EventPriority.NORMAL,
-        source: Optional[str] = None
+        source: Optional[str] = None,
     ) -> None:
         """Publish an event to the bus."""
-        event = Event(
-            name=event_name,
-            data=data or {},
-            source=source
-        )
+        event = Event(name=event_name, data=data or {}, source=source)
 
         await self._queue.put((priority.value, event))
         logger.debug(f"Published event: {event_name} from {source}")
@@ -175,10 +174,7 @@ class EventBus:
         while self._running:
             try:
                 # Get event with priority
-                priority, event = await asyncio.wait_for(
-                    self._queue.get(),
-                    timeout=1.0
-                )
+                priority, event = await asyncio.wait_for(self._queue.get(), timeout=1.0)
 
                 # Call all subscribers
                 if event.name in self._subscribers:
@@ -215,12 +211,7 @@ class ServiceRegistry:
         self._services: Dict[str, Any] = {}
         self._interfaces: Dict[Type, List[str]] = {}
 
-    def register(
-        self,
-        name: str,
-        service: Any,
-        interface: Optional[Type] = None
-    ) -> None:
+    def register(self, name: str, service: Any, interface: Optional[Type] = None) -> None:
         """Register a service."""
         self._services[name] = service
 
@@ -300,7 +291,7 @@ class DatabaseAdapter(ABC):
         pass
 
     @abstractmethod
-    async def transaction(self) -> 'TransactionContext':
+    async def transaction(self) -> "TransactionContext":
         """Start a database transaction."""
         pass
 
@@ -363,6 +354,7 @@ class TransactionContext:
 # Plugin Manager
 class PluginInfo(BaseModel):
     """Plugin metadata."""
+
     name: str
     display_name: str
     category: str
@@ -382,6 +374,7 @@ class PluginInfo(BaseModel):
 
 class PluginStatus(Enum):
     """Plugin status."""
+
     UNLOADED = "unloaded"
     LOADING = "loading"
     LOADED = "loaded"
@@ -393,11 +386,7 @@ class PluginStatus(Enum):
 class PluginManager:
     """Manages plugin lifecycle and operations."""
 
-    def __init__(
-        self,
-        event_bus: EventBus,
-        service_registry: ServiceRegistry
-    ):
+    def __init__(self, event_bus: EventBus, service_registry: ServiceRegistry):
         self.event_bus = event_bus
         self.service_registry = service_registry
         self._plugins: Dict[str, Any] = {}
@@ -442,7 +431,7 @@ class PluginManager:
                             repository=manifest.get("repository"),
                             dependencies=manifest.get("dependencies", {}),
                             permissions=manifest.get("permissions", []),
-                            tags=manifest.get("tags", [])
+                            tags=manifest.get("tags", []),
                         )
 
                         self._plugin_info[f"{info.category}.{info.name}"] = info
@@ -469,15 +458,18 @@ class PluginManager:
             module_path = f"plugins.{category}.{name}.plugin"
 
             import importlib
+
             module = importlib.import_module(module_path)
 
             # Find plugin class (assumes it ends with 'Plugin')
             plugin_class = None
             for attr_name in dir(module):
                 attr = getattr(module, attr_name)
-                if (isinstance(attr, type) and
-                    attr_name.endswith("Plugin") and
-                    attr_name != "BasePlugin"):
+                if (
+                    isinstance(attr, type)
+                    and attr_name.endswith("Plugin")
+                    and attr_name != "BasePlugin"
+                ):
                     plugin_class = attr
                     break
 
@@ -499,9 +491,7 @@ class PluginManager:
 
                 # Publish event
                 await self.event_bus.publish(
-                    "plugin.loaded",
-                    {"plugin_id": plugin_id},
-                    source="PluginManager"
+                    "plugin.loaded", {"plugin_id": plugin_id}, source="PluginManager"
                 )
 
                 logger.info(f"Successfully loaded plugin: {plugin_id}")
@@ -534,9 +524,7 @@ class PluginManager:
 
             # Publish event
             await self.event_bus.publish(
-                "plugin.unloaded",
-                {"plugin_id": plugin_id},
-                source="PluginManager"
+                "plugin.unloaded", {"plugin_id": plugin_id}, source="PluginManager"
             )
 
             logger.info(f"Successfully unloaded plugin: {plugin_id}")
@@ -563,9 +551,7 @@ class PluginManager:
                 await self.db_adapter.set("core.plugins.enabled", enabled_plugins)
 
         await self.event_bus.publish(
-            "plugin.enabled",
-            {"plugin_id": plugin_id},
-            source="PluginManager"
+            "plugin.enabled", {"plugin_id": plugin_id}, source="PluginManager"
         )
 
         return True
@@ -585,9 +571,7 @@ class PluginManager:
                 await self.db_adapter.set("core.plugins.enabled", enabled_plugins)
 
         await self.event_bus.publish(
-            "plugin.disabled",
-            {"plugin_id": plugin_id},
-            source="PluginManager"
+            "plugin.disabled", {"plugin_id": plugin_id}, source="PluginManager"
         )
 
         return True

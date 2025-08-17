@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 # Plugin Metadata
 class PluginMetadata(BaseModel):
     """Plugin metadata and configuration."""
+
     name: str
     version: str = "1.0.0"
     description: str = ""
@@ -40,6 +41,7 @@ class PluginMetadata(BaseModel):
 # Plugin Lifecycle
 class PluginLifecycle:
     """Plugin lifecycle states."""
+
     DISCOVERED = "discovered"
     LOADED = "loaded"
     INITIALIZED = "initialized"
@@ -51,6 +53,7 @@ class PluginLifecycle:
 # Plugin Context
 class PluginContext:
     """Plugin execution context."""
+
     def __init__(self, app_config: Dict[str, Any], services: Dict[str, Any]):
         self.app_config = app_config
         self.services = services
@@ -60,7 +63,9 @@ class PluginContext:
         """Get a service by name."""
         return self.services.get(name)
 
-    def get_config(self, plugin_name: str, default: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def get_config(
+        self, plugin_name: str, default: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
         """Get plugin configuration."""
         return self.app_config.get("plugins", {}).get(plugin_name, default or {})
 
@@ -68,6 +73,7 @@ class PluginContext:
 # Plugin Dependency
 class PluginDependency(BaseModel):
     """Plugin dependency specification."""
+
     name: str
     version: Optional[str] = None
     optional: bool = False
@@ -76,6 +82,7 @@ class PluginDependency(BaseModel):
 # Plugin Permission
 class PluginPermission(BaseModel):
     """Plugin permission specification."""
+
     name: str
     description: str = ""
     required: bool = True
@@ -84,6 +91,7 @@ class PluginPermission(BaseModel):
 # Plugin Hook
 class PluginHook:
     """Plugin hook for event handling."""
+
     def __init__(self, event_name: str, priority: int = 0):
         self.event_name = event_name
         self.priority = priority
@@ -92,6 +100,7 @@ class PluginHook:
 # Plugin Configuration Schema
 class PluginConfigSchema(BaseModel):
     """Plugin configuration schema."""
+
     type: str = "object"
     properties: Dict[str, Any] = Field(default_factory=dict)
     required: List[str] = Field(default_factory=list)
@@ -101,31 +110,38 @@ class PluginConfigSchema(BaseModel):
 # Plugin Decorators
 def plugin_hook(event_name: str, priority: int = 0):
     """Decorator for plugin hook methods."""
+
     def decorator(func):
         func._plugin_hook = PluginHook(event_name, priority)
         return func
+
     return decorator
 
 
 def requires_permission(permission: str):
     """Decorator for methods requiring permissions."""
+
     def decorator(func):
         func._required_permission = permission
         return func
+
     return decorator
 
 
 def requires_dependency(dependency: str, version: Optional[str] = None):
     """Decorator for methods requiring dependencies."""
+
     def decorator(func):
         func._required_dependency = PluginDependency(name=dependency, version=version)
         return func
+
     return decorator
 
 
 # Plugin Health Status
 class HealthStatus(BaseModel):
     """Plugin health status."""
+
     healthy: bool = True
     message: str = "OK"
     timestamp: datetime = Field(default_factory=datetime.utcnow)
@@ -136,21 +152,25 @@ class HealthStatus(BaseModel):
 # Plugin Exceptions
 class PluginError(Exception):
     """Base exception for plugin errors."""
+
     pass
 
 
 class PluginInitializationError(PluginError):
     """Plugin initialization failed."""
+
     pass
 
 
 class PluginConfigurationError(PluginError):
     """Plugin configuration error."""
+
     pass
 
 
 class PluginDependencyError(PluginError):
     """Plugin dependency not satisfied."""
+
     pass
 
 
@@ -276,8 +296,8 @@ class BasePlugin(ABC):
             message="Plugin is running" if self.initialized else "Plugin not initialized",
             components={
                 "database": {"status": "connected" if self.db_adapter else "disconnected"},
-                "events": {"subscriptions": len(self._event_subscriptions)}
-            }
+                "events": {"subscriptions": len(self._event_subscriptions)},
+            },
         )
 
     def validate_config(self, config: Dict[str, Any]) -> bool:
@@ -311,7 +331,11 @@ class BasePlugin(ABC):
             "enabled": self.enabled,
             "initialized": self.initialized,
             "startup_time": self._startup_time.isoformat() if self._startup_time else None,
-            "uptime": (datetime.utcnow() - self._startup_time).total_seconds() if self._startup_time else 0
+            "uptime": (
+                (datetime.utcnow() - self._startup_time).total_seconds()
+                if self._startup_time
+                else 0
+            ),
         }
 
     def get_metrics(self) -> Dict[str, float]:
@@ -324,10 +348,14 @@ class BasePlugin(ABC):
             Dict[str, float]: Plugin metrics.
         """
         return {
-            "uptime_seconds": (datetime.utcnow() - self._startup_time).total_seconds() if self._startup_time else 0,
+            "uptime_seconds": (
+                (datetime.utcnow() - self._startup_time).total_seconds()
+                if self._startup_time
+                else 0
+            ),
             "event_subscriptions": len(self._event_subscriptions),
             "background_tasks": len(self._background_tasks),
-            "registered_services": len(self._registered_services)
+            "registered_services": len(self._registered_services),
         }
 
     # Helper methods for plugin developers
@@ -340,11 +368,7 @@ class BasePlugin(ABC):
             data: Event data.
         """
         if self.event_bus:
-            await self.event_bus.publish(
-                event_name,
-                data,
-                source=f"{self.category}.{self.name}"
-            )
+            await self.event_bus.publish(event_name, data, source=f"{self.category}.{self.name}")
 
     async def subscribe_to_event(self, event_name: str, handler: Any) -> None:
         """
@@ -539,11 +563,7 @@ class NotificationPlugin(BasePlugin):
 
     @abstractmethod
     async def send_notification(
-        self,
-        recipient: str,
-        subject: str,
-        message: str,
-        metadata: Optional[Dict[str, Any]] = None
+        self, recipient: str, subject: str, message: str, metadata: Optional[Dict[str, Any]] = None
     ) -> bool:
         """Send a notification."""
         pass
@@ -580,11 +600,7 @@ class WorkflowPlugin(BasePlugin):
         self.category = "workflow"
 
     @abstractmethod
-    async def execute_workflow(
-        self,
-        workflow_id: str,
-        context: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    async def execute_workflow(self, workflow_id: str, context: Dict[str, Any]) -> Dict[str, Any]:
         """Execute a workflow."""
         pass
 
@@ -609,12 +625,7 @@ class PluginValidator:
         Returns:
             bool: True if valid, False otherwise.
         """
-        required_methods = [
-            'initialize',
-            'shutdown',
-            'get_api_routes',
-            'get_database_schema'
-        ]
+        required_methods = ["initialize", "shutdown", "get_api_routes", "get_database_schema"]
 
         for method in required_methods:
             if not hasattr(plugin_class, method):
@@ -634,7 +645,7 @@ class PluginValidator:
         Returns:
             bool: True if valid, False otherwise.
         """
-        required_fields = ['name', 'category', 'version', 'description']
+        required_fields = ["name", "category", "version", "description"]
 
         for field in required_fields:
             if field not in manifest:
@@ -643,11 +654,18 @@ class PluginValidator:
 
         # Validate category
         valid_categories = [
-            'business', 'integration', 'analytics', 'security',
-            'ui', 'notification', 'storage', 'workflow', 'custom'
+            "business",
+            "integration",
+            "analytics",
+            "security",
+            "ui",
+            "notification",
+            "storage",
+            "workflow",
+            "custom",
         ]
 
-        if manifest['category'] not in valid_categories:
+        if manifest["category"] not in valid_categories:
             logger.error(f"Invalid plugin category: {manifest['category']}")
             return False
 
@@ -656,29 +674,29 @@ class PluginValidator:
 
 # Export main classes
 __all__ = [
-    'BasePlugin',
-    'BusinessPlugin',
-    'IntegrationPlugin',
-    'AnalyticsPlugin',
-    'SecurityPlugin',
-    'UIPlugin',
-    'NotificationPlugin',
-    'StoragePlugin',
-    'WorkflowPlugin',
-    'PluginMetadata',
-    'PluginLifecycle',
-    'PluginContext',
-    'PluginDependency',
-    'PluginPermission',
-    'PluginHook',
-    'PluginConfigSchema',
-    'plugin_hook',
-    'requires_permission',
-    'requires_dependency',
-    'PluginError',
-    'PluginInitializationError',
-    'PluginConfigurationError',
-    'PluginDependencyError',
-    'HealthStatus',
-    'PluginValidator'
+    "BasePlugin",
+    "BusinessPlugin",
+    "IntegrationPlugin",
+    "AnalyticsPlugin",
+    "SecurityPlugin",
+    "UIPlugin",
+    "NotificationPlugin",
+    "StoragePlugin",
+    "WorkflowPlugin",
+    "PluginMetadata",
+    "PluginLifecycle",
+    "PluginContext",
+    "PluginDependency",
+    "PluginPermission",
+    "PluginHook",
+    "PluginConfigSchema",
+    "plugin_hook",
+    "requires_permission",
+    "requires_dependency",
+    "PluginError",
+    "PluginInitializationError",
+    "PluginConfigurationError",
+    "PluginDependencyError",
+    "HealthStatus",
+    "PluginValidator",
 ]

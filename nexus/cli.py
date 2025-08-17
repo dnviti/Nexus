@@ -23,14 +23,14 @@ logger = logging.getLogger("nexus.cli")
 
 @click.group()
 @click.version_option(version=__version__, prog_name="Nexus")
-@click.option('--verbose', '-v', is_flag=True, help='Enable verbose output')
-@click.option('--config', '-c', type=click.Path(exists=True), help='Configuration file path')
+@click.option("--verbose", "-v", is_flag=True, help="Enable verbose output")
+@click.option("--config", "-c", type=click.Path(exists=True), help="Configuration file path")
 @click.pass_context
 def cli(ctx, verbose, config):
     """Nexus - The Ultimate Plugin-Based Application Platform"""
     ctx.ensure_object(dict)
-    ctx.obj['verbose'] = verbose
-    ctx.obj['config_path'] = config
+    ctx.obj["verbose"] = verbose
+    ctx.obj["config_path"] = config
 
     # Setup logging level
     log_level = "DEBUG" if verbose else "INFO"
@@ -38,10 +38,10 @@ def cli(ctx, verbose, config):
 
 
 @cli.command()
-@click.option('--host', default='0.0.0.0', help='Host to bind to')
-@click.option('--port', default=8000, type=int, help='Port to bind to')
-@click.option('--reload', is_flag=True, help='Enable auto-reload for development')
-@click.option('--workers', default=1, type=int, help='Number of worker processes')
+@click.option("--host", default="0.0.0.0", help="Host to bind to")
+@click.option("--port", default=8000, type=int, help="Port to bind to")
+@click.option("--reload", is_flag=True, help="Enable auto-reload for development")
+@click.option("--workers", default=1, type=int, help="Number of worker processes")
 @click.pass_context
 def run(ctx, host, port, reload, workers):
     """Run the Nexus application server"""
@@ -52,7 +52,7 @@ def run(ctx, host, port, reload, workers):
         from . import create_nexus_app
 
         # Create the application
-        app = create_nexus_app(config_path=ctx.obj.get('config_path'))
+        app = create_nexus_app(config_path=ctx.obj.get("config_path"))
 
         # Run the server
         uvicorn.run(
@@ -61,7 +61,7 @@ def run(ctx, host, port, reload, workers):
             port=port,
             reload=reload,
             workers=workers if not reload else 1,
-            log_level="info" if not ctx.obj['verbose'] else "debug"
+            log_level="info" if not ctx.obj["verbose"] else "debug",
         )
 
     except ImportError:
@@ -73,7 +73,7 @@ def run(ctx, host, port, reload, workers):
 
 
 @cli.command()
-@click.option('--output', '-o', type=click.Path(), help='Output file for configuration')
+@click.option("--output", "-o", type=click.Path(), help="Output file for configuration")
 @click.pass_context
 def init(ctx, output):
     """Initialize a new Nexus project"""
@@ -92,19 +92,14 @@ def init(ctx, output):
         # Write configuration file
         import yaml
         from dataclasses import asdict
-        with open(config_path, 'w') as f:
+
+        with open(config_path, "w") as f:
             yaml.dump(asdict(config), f, default_flow_style=False, indent=2)
 
         click.echo(f"✅ Configuration created: {config_path}")
 
         # Create basic project structure
-        project_dirs = [
-            "plugins",
-            "config",
-            "logs",
-            "static",
-            "templates"
-        ]
+        project_dirs = ["plugins", "config", "logs", "static", "templates"]
 
         for dir_name in project_dirs:
             dir_path = Path(dir_name)
@@ -150,7 +145,7 @@ def plugin():
     pass
 
 
-@plugin.command('list')
+@plugin.command("list")
 @click.pass_context
 def plugin_list(ctx):
     """List available plugins"""
@@ -167,9 +162,9 @@ def plugin_list(ctx):
         click.echo(f"❌ Error listing plugins: {e}", err=True)
 
 
-@plugin.command('create')
-@click.argument('name')
-@click.option('--template', default='basic', help='Plugin template to use')
+@plugin.command("create")
+@click.argument("name")
+@click.option("--template", default="basic", help="Plugin template to use")
 @click.pass_context
 def plugin_create(ctx, name, template):
     """Create a new plugin"""
@@ -234,7 +229,7 @@ def create_plugin():
             f.write(plugin_content)
 
         # Create manifest file
-        manifest_content = f'''{{
+        manifest_content = f"""{{
     "name": "{name}",
     "version": "1.0.0",
     "description": "{name.title().replace("_", " ")} plugin",
@@ -242,7 +237,7 @@ def create_plugin():
     "main": "plugin.py",
     "dependencies": [],
     "entry_point": "create_plugin"
-}}'''
+}}"""
 
         with open(plugin_dir / "manifest.json", "w") as f:
             f.write(manifest_content)
@@ -258,8 +253,8 @@ def create_plugin():
         sys.exit(1)
 
 
-@plugin.command('info')
-@click.argument('name')
+@plugin.command("info")
+@click.argument("name")
 def plugin_info(name):
     """Show plugin information"""
     click.echo(f"🔍 Plugin Information: {name}")
@@ -291,8 +286,13 @@ def status(ctx):
 
 
 @cli.command()
-@click.option('--format', 'output_format', default='text',
-              type=click.Choice(['text', 'json']), help='Output format')
+@click.option(
+    "--format",
+    "output_format",
+    default="text",
+    type=click.Choice(["text", "json"]),
+    help="Output format",
+)
 def health(output_format):
     """Check application health"""
     click.echo("🏥 Health Check")
@@ -301,20 +301,17 @@ def health(output_format):
         # This would typically run actual health checks
         health_data = {
             "status": "healthy",
-            "checks": {
-                "database": "healthy",
-                "memory": "healthy",
-                "disk": "healthy"
-            },
-            "timestamp": "2024-12-21T10:00:00Z"
+            "checks": {"database": "healthy", "memory": "healthy", "disk": "healthy"},
+            "timestamp": "2024-12-21T10:00:00Z",
         }
 
-        if output_format == 'json':
+        if output_format == "json":
             import json
+
             click.echo(json.dumps(health_data, indent=2))
         else:
             click.echo(f"Overall Status: {health_data['status']}")
-            for check, status in health_data['checks'].items():
+            for check, status in health_data["checks"].items():
                 status_icon = "✅" if status == "healthy" else "❌"
                 click.echo(f"  {status_icon} {check}: {status}")
 
@@ -324,7 +321,7 @@ def health(output_format):
 
 
 @cli.command()
-@click.option('--config-file', help='Path to configuration file')
+@click.option("--config-file", help="Path to configuration file")
 def validate(config_file):
     """Validate configuration"""
     click.echo("🔍 Validating Configuration")
@@ -341,6 +338,7 @@ def validate(config_file):
 
         # Load and validate configuration
         import yaml
+
         with open(config_path) as f:
             config_data = yaml.safe_load(f)
 
@@ -364,5 +362,5 @@ def main():
         sys.exit(1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

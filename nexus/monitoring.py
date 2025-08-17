@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 class HealthStatus(BaseModel):
     """Health check status model."""
+
     name: str
     status: str  # "healthy", "degraded", "unhealthy"
     message: str = "OK"
@@ -27,6 +28,7 @@ class HealthStatus(BaseModel):
 
 class SystemMetrics(BaseModel):
     """System metrics model."""
+
     cpu_percent: float
     memory_percent: float
     memory_used_mb: float
@@ -39,6 +41,7 @@ class SystemMetrics(BaseModel):
 
 class ApplicationMetrics(BaseModel):
     """Application-specific metrics model."""
+
     active_connections: int = 0
     total_requests: int = 0
     failed_requests: int = 0
@@ -51,6 +54,7 @@ class ApplicationMetrics(BaseModel):
 @dataclass
 class HealthCheck:
     """Health check configuration and execution."""
+
     name: str
     check_function: Callable
     timeout_seconds: float = 5.0
@@ -66,8 +70,8 @@ class HealthCheck:
 
         try:
             # Execute the check function
-            if hasattr(self.check_function, '__call__'):
-                if hasattr(self.check_function, '__await__'):
+            if hasattr(self.check_function, "__call__"):
+                if hasattr(self.check_function, "__await__"):
                     result = await self.check_function()
                 else:
                     result = self.check_function()
@@ -81,7 +85,7 @@ class HealthCheck:
                     name=self.name,
                     status="healthy",
                     message="Check passed",
-                    response_time_ms=response_time
+                    response_time_ms=response_time,
                 )
                 self.failure_count = 0
             else:
@@ -89,7 +93,7 @@ class HealthCheck:
                     name=self.name,
                     status="unhealthy",
                     message="Check failed",
-                    response_time_ms=response_time
+                    response_time_ms=response_time,
                 )
                 self.failure_count += 1
 
@@ -100,7 +104,7 @@ class HealthCheck:
                 status="unhealthy",
                 message=f"Check error: {str(e)}",
                 response_time_ms=response_time,
-                details={"error": str(e)}
+                details={"error": str(e)},
             )
             self.failure_count += 1
             logger.error(f"Health check '{self.name}' failed: {e}")
@@ -137,8 +141,8 @@ class MetricsCollector:
         """Get current system metrics."""
         try:
             memory = psutil.virtual_memory()
-            disk = psutil.disk_usage('/')
-            load_avg = psutil.getloadavg() if hasattr(psutil, 'getloadavg') else [0.0, 0.0, 0.0]
+            disk = psutil.disk_usage("/")
+            load_avg = psutil.getloadavg() if hasattr(psutil, "getloadavg") else [0.0, 0.0, 0.0]
 
             return SystemMetrics(
                 cpu_percent=psutil.cpu_percent(interval=1),
@@ -147,7 +151,7 @@ class MetricsCollector:
                 memory_total_mb=memory.total / 1024 / 1024,
                 disk_usage_percent=disk.percent,
                 load_average=list(load_avg),
-                uptime_seconds=time.time() - self.start_time
+                uptime_seconds=time.time() - self.start_time,
             )
         except Exception as e:
             logger.error(f"Failed to collect system metrics: {e}")
@@ -158,14 +162,13 @@ class MetricsCollector:
                 memory_total_mb=0.0,
                 disk_usage_percent=0.0,
                 load_average=[0.0, 0.0, 0.0],
-                uptime_seconds=time.time() - self.start_time
+                uptime_seconds=time.time() - self.start_time,
             )
 
     def get_application_metrics(self) -> ApplicationMetrics:
         """Get current application metrics."""
         avg_response_time = (
-            sum(self.response_times) / len(self.response_times)
-            if self.response_times else 0.0
+            sum(self.response_times) / len(self.response_times) if self.response_times else 0.0
         )
 
         return ApplicationMetrics(
@@ -173,7 +176,7 @@ class MetricsCollector:
             failed_requests=self.error_count,
             average_response_time_ms=avg_response_time,
             plugins_loaded=0,  # Would be populated by plugin manager
-            plugins_active=0   # Would be populated by plugin manager
+            plugins_active=0,  # Would be populated by plugin manager
         )
 
     def add_health_check(self, health_check: HealthCheck):
@@ -191,9 +194,7 @@ class MetricsCollector:
             except Exception as e:
                 logger.error(f"Failed to run health check '{name}': {e}")
                 results[name] = HealthStatus(
-                    name=name,
-                    status="unhealthy",
-                    message=f"Execution failed: {str(e)}"
+                    name=name, status="unhealthy", message=f"Execution failed: {str(e)}"
                 )
         return results
 
@@ -203,12 +204,14 @@ class MetricsCollector:
             return "unknown"
 
         unhealthy_checks = [
-            check for check in self.health_checks.values()
+            check
+            for check in self.health_checks.values()
             if check.last_status and check.last_status.status == "unhealthy"
         ]
 
         degraded_checks = [
-            check for check in self.health_checks.values()
+            check
+            for check in self.health_checks.values()
             if check.last_status and check.last_status.status == "degraded"
         ]
 
@@ -239,7 +242,7 @@ def memory_health_check() -> bool:
 def disk_health_check() -> bool:
     """Disk usage health check."""
     try:
-        disk = psutil.disk_usage('/')
+        disk = psutil.disk_usage("/")
         return disk.percent < 95  # Consider unhealthy if > 95% disk usage
     except Exception:
         return False
@@ -252,31 +255,31 @@ def create_default_health_checks() -> List[HealthCheck]:
             name="database",
             check_function=database_health_check,
             timeout_seconds=5.0,
-            interval_seconds=30.0
+            interval_seconds=30.0,
         ),
         HealthCheck(
             name="memory",
             check_function=memory_health_check,
             timeout_seconds=1.0,
-            interval_seconds=60.0
+            interval_seconds=60.0,
         ),
         HealthCheck(
             name="disk",
             check_function=disk_health_check,
             timeout_seconds=1.0,
-            interval_seconds=300.0  # Check every 5 minutes
-        )
+            interval_seconds=300.0,  # Check every 5 minutes
+        ),
     ]
 
 
 __all__ = [
-    'HealthStatus',
-    'SystemMetrics',
-    'ApplicationMetrics',
-    'HealthCheck',
-    'MetricsCollector',
-    'database_health_check',
-    'memory_health_check',
-    'disk_health_check',
-    'create_default_health_checks'
+    "HealthStatus",
+    "SystemMetrics",
+    "ApplicationMetrics",
+    "HealthCheck",
+    "MetricsCollector",
+    "database_health_check",
+    "memory_health_check",
+    "disk_health_check",
+    "create_default_health_checks",
 ]

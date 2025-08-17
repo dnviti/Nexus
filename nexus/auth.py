@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 class User(BaseModel):
     """User model."""
+
     id: str
     username: str
     email: str
@@ -41,7 +42,7 @@ class AuthenticationManager:
         email: str,
         password: str,
         full_name: Optional[str] = None,
-        is_superuser: bool = False
+        is_superuser: bool = False,
     ) -> User:
         """Create a new user."""
         user_id = f"user_{len(self.users) + 1}"
@@ -53,7 +54,7 @@ class AuthenticationManager:
             is_superuser=is_superuser,
             created_at=datetime.utcnow(),
             permissions=["read"] if not is_superuser else ["read", "write", "admin"],
-            roles=["user"] if not is_superuser else ["admin", "user"]
+            roles=["user"] if not is_superuser else ["admin", "user"],
         )
         self.users[user_id] = user
         logger.info(f"Created user: {username}")
@@ -101,7 +102,7 @@ async def create_default_admin(auth_manager: AuthenticationManager) -> User:
         email="admin@nexus.local",
         password="admin123",  # In production, use secure password
         full_name="System Administrator",
-        is_superuser=True
+        is_superuser=True,
     )
     logger.info("Created default admin user")
     return admin_user
@@ -112,8 +113,7 @@ async def get_current_user(token: str = None) -> Optional[User]:
     """Get current authenticated user."""
     if not token:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication required"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required"
         )
 
     # This would typically validate JWT token
@@ -125,13 +125,8 @@ async def get_current_user(token: str = None) -> Optional[User]:
         full_name="Demo User",
         created_at=datetime.utcnow(),
         permissions=["read", "write"],
-        roles=["user"]
+        roles=["user"],
     )
 
 
-__all__ = [
-    'User',
-    'AuthenticationManager',
-    'create_default_admin',
-    'get_current_user'
-]
+__all__ = ["User", "AuthenticationManager", "create_default_admin", "get_current_user"]
