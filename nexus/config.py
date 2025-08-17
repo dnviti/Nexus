@@ -71,7 +71,7 @@ class CORSConfig(BaseModel):
 class ServerConfig(BaseModel):
     """Server configuration."""
 
-    host: str = "0.0.0.0"
+    host: str = "0.0.0.0"  # nosec B104 - Framework default, should be configured in production
     port: int = Field(8000, ge=1, le=65535)
     workers: int = Field(1, ge=1)
     reload: bool = False

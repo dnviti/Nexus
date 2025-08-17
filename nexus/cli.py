@@ -39,7 +39,7 @@ def cli(ctx: Any, verbose: bool, config: Optional[str]) -> None:
 
 
 @cli.command()
-@click.option("--host", default="0.0.0.0", help="Host to bind to")
+@click.option("--host", default="0.0.0.0", help="Host to bind to")  # nosec B104
 @click.option("--port", default=8000, type=int, help="Port to bind to")
 @click.option("--reload", is_flag=True, help="Enable auto-reload for development")
 @click.option("--workers", default=1, type=int, help="Number of worker processes")

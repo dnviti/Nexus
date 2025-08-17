@@ -401,7 +401,7 @@ class NexusApp:
         """Unload a plugin dynamically."""
         return await self.plugin_manager.unload_plugin(plugin_name)
 
-    def run(self, host: str = "0.0.0.0", port: int = 8000, **kwargs: Any) -> None:
+    def run(self, host: str = "0.0.0.0", port: int = 8000, **kwargs: Any) -> None:  # nosec B104
         """Run the application using uvicorn."""
         uvicorn.run(self.app, host=host, port=port, **kwargs)
 

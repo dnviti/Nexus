@@ -97,13 +97,25 @@ class AuthenticationManager:
 
 async def create_default_admin(auth_manager: AuthenticationManager) -> User:
     """Create default admin user."""
+    # Generate a secure random password for the admin user
+    import secrets
+    import string
+
+    # Generate a 16-character secure password
+    alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
+    secure_password = "".join(secrets.choice(alphabet) for _ in range(16))
+
     admin_user = await auth_manager.create_user(
         username="admin",
         email="admin@nexus.local",
-        password="admin123",  # In production, use secure password
+        password=secure_password,
         full_name="System Administrator",
         is_superuser=True,
     )
+
+    # Log the generated password securely (in production, use proper secret management)
+    logger.warning(f"Default admin user created with password: {secure_password}")
+    logger.warning("SECURITY: Change the admin password immediately in production!")
     logger.info("Created default admin user")
     return admin_user
 

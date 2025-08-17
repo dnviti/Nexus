@@ -97,3 +97,4 @@ yarn-error.log*
 # Project-specific
 REORGANIZATION_COMPLETE.md
 test_project/
+bandit*.json

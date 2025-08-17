@@ -45,7 +45,7 @@ class AppConfig:
         name: str = "Nexus Application"
         description: str = "A modular application built with Nexus Framework"
         version: str = "1.0.0"
-        host: str = "0.0.0.0"
+        host: str = "0.0.0.0"  # nosec B104 - Framework default, should be configured in production
         port: int = 8000
         reload: bool = False
         workers: int = 1

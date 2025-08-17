@@ -445,8 +445,8 @@ class BasePlugin(ABC):
                 result = await self.db_adapter.get(key)
                 if result:
                     return json.loads(result)
-            except Exception:
-                pass
+            except (json.JSONDecodeError, TypeError, ValueError) as e:
+                logger.debug(f"Failed to parse JSON config value for key '{key}': {e}")
         return self.config.get(key, default)
 
     async def set_config(self, key: str, value: Any) -> None:

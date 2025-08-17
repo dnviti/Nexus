@@ -254,7 +254,9 @@ def generate_id(prefix: str = "", length: int = 8) -> str:
     import string
 
     chars = string.ascii_lowercase + string.digits
-    random_part = "".join(random.choices(chars, k=length))
+    import secrets
+
+    random_part = "".join(secrets.choice(chars) for _ in range(length))
 
     if prefix:
         return f"{prefix}_{random_part}"
@@ -267,7 +269,9 @@ def generate_random_string(length: int = 32) -> str:
     import string
 
     chars = string.ascii_lowercase + string.digits
-    return "".join(random.choices(chars, k=length))
+    import secrets
+
+    return "".join(secrets.choice(chars) for _ in range(length))
 
 
 def format_file_size(size_bytes: int) -> str:
