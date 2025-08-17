@@ -5,8 +5,8 @@ Basic health checks and metrics collection functionality.
 
 import logging
 import time
-from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from dataclasses import dataclass
+from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional
 
 import psutil

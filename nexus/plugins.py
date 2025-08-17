@@ -7,7 +7,7 @@ import logging
 from abc import ABC, abstractmethod
 from datetime import datetime
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Set, Type
+from typing import Any, Callable, Dict, List, Optional, Set
 
 from fastapi import APIRouter
 from pydantic import BaseModel, Field

@@ -6,9 +6,8 @@ Basic middleware components for request/response processing.
 import logging
 import time
 from datetime import datetime
-from typing import Any, Callable, Dict, List, Optional
-
-from fastapi import HTTPException, Request, Response, status
+from typing import Any, Dict, List, Optional
+from fastapi import Response
 from fastapi.responses import JSONResponse
 
 logger = logging.getLogger(__name__)
