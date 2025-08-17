@@ -427,7 +427,7 @@ def backup_create(ctx: Any, output: Optional[str], include_plugins: bool) -> Non
             files_list.append("plugins/")
 
         backup_info = {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now().isoformat(),
             "version": __version__,
             "includes_plugins": include_plugins,
             "files": files_list,
@@ -435,7 +435,9 @@ def backup_create(ctx: Any, output: Optional[str], include_plugins: bool) -> Non
 
         click.echo(f"✅ Backup created successfully: {output}")
         click.echo(f"📦 Included: {', '.join(files_list)}")
-        click.echo(f"📊 Backup info: {backup_info['timestamp']} (v{backup_info['version']})")
+        timestamp = str(backup_info["timestamp"])
+        version = str(backup_info["version"])
+        click.echo(f"📊 Backup info: {timestamp} (v{version})")
 
     except Exception as e:
         click.echo(f"❌ Error creating backup: {e}", err=True)
