@@ -957,26 +957,6 @@ class TestPluginValidatorErrorPaths:
         """Test validating plugin with missing required method."""
         validator = PluginValidator()
 
-        # Create a complete plugin but test validation logic directly
-        class CompletePlugin(BasePlugin):
-            def __init__(self):
-                super().__init__()
-                self.name = "complete_plugin"
-
-            async def initialize(self):
-                return True
-
-            async def shutdown(self):
-                pass
-
-            def get_api_routes(self):
-                return []
-
-            def get_database_schema(self):
-                return {}
-
-        plugin = CompletePlugin()
-
         # Create a mock object that doesn't have the required method
         class MockIncompletePlugin:
             def __init__(self):
@@ -994,7 +974,8 @@ class TestPluginValidatorErrorPaths:
             # Missing get_database_schema method
 
         incomplete_plugin = MockIncompletePlugin()
-        result = validator.validate_plugin(incomplete_plugin)
+        # Use type: ignore to suppress type checker warning for test purposes
+        result = validator.validate_plugin(incomplete_plugin)  # type: ignore
         assert result == False
 
     def test_validate_manifest_invalid_category(self):
