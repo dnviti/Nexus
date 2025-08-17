@@ -44,33 +44,58 @@ class TestLoggingSetup:
     """Test logging setup functionality."""
 
     @patch("nexus.utils.logging.basicConfig")
-    def test_setup_logging_default(self, mock_basic_config):
+    @patch("nexus.utils.logging.getLogger")
+    def test_setup_logging_default(self, mock_get_logger, mock_basic_config):
         """Test setup logging with default parameters."""
+        # Mock the logger to avoid interfering with pytest's logging
+        mock_logger = mock_get_logger.return_value
+        mock_logger.addHandler = lambda x: None
+
         setup_logging()
         mock_basic_config.assert_called_once()
 
     @patch("nexus.utils.logging.basicConfig")
-    def test_setup_logging_with_level(self, mock_basic_config):
+    @patch("nexus.utils.logging.getLogger")
+    def test_setup_logging_with_level(self, mock_get_logger, mock_basic_config):
         """Test setup logging with custom level."""
+        # Mock the logger to avoid interfering with pytest's logging
+        mock_logger = mock_get_logger.return_value
+        mock_logger.addHandler = lambda x: None
+
         setup_logging(level="DEBUG")
         mock_basic_config.assert_called_once()
 
     @patch("nexus.utils.logging.basicConfig")
-    def test_setup_logging_with_format(self, mock_basic_config):
+    @patch("nexus.utils.logging.getLogger")
+    def test_setup_logging_with_format(self, mock_get_logger, mock_basic_config):
         """Test setup logging with custom format."""
+        # Mock the logger to avoid interfering with pytest's logging
+        mock_logger = mock_get_logger.return_value
+        mock_logger.addHandler = lambda x: None
+
         custom_format = "%(asctime)s - %(message)s"
         setup_logging(format_string=custom_format)
         mock_basic_config.assert_called_once()
 
     @patch("nexus.utils.logging.basicConfig")
-    def test_setup_logging_with_file(self, mock_basic_config):
+    @patch("nexus.utils.logging.getLogger")
+    def test_setup_logging_with_file(self, mock_get_logger, mock_basic_config):
         """Test setup logging with file output."""
+        # Mock the logger to avoid interfering with pytest's logging
+        mock_logger = mock_get_logger.return_value
+        mock_logger.addHandler = lambda x: None
+
         setup_logging(log_file="test.log")
         mock_basic_config.assert_called_once()
 
     @patch("nexus.utils.logging.basicConfig")
-    def test_setup_logging_json_format(self, mock_basic_config):
+    @patch("nexus.utils.logging.getLogger")
+    def test_setup_logging_json_format(self, mock_get_logger, mock_basic_config):
         """Test setup logging with JSON format."""
+        # Mock the logger to avoid interfering with pytest's logging
+        mock_logger = mock_get_logger.return_value
+        mock_logger.addHandler = lambda x: None
+
         setup_logging(enable_json=True)
         mock_basic_config.assert_called_once()
 

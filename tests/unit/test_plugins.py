@@ -977,12 +977,25 @@ class TestPluginValidatorErrorPaths:
 
         plugin = CompletePlugin()
 
-        # Mock hasattr to simulate missing method for validation test
-        with patch("builtins.hasattr") as mock_hasattr:
-            # Return False for get_database_schema to simulate missing method
-            mock_hasattr.side_effect = lambda obj, attr: attr != "get_database_schema"
-            result = validator.validate_plugin(plugin)
-            assert result == False
+        # Create a mock object that doesn't have the required method
+        class MockIncompletePlugin:
+            def __init__(self):
+                self.name = "incomplete_plugin"
+
+            async def initialize(self):
+                return True
+
+            async def shutdown(self):
+                pass
+
+            def get_api_routes(self):
+                return []
+
+            # Missing get_database_schema method
+
+        incomplete_plugin = MockIncompletePlugin()
+        result = validator.validate_plugin(incomplete_plugin)
+        assert result == False
 
     def test_validate_manifest_invalid_category(self):
         """Test validating manifest with invalid category."""
