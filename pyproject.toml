@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "nexus"
+name = "nexus-platform"
 version = "2.0.0"
 description = "The Ultimate Plugin-Based Application Platform - Build modular, scalable applications with ease"
 authors = ["Nexus Team <team@nexus.dev>"]
@@ -325,10 +325,7 @@ filterwarnings = [
     "ignore::UserWarning",
 ]
 timeout = 300
-env = [
-    "NEXUS_ENV = testing",
-    "NEXUS_DEBUG = true",
-]
+env = ["NEXUS_ENV = testing", "NEXUS_DEBUG = true"]
 
 [tool.coverage.run]
 source = ["nexus"]
