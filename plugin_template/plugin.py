@@ -9,13 +9,14 @@ License: MIT
 """
 
 import logging
-from typing import Optional, List, Dict, Any
 from datetime import datetime
+from typing import Any, Dict, List, Optional
 
-from nexus.plugins import BasePlugin, PluginMetadata, PluginLifecycle
-from nexus.core import Event, EventPriority
-from fastapi import APIRouter, HTTPException, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
+
+from nexus.core import Event, EventPriority
+from nexus.plugins import BasePlugin, PluginLifecycle, PluginMetadata
 
 # Set up logging for this plugin
 logger = logging.getLogger(__name__)

@@ -4,21 +4,22 @@ Nexus Admin CLI
 Administrative command-line interface for Nexus
 """
 
+import asyncio
+import json
+import logging
 import os
 import sys
-import click
-import asyncio
-import logging
-import json
-from pathlib import Path
-from typing import Optional, Dict, Any, List
 from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
-from .core import AppConfig, PluginManager, ServiceRegistry, create_default_config
-from .utils import setup_logging
-from .monitoring import MetricsCollector, create_default_health_checks
-from .auth import AuthenticationManager
+import click
+
 from . import __version__
+from .auth import AuthenticationManager
+from .core import AppConfig, PluginManager, ServiceRegistry, create_default_config
+from .monitoring import MetricsCollector, create_default_health_checks
+from .utils import setup_logging
 
 # Setup logging
 logger = logging.getLogger("nexus.admin")

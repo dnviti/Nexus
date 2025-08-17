@@ -4,18 +4,19 @@ Nexus CLI
 Command-line interface for Nexus
 """
 
-import os
-import sys
-import click
 import asyncio
 import logging
+import os
+import sys
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
 
-from .core import AppConfig, PluginManager, ServiceRegistry, create_default_config
-from .utils import setup_logging
-from .monitoring import MetricsCollector
+import click
+
 from . import __version__
+from .core import AppConfig, PluginManager, ServiceRegistry, create_default_config
+from .monitoring import MetricsCollector
+from .utils import setup_logging
 
 # Setup logging
 logger = logging.getLogger("nexus.cli")
@@ -49,6 +50,7 @@ def run(ctx, host, port, reload, workers):
 
     try:
         import uvicorn
+
         from . import create_nexus_app
 
         # Create the application
@@ -90,8 +92,9 @@ def init(ctx, output):
             config_path = Path("nexus_config.yaml")
 
         # Write configuration file
-        import yaml
         from dataclasses import asdict
+
+        import yaml
 
         with open(config_path, "w") as f:
             yaml.dump(asdict(config), f, default_flow_style=False, indent=2)

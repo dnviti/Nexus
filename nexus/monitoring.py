@@ -5,11 +5,11 @@ Basic health checks and metrics collection functionality.
 
 import logging
 import time
-import psutil
-from typing import Dict, Any, List, Optional, Callable
-from datetime import datetime, timedelta
 from dataclasses import dataclass, field
+from datetime import datetime, timedelta
+from typing import Any, Callable, Dict, List, Optional
 
+import psutil
 from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)

@@ -11,45 +11,45 @@ __license__ = "MIT"
 
 import asyncio
 import logging
-from typing import Optional, Dict, Any, List, Type, Callable, Union
+from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional, Type, Union
+
+import uvicorn
+
+# FastAPI and async support
+from fastapi import Depends, FastAPI, HTTPException, Request, Response
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 # Core imports
 from .core import (
     AppConfig,
+    DatabaseAdapter,
     DatabaseConfig,
     Event,
     EventBus,
     EventPriority,
-    ServiceRegistry,
-    DatabaseAdapter,
-    TransactionContext,
-    PluginManager,
     PluginInfo,
+    PluginManager,
     PluginStatus,
+    ServiceRegistry,
+    TransactionContext,
     create_default_config,
 )
-
 from .plugins import (
     BasePlugin,
-    PluginMetadata,
-    PluginLifecycle,
+    PluginConfigSchema,
     PluginContext,
     PluginDependency,
-    PluginPermission,
     PluginHook,
-    PluginConfigSchema,
+    PluginLifecycle,
+    PluginMetadata,
+    PluginPermission,
     plugin_hook,
-    requires_permission,
     requires_dependency,
+    requires_permission,
 )
-
-# FastAPI and async support
-from fastapi import FastAPI, HTTPException, Depends, Request, Response
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-from contextlib import asynccontextmanager
-import uvicorn
 
 # Logging setup
 logger = logging.getLogger(__name__)
@@ -483,6 +483,9 @@ def create_plugin(
     return DynamicPlugin
 
 
+# Version check
+import sys
+
 # Convenience imports for common use cases
 from typing import Union
 
@@ -501,7 +504,6 @@ from fastapi import (
     WebSocket,
     status,
 )
-
 from fastapi.responses import (
     FileResponse,
     HTMLResponse,
@@ -512,9 +514,6 @@ from fastapi.responses import (
 
 # Re-export Pydantic for model creation
 from pydantic import BaseModel, Field, validator
-
-# Version check
-import sys
 
 if sys.version_info < (3, 11):
     import warnings

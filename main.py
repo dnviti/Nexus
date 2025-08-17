@@ -19,6 +19,8 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
+from nexus.api import create_api_router
+from nexus.auth import AuthenticationManager, create_default_admin
 from nexus.core import (
     AppConfig,
     DatabaseAdapter,
@@ -27,8 +29,6 @@ from nexus.core import (
     ServiceRegistry,
     create_default_config,
 )
-from nexus.auth import AuthenticationManager, create_default_admin
-from nexus.api import create_api_router
 from nexus.middleware import (
     ErrorHandlerMiddleware,
     LoggingMiddleware,

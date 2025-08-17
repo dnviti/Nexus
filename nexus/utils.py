@@ -3,12 +3,13 @@ Nexus Framework Utilities Module
 Common utility functions and helpers.
 """
 
+import json
 import logging
 import os
 import sys
-from typing import Optional, Dict, Any
 from pathlib import Path
-import json
+from typing import Any, Dict, Optional
+
 import yaml
 
 
@@ -235,8 +236,8 @@ def validate_email(email: str) -> bool:
 
 def generate_id(prefix: str = "", length: int = 8) -> str:
     """Generate a random ID with optional prefix."""
-    import string
     import random
+    import string
 
     chars = string.ascii_lowercase + string.digits
     random_part = "".join(random.choices(chars, k=length))
