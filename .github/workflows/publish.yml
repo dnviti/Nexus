@@ -150,6 +150,7 @@ jobs:
           path: dist/
 
       - name: Test package installation
+        shell: bash
         run: |
           python -m pip install --upgrade pip
           pip install dist/*.whl
