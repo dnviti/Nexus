@@ -25,11 +25,35 @@ from nexus.core import EventBus, PluginManager, ServiceRegistry
 
 
 @pytest.fixture(scope="session")
-def event_loop() -> Generator:
+def event_loop():
     """Create an instance of the default event loop for the test session."""
-    loop = asyncio.get_event_loop_policy().new_event_loop()
+    try:
+        # Try to get existing loop first
+        loop = asyncio.get_event_loop()
+        if loop.is_closed():
+            raise RuntimeError("Loop is closed")
+    except RuntimeError:
+        # Create new loop if none exists or current is closed
+        policy = asyncio.get_event_loop_policy()
+        loop = policy.new_event_loop()
+        asyncio.set_event_loop(loop)
+
     yield loop
-    loop.close()
+
+    # Clean up
+    try:
+        # Cancel all running tasks
+        pending = asyncio.all_tasks(loop)
+        if pending:
+            for task in pending:
+                task.cancel()
+            # Wait for tasks to be cancelled
+            loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
+    except Exception:
+        pass
+    finally:
+        if not loop.is_closed():
+            loop.close()
 
 
 @pytest.fixture
@@ -222,11 +246,89 @@ class TestPluginImpl(BasePlugin):
 # Test markers for different test categories
 pytest_plugins = []
 
-# Configure pytest to handle async tests
-pytest.mark.asyncio = pytest.mark.asyncio
+# Configure pytest to handle async tests automatically
+# This ensures that pytest-asyncio is properly configured
 
 # Test environment variables
 import os
 
 os.environ.setdefault("NEXUS_ENV", "testing")
 os.environ.setdefault("NEXUS_DEBUG", "true")
+
+
+# Ensure asyncio mode is configured for pytest-asyncio
+def pytest_configure(config):
+    """Configure pytest with asyncio settings."""
+    config.addinivalue_line("markers", "asyncio: mark test as async")
+    # Ensure asyncio mode is set to auto
+    if not hasattr(config.option, "asyncio_mode"):
+        config.option.asyncio_mode = "auto"
+
+
+# Auto-apply asyncio marker to async test functions
+def pytest_collection_modifyitems(config, items):
+    """Automatically mark async test functions with asyncio marker."""
+    for item in items:
+        # Check if the test function is a coroutine function
+        if hasattr(item, "function") and asyncio.iscoroutinefunction(item.function):
+            # Add asyncio marker if not already present
+            if not any(marker.name == "asyncio" for marker in item.iter_markers()):
+                item.add_marker(pytest.mark.asyncio)
+
+        # Also check for async methods in test classes
+        if hasattr(item, "obj") and hasattr(item.obj, "__self__"):
+            test_method = getattr(item.obj.__self__.__class__, item.obj.__name__, None)
+            if test_method and asyncio.iscoroutinefunction(test_method):
+                if not any(marker.name == "asyncio" for marker in item.iter_markers()):
+                    item.add_marker(pytest.mark.asyncio)
+
+
+# Pytest hook to ensure proper async test handling
+def pytest_runtest_setup(item):
+    """Setup hook for each test item to ensure proper async handling."""
+    if any(marker.name == "asyncio" for marker in item.iter_markers()):
+        # Ensure we have a proper event loop for async tests
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_closed():
+                # Create a new loop if the current one is closed
+                policy = asyncio.get_event_loop_policy()
+                loop = policy.new_event_loop()
+                asyncio.set_event_loop(loop)
+        except RuntimeError:
+            # No loop exists, create one
+            policy = asyncio.get_event_loop_policy()
+            loop = policy.new_event_loop()
+            asyncio.set_event_loop(loop)
+
+
+# Debug fixture to help troubleshoot async issues
+@pytest.fixture(autouse=True)
+def debug_async_environment():
+    """Debug fixture to log async environment state."""
+    import logging
+
+    logger = logging.getLogger("test.async")
+
+    try:
+        loop = asyncio.get_event_loop()
+        logger.debug(
+            f"Event loop: {loop}, running: {loop.is_running()}, closed: {loop.is_closed()}"
+        )
+    except RuntimeError as e:
+        logger.debug(f"No event loop available: {e}")
+
+    yield
+
+    # Cleanup after test
+    try:
+        loop = asyncio.get_event_loop()
+        if not loop.is_closed():
+            # Cancel any remaining tasks
+            pending = [task for task in asyncio.all_tasks(loop) if not task.done()]
+            if pending:
+                for task in pending:
+                    if not task.cancelled():
+                        task.cancel()
+    except Exception as e:
+        logger.debug(f"Cleanup error: {e}")
