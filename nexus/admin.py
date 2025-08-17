@@ -16,8 +16,9 @@ import click
 
 from . import __version__
 from .auth import AuthenticationManager
-from .core import EventBus, PluginManager, ServiceRegistry, create_default_config
-from .monitoring import create_default_health_checks
+from .core import EventBus, PluginManager, ServiceRegistry
+
+# Removed unused import: from .monitoring import create_default_health_checks
 from .utils import setup_logging
 
 # Setup logging
@@ -102,12 +103,15 @@ def user_list(ctx: Any, output_format: str) -> None:
     try:
 
         async def list_users_async() -> None:
+            # Initialize auth manager for future user management
             auth_manager = AuthenticationManager()
-            # In a real implementation, this would get all users
+            # In a real implementation, this would get all users from auth_manager
+            # For now, using sample data until auth_manager.list_users() is implemented
             users = [
                 {"username": "admin", "email": "admin@example.com", "created": "2024-01-01"},
                 {"username": "user1", "email": "user1@example.com", "created": "2024-01-02"},
             ]
+            # TODO: Replace with: users = await auth_manager.list_users()
 
             if output_format == "json":
                 click.echo(json.dumps(users, indent=2))
@@ -163,7 +167,6 @@ def plugin_status(ctx: Any, detailed: bool) -> None:
     try:
 
         async def get_plugin_status() -> None:
-            config = create_default_config()
             service_registry = ServiceRegistry()
             event_bus = EventBus()
             plugin_manager = PluginManager(event_bus, service_registry)
@@ -423,7 +426,7 @@ def backup_create(ctx: Any, output: Optional[str], include_plugins: bool) -> Non
         if include_plugins:
             files_list.append("plugins/")
 
-        backup_data = {
+        backup_info = {
             "timestamp": datetime.utcnow().isoformat(),
             "version": __version__,
             "includes_plugins": include_plugins,
@@ -432,6 +435,7 @@ def backup_create(ctx: Any, output: Optional[str], include_plugins: bool) -> Non
 
         click.echo(f"✅ Backup created successfully: {output}")
         click.echo(f"📦 Included: {', '.join(files_list)}")
+        click.echo(f"📊 Backup info: {backup_info['timestamp']} (v{backup_info['version']})")
 
     except Exception as e:
         click.echo(f"❌ Error creating backup: {e}", err=True)

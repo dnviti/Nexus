@@ -324,5 +324,92 @@ class TestErrorHandling:
         assert health_data["status"] == "healthy"
 
 
+class TestCoreAPI:
+    """Test the comprehensive Core API endpoints."""
+
+    def test_v1_status_endpoint(self):
+        """Test the /api/v1/status endpoint."""
+        app = create_nexus_app(title="Test App")
+        client = TestClient(app.app)
+
+        response = client.get("/api/v1/status")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert data["success"] is True
+        assert "data" in data
+        assert data["data"]["status"] == "healthy"
+        assert "version" in data["data"]
+        assert "components" in data["data"]
+
+    def test_v1_health_endpoint(self):
+        """Test the /api/v1/health endpoint."""
+        app = create_nexus_app(title="Test App")
+        client = TestClient(app.app)
+
+        response = client.get("/api/v1/health")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert data["status"] == "ok"
+        assert "version" in data
+        assert "uptime" in data
+
+    def test_v1_config_endpoint(self):
+        """Test the /api/v1/config endpoint."""
+        app = create_nexus_app(title="Test App")
+        client = TestClient(app.app)
+
+        response = client.get("/api/v1/config")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert data["success"] is True
+        assert "data" in data
+        assert "database" in data["data"]
+        assert "server" in data["data"]
+
+    def test_v1_metrics_endpoint(self):
+        """Test the /api/v1/metrics endpoint."""
+        app = create_nexus_app(title="Test App")
+        client = TestClient(app.app)
+
+        response = client.get("/api/v1/metrics")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert data["success"] is True
+        assert "data" in data
+        assert "time_range" in data["data"]
+        assert "metrics" in data["data"]
+
+    def test_v1_services_endpoint(self):
+        """Test the /api/v1/services endpoint."""
+        app = create_nexus_app(title="Test App")
+        client = TestClient(app.app)
+
+        response = client.get("/api/v1/services")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert data["success"] is True
+        assert "data" in data
+        assert "services" in data["data"]
+
+    def test_v1_components_health_endpoint(self):
+        """Test the /api/v1/components/health endpoint."""
+        app = create_nexus_app(title="Test App")
+        client = TestClient(app.app)
+
+        response = client.get("/api/v1/components/health")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert data["success"] is True
+        assert "data" in data
+        assert "overall_status" in data["data"]
+        assert "components" in data["data"]
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

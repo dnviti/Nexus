@@ -250,11 +250,10 @@ def validate_email(email: str) -> bool:
 
 def generate_id(prefix: str = "", length: int = 8) -> str:
     """Generate a random ID with optional prefix."""
-    import random
+    import secrets
     import string
 
     chars = string.ascii_lowercase + string.digits
-    import secrets
 
     random_part = "".join(secrets.choice(chars) for _ in range(length))
 
@@ -265,11 +264,10 @@ def generate_id(prefix: str = "", length: int = 8) -> str:
 
 def generate_random_string(length: int = 32) -> str:
     """Generate a random string of specified length."""
-    import random
+    import secrets
     import string
 
     chars = string.ascii_lowercase + string.digits
-    import secrets
 
     return "".join(secrets.choice(chars) for _ in range(length))
 

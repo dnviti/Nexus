@@ -21,6 +21,8 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+# API imports
+from .api import create_api_router, create_core_api_router
 from .config import AppConfig, create_default_config, load_config
 
 # Core imports
@@ -68,6 +70,7 @@ __all__ = [
     "AppConfig",
     "DatabaseConfig",
     "create_default_config",
+    "load_config",
     # Decorators and utilities
     "plugin_hook",
     "requires_permission",
@@ -142,6 +145,12 @@ class NexusApp:
 
         # Setup core routes
         self._setup_core_routes()
+
+        # Setup comprehensive core API
+        self._setup_core_api()
+
+        # Setup legacy API for backward compatibility
+        self._setup_legacy_api()
 
         # Store startup and shutdown handlers
         self._startup_handlers: List[Callable[[], Any]] = []
@@ -365,6 +374,18 @@ class NexusApp:
 
                         self.app.include_router(router, prefix=prefix, tags=[plugin_name])
                         logger.info(f"Registered routes for plugin: {plugin_name}")
+
+    def _setup_core_api(self) -> None:
+        """Set up comprehensive core API routes."""
+        core_api_router = create_core_api_router()
+        self.app.include_router(core_api_router)
+        logger.info("Registered comprehensive core API routes")
+
+    def _setup_legacy_api(self) -> None:
+        """Set up legacy API routes for backward compatibility."""
+        legacy_api_router = create_api_router()
+        self.app.include_router(legacy_api_router)
+        logger.info("Registered legacy API routes")
 
     def on_startup(self, func: Callable[[], Any]) -> Callable[[], Any]:
         """Register a startup handler."""

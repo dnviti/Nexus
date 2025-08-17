@@ -8,8 +8,8 @@ across all test modules in the test suite.
 import asyncio
 import sys
 from pathlib import Path
-from typing import Any, Dict, Generator
-from unittest.mock import AsyncMock, patch
+from typing import Any, Dict
+from unittest.mock import AsyncMock
 
 import pytest
 from fastapi.testclient import TestClient
