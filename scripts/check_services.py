@@ -26,7 +26,7 @@ def check_tcp_connection(host: str, port: int, timeout: int = 5) -> bool:
 def check_redis(host: str = "localhost", port: int = 6379, timeout: int = 5) -> bool:
     """Check Redis connectivity using Python redis library."""
     try:
-        import redis
+        import redis  # type: ignore
         r = redis.Redis(host=host, port=port, socket_connect_timeout=timeout)
         r.ping()
         return True
@@ -52,7 +52,7 @@ def check_postgres(host: str = "localhost", port: int = 5432, timeout: int = 5) 
 
     # Try with psycopg2 if available
     try:
-        import psycopg2
+        import psycopg2  # type: ignore
         conn = psycopg2.connect(
             host=host,
             port=port,
@@ -87,7 +87,7 @@ def check_mysql(host: str = "localhost", port: int = 3306, timeout: int = 5) -> 
 
     # Try with pymysql if available
     try:
-        import pymysql
+        import pymysql  # type: ignore
         conn = pymysql.connect(
             host=host,
             port=port,

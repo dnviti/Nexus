@@ -6,12 +6,10 @@ Tests cover error handling, CORS, rate limiting, logging, and timing middleware.
 
 import asyncio
 import time
-from datetime import datetime
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
-from fastapi import HTTPException, Request, Response, status
-from fastapi.responses import JSONResponse
+from fastapi import HTTPException, status
 
 from nexus.middleware import (
     CORSMiddleware,
@@ -460,8 +458,6 @@ class TestRequestIDMiddleware:
         scope = {"type": "http", "method": "GET", "path": "/test"}
         receive = AsyncMock()
         send = AsyncMock()
-
-        initial_counter = self.middleware.request_counter
 
         await self.middleware(scope, receive, send)
 

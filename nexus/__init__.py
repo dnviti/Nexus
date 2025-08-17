@@ -21,7 +21,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from .config import AppConfig, create_default_config
+from .config import AppConfig, create_default_config, load_config
 
 # Core imports
 from .core import (
@@ -445,8 +445,6 @@ def create_nexus_app(
         config = create_default_config()
     elif isinstance(config, str):
         # Load from file
-        from .config import load_config
-
         config = load_config(config)
     elif isinstance(config, dict):
         # Create from dictionary

@@ -127,7 +127,9 @@ class TestErrorHandling:
     def test_import_non_existent_module(self):
         """Test importing non-existent nexus modules raises ImportError."""
         with pytest.raises(ImportError):
-            from nexus import NonExistentModule
+            import importlib
+
+            importlib.import_module("nexus.NonExistentModule")
 
 
 class TestFrameworkMetadata:

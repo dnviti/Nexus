@@ -4,8 +4,8 @@ Basic authentication and authorization functionality.
 """
 
 import logging
-from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
+from datetime import datetime
+from typing import Dict, List, Optional
 
 from fastapi import HTTPException, status
 from pydantic import BaseModel

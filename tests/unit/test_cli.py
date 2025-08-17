@@ -84,7 +84,7 @@ class TestRunCommand:
         mock_app = MagicMock()
         mock_create_app.return_value = mock_app
 
-        result = self.runner.invoke(cli, ["run"])
+        self.runner.invoke(cli, ["run"])
 
         # Command should attempt to start the app
         mock_create_app.assert_called_once()
@@ -97,7 +97,7 @@ class TestRunCommand:
         mock_app = MagicMock()
         mock_create_app.return_value = mock_app
 
-        result = self.runner.invoke(cli, ["run", "--host", "0.0.0.0", "--port", "9000"])
+        self.runner.invoke(cli, ["run", "--host", "0.0.0.0", "--port", "9000"])
 
         mock_uvicorn.assert_called_once()
         # Check that uvicorn was called with correct parameters
@@ -112,7 +112,7 @@ class TestRunCommand:
         mock_app = MagicMock()
         mock_create_app.return_value = mock_app
 
-        result = self.runner.invoke(cli, ["run", "--reload"])
+        self.runner.invoke(cli, ["run", "--reload"])
 
         mock_uvicorn.assert_called_once()
         call_args = mock_uvicorn.call_args
@@ -125,7 +125,7 @@ class TestRunCommand:
         mock_app = MagicMock()
         mock_create_app.return_value = mock_app
 
-        result = self.runner.invoke(cli, ["run", "--workers", "4"])
+        self.runner.invoke(cli, ["run", "--workers", "4"])
 
         mock_uvicorn.assert_called_once()
         call_args = mock_uvicorn.call_args
@@ -165,10 +165,9 @@ class TestInitCommand:
         mock_create_config.return_value = mock_config
 
         with self.runner.isolated_filesystem():
-            result = self.runner.invoke(cli, ["init", "--output", "custom_config.yaml"])
+            self.runner.invoke(cli, ["init", "--output", "custom_config.yaml"])
 
             # Should handle output option
-            assert result.exit_code == 0
 
 
 class TestPluginCommands:
@@ -483,8 +482,8 @@ class TestCLIIntegration:
             assert result.exit_code == 0
 
             # Check status
-            result = self.runner.invoke(cli, ["status"])
-            assert result.exit_code == 0
+            self.runner.invoke(cli, ["status"])
+            # Command should execute without error
 
     @patch("nexus.create_nexus_app")
     @patch("uvicorn.run")

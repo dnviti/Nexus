@@ -4,18 +4,15 @@ Nexus CLI
 Command-line interface for Nexus
 """
 
-import asyncio
 import logging
-import os
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 import click
 
 from . import __version__
-from .core import AppConfig, PluginManager, ServiceRegistry, create_default_config
-from .monitoring import MetricsCollector
+from .core import create_default_config
 from .utils import setup_logging
 
 # Setup logging

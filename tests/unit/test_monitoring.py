@@ -192,6 +192,7 @@ class TestHealthChecker:
 
         assert check_id is not None
         check_config = checker.get_check_config(check_id)
+        assert check_config is not None
         assert check_config["interval"] == 60
         assert check_config["timeout"] == 10
         assert check_config["enabled"] == True
@@ -259,11 +260,13 @@ class TestHealthChecker:
         # Disable check
         checker.disable_check(check_id)
         config = checker.get_check_config(check_id)
+        assert config is not None
         assert config["enabled"] == False
 
         # Enable check
         checker.enable_check(check_id)
         config = checker.get_check_config(check_id)
+        assert config is not None
         assert config["enabled"] == True
 
 
@@ -461,7 +464,7 @@ class TestSystemMonitor:
     @pytest.mark.asyncio
     async def test_system_monitor_async_monitoring(self):
         """Test asynchronous monitoring loop."""
-        monitor = SystemMonitor(interval=0.1)  # Very short interval for testing
+        monitor = SystemMonitor(interval=1)  # Very short interval for testing
 
         monitor.start_monitoring()
 
@@ -539,8 +542,8 @@ class TestIntegrationScenarios:
         health_checker = HealthChecker()
         alerts = []
 
-        def alert_handler(alert):
-            alerts.append(alert)
+        def alert_handler(alert_type: str, alert_data: dict):
+            alerts.append({"type": alert_type, "data": alert_data})
 
         # Add alert handler
         health_checker.add_alert_handler(alert_handler)
@@ -562,12 +565,13 @@ class TestIntegrationScenarios:
         for result in failing_results:
             if result.status == "unhealthy":
                 alert_handler(
+                    "health_check_failed",
                     {
                         "service": result.name,
                         "status": result.status,
                         "message": result.message,
                         "timestamp": result.timestamp,
-                    }
+                    },
                 )
 
         assert len(alerts) > 0

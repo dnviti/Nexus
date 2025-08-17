@@ -165,7 +165,7 @@ class TestPluginSystem:
                 self.category = "test"
 
             async def initialize(self):
-                pass
+                return True
 
             async def shutdown(self):
                 pass
@@ -200,6 +200,7 @@ class TestPluginSystem:
 
             async def initialize(self):
                 self.initialized = True
+                return True
 
             async def shutdown(self):
                 self.shutdown_called = True

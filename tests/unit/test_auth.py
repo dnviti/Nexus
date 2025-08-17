@@ -5,7 +5,7 @@ Tests cover authentication, authorization, user management, and basic auth funct
 """
 
 from datetime import datetime
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock
 
 import pytest
 
@@ -394,6 +394,8 @@ class TestAuthenticationIntegration:
         user1 = await self.auth_manager.get_user_by_token(token1)
         user2 = await self.auth_manager.get_user_by_token(token2)
 
+        assert user1 is not None
+        assert user2 is not None
         assert user1.id == user.id
         assert user2.id == user.id
 

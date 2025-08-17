@@ -7,7 +7,6 @@ import logging
 from abc import ABC, abstractmethod
 from datetime import datetime
 from enum import Enum
-from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Set, Type
 
 from fastapi import APIRouter
@@ -202,10 +201,10 @@ class BasePlugin(ABC):
         self.config: Dict[str, Any] = {}
 
         # Dependencies injected by framework
-        self.db_adapter = None
-        self.event_bus = None
-        self.service_registry = None
-        self.cache_manager = None
+        self.db_adapter: Optional[Any] = None
+        self.event_bus: Optional[Any] = None
+        self.service_registry: Optional[Any] = None
+        self.cache_manager: Optional[Any] = None
 
         # Plugin resources
         self.logger = logging.getLogger(f"nexus.plugins.{self.category}.{self.name}")

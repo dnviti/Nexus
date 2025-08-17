@@ -6,17 +6,15 @@ TransactionContext, PluginInfo, PluginStatus, and PluginManager.
 """
 
 import asyncio
-import os
 import tempfile
 from datetime import datetime
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock
 
 import pytest
 
 from nexus.core import (
     DatabaseAdapter,
-    DatabaseConfig,
     Event,
     EventBus,
     EventPriority,
@@ -391,8 +389,12 @@ class TestDatabaseAdapter:
 
     def test_database_adapter_abstract(self):
         """Test that DatabaseAdapter is abstract."""
-        with pytest.raises(TypeError):
-            DatabaseAdapter()
+        # Test that we cannot instantiate the abstract class directly
+        try:
+            adapter = DatabaseAdapter()  # type: ignore
+            assert False, "Should not be able to instantiate abstract class"
+        except TypeError:
+            pass  # Expected behavior
 
     def test_database_adapter_methods_are_abstract(self):
         """Test that all methods are abstract."""
@@ -405,25 +407,27 @@ class TestDatabaseAdapter:
             async def disconnect(self):
                 pass
 
-            async def get(self, key):
+            async def get(self, key: str, default=None):
+                return default
+
+            async def set(self, key: str, value):
                 pass
 
-            async def set(self, key, value):
+            async def delete(self, key: str):
                 pass
 
-            async def delete(self, key):
-                pass
+            async def exists(self, key: str) -> bool:
+                return True
 
-            async def exists(self, key):
-                pass
-
-            async def list_keys(self, pattern=None):
-                pass
+            async def list_keys(self, pattern: str = "*") -> list:
+                return []
 
             async def transaction(self):
-                pass
+                from nexus.core import TransactionContext
 
-            async def migrate(self, version):
+                return TransactionContext(self)
+
+            async def migrate(self):
                 pass
 
         adapter = TestAdapter()

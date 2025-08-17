@@ -199,7 +199,7 @@ def format_duration(seconds: float) -> str:
         return f"{days:.1f}d"
 
 
-def sanitize_string(value: str, max_length: int = 100) -> str:
+def sanitize_string(value: Any, max_length: int = 100) -> str:
     """Sanitize string for safe usage."""
     import re
 

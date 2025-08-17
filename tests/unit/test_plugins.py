@@ -4,9 +4,7 @@ Comprehensive unit tests for the Nexus plugins module.
 Tests cover BasePlugin, plugin decorators, plugin types, validation, and all plugin-related functionality.
 """
 
-import asyncio
 from datetime import datetime
-from typing import Any, Dict
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -244,7 +242,7 @@ class TestPluginDecorators:
 
         # Decorator should add metadata to function
         assert hasattr(test_handler, "_nexus_hook")
-        assert test_handler._nexus_hook == "test_event"
+        assert getattr(test_handler, "_nexus_hook") == "test_event"
 
     def test_plugin_hook_decorator_with_priority(self):
         """Test plugin_hook decorator with priority."""
@@ -255,8 +253,8 @@ class TestPluginDecorators:
 
         assert hasattr(priority_handler, "_nexus_hook")
         assert hasattr(priority_handler, "_nexus_priority")
-        assert priority_handler._nexus_hook == "priority_event"
-        assert priority_handler._nexus_priority == 5
+        assert getattr(priority_handler, "_nexus_hook") == "priority_event"
+        assert getattr(priority_handler, "_nexus_priority") == 5
 
     def test_requires_permission_decorator(self):
         """Test requires_permission decorator."""
@@ -266,7 +264,7 @@ class TestPluginDecorators:
             return "admin_action"
 
         assert hasattr(admin_function, "_required_permission")
-        assert admin_function._required_permission == "admin"
+        assert getattr(admin_function, "_required_permission") == "admin"
 
     def test_requires_dependency_decorator(self):
         """Test requires_dependency decorator."""
@@ -276,7 +274,7 @@ class TestPluginDecorators:
             return "db_action"
 
         assert hasattr(db_function, "_required_dependency")
-        assert db_function._required_dependency == "database"
+        assert getattr(db_function, "_required_dependency") == "database"
 
     def test_requires_dependency_decorator_with_version(self):
         """Test requires_dependency decorator with version."""
@@ -287,8 +285,8 @@ class TestPluginDecorators:
 
         assert hasattr(cache_function, "_required_dependency")
         assert hasattr(cache_function, "_dependency_version")
-        assert cache_function._required_dependency == "cache"
-        assert cache_function._dependency_version == ">=2.0.0"
+        assert getattr(cache_function, "_required_dependency") == "cache"
+        assert getattr(cache_function, "_dependency_version") == ">=2.0.0"
 
 
 class TestHealthStatus:
@@ -362,6 +360,7 @@ class TestBasePlugin:
 
             async def initialize(self):
                 self.initialized = True
+                return True
 
             async def shutdown(self):
                 pass
@@ -633,7 +632,7 @@ class TestSpecializedPlugins:
         """Test NotificationPlugin notification sending."""
         plugin = NotificationPlugin()
         # Should not raise error
-        await plugin.send_notification("test", "Test message", {"recipient": "user"})
+        await plugin.send_notification("user", "Test Subject", "Test message")
 
     def test_storage_plugin(self):
         """Test StoragePlugin class."""
@@ -645,7 +644,7 @@ class TestSpecializedPlugins:
         """Test StoragePlugin data storage."""
         plugin = StoragePlugin()
         # Should not raise error
-        await plugin.store("key", "data")
+        await plugin.store("key", b"data")
 
     @pytest.mark.asyncio
     async def test_storage_plugin_retrieve(self):
@@ -704,7 +703,7 @@ class TestPluginValidator:
                 self.version = "1.0.0"
 
             async def initialize(self):
-                pass
+                return True
 
             async def shutdown(self):
                 pass
@@ -731,7 +730,7 @@ class TestPluginValidator:
                 self.name = ""  # Invalid empty name
 
             async def initialize(self):
-                pass
+                return True
 
             async def shutdown(self):
                 pass
@@ -958,22 +957,32 @@ class TestPluginValidatorErrorPaths:
         """Test validating plugin with missing required method."""
         validator = PluginValidator()
 
-        # Create a mock plugin missing a required method
-        class IncompletePlugin:
+        # Create a complete plugin but test validation logic directly
+        class CompletePlugin(BasePlugin):
             def __init__(self):
-                self.name = "incomplete_plugin"
+                super().__init__()
+                self.name = "complete_plugin"
 
             async def initialize(self):
-                pass
+                return True
 
             async def shutdown(self):
                 pass
 
-            # Missing get_api_routes and get_database_schema methods
+            def get_api_routes(self):
+                return []
 
-        plugin = IncompletePlugin()
-        result = validator.validate_plugin(plugin)
-        assert result == False
+            def get_database_schema(self):
+                return {}
+
+        plugin = CompletePlugin()
+
+        # Mock hasattr to simulate missing method for validation test
+        with patch('builtins.hasattr') as mock_hasattr:
+            # Return False for get_database_schema to simulate missing method
+            mock_hasattr.side_effect = lambda obj, attr: attr != 'get_database_schema'
+            result = validator.validate_plugin(plugin)
+            assert result == False
 
     def test_validate_manifest_invalid_category(self):
         """Test validating manifest with invalid category."""

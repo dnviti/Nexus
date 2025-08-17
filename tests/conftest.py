@@ -9,7 +9,7 @@ import asyncio
 import sys
 from pathlib import Path
 from typing import Any, Dict, Generator
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
@@ -18,7 +18,7 @@ from fastapi.testclient import TestClient
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-import nexus
+# nexus import removed as unused
 from nexus import BasePlugin, create_nexus_app
 from nexus.config import AppConfig, create_default_config
 from nexus.core import EventBus, PluginManager, ServiceRegistry
@@ -62,7 +62,7 @@ def mock_config() -> AppConfig:
     config = create_default_config()
     config.app.debug = True
     config.app.name = "Test Nexus App"
-    config.auth.secret_key = "test-secret-key"
+    config.auth.jwt_secret = "test-secret-key"
     config.database = None  # Disable database for basic tests
     return config
 
@@ -155,9 +155,10 @@ class TestPlugin(BasePlugin):
         self.initialized = False
         self.shutdown_called = False
 
-    async def initialize(self) -> None:
+    async def initialize(self) -> bool:
         """Initialize the test plugin."""
         self.initialized = True
+        return True
 
     async def shutdown(self) -> None:
         """Shutdown the test plugin."""
@@ -171,13 +172,11 @@ class TestPlugin(BasePlugin):
         """Get database schema for this plugin."""
         return {}
 
-    async def health_check(self) -> Dict[str, Any]:
+    async def health_check(self):
         """Health check for the test plugin."""
-        return {
-            "status": "healthy",
-            "initialized": self.initialized,
-            "details": "Test plugin is working correctly",
-        }
+        from nexus.plugins import HealthStatus
+
+        return HealthStatus(healthy=True, message="Test plugin is working correctly")
 
 
 @pytest.fixture
