@@ -75,11 +75,11 @@ Your application will be available at `http://localhost:8000` with automatic API
 
 ## Community & Support
 
-- **GitHub**: [nexus-team/nexus](https://github.com/nexus-team/nexus)
+- **GitHub**: [dnviti/Nexus](https://github.com/dnviti/Nexus)
 - **Discord**: [Join our community](https://discord.gg/nexus)
 - **Twitter**: [@nexus_dev](https://twitter.com/nexus_dev)
-- **Issues**: [Report bugs and request features](https://github.com/nexus-team/nexus/issues)
+- **Issues**: [Report bugs and request features](https://github.com/dnviti/Nexus/issues)
 
 ## License
 
-Nexus is open source software licensed under the [MIT License](https://github.com/nexus-team/nexus/blob/main/LICENSE).
+Nexus is open source software licensed under the [MIT License](https://github.com/dnviti/Nexus/blob/main/LICENSE).

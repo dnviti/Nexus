@@ -53,12 +53,14 @@ Authorization: Bearer <token>
 ```
 
 **Query Parameters:**
+
 - `status` (string): Filter by status (active, inactive, error, loading)
 - `category` (string): Filter by category
 - `search` (string): Search in plugin names and descriptions
 - `include_disabled` (boolean): Include disabled plugins (default: true)
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -128,6 +130,7 @@ Authorization: Bearer <token>
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -139,7 +142,7 @@ Authorization: Bearer <token>
       "description": "Provides comprehensive user authentication and authorization",
       "author": "Nexus Team",
       "email": "team@nexus.dev",
-      "homepage": "https://github.com/nexus-team/auth-plugin",
+      "homepage": "https://github.com/dnviti/auth-plugin",
       "category": "security",
       "tags": ["auth", "security", "jwt"],
       "status": "active",
@@ -274,6 +277,7 @@ Content-Type: application/json
 ```
 
 **Alternative sources:**
+
 ```json
 {
   "source": "file",
@@ -289,6 +293,7 @@ Content-Type: application/json
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -329,6 +334,7 @@ Content-Type: application/json
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -355,11 +361,13 @@ Authorization: Bearer <admin_token>
 ```
 
 **Query Parameters:**
+
 - `force` (boolean): Force removal even if dependencies exist
 - `backup` (boolean): Create backup before removal
 - `cleanup_data` (boolean): Remove plugin data from database
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -387,10 +395,12 @@ Authorization: Bearer <token>
 ```
 
 **Query Parameters:**
+
 - `include_schema` (boolean): Include configuration schema
 - `include_secrets` (boolean): Include secret values (admin only)
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -448,6 +458,7 @@ Content-Type: application/json
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -477,6 +488,7 @@ Authorization: Bearer <admin_token>
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -505,6 +517,7 @@ Content-Type: application/json
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -542,6 +555,7 @@ Authorization: Bearer <token>
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -594,12 +608,14 @@ Authorization: Bearer <token>
 ```
 
 **Query Parameters:**
+
 - `start_time` (string): Start time for metrics (ISO 8601)
 - `end_time` (string): End time for metrics (ISO 8601)
 - `resolution` (string): Time resolution (1m, 5m, 15m, 1h)
 - `metrics` (array): Specific metrics to include
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -611,20 +627,20 @@ Authorization: Bearer <token>
     },
     "metrics": {
       "requests_per_minute": [
-        {"timestamp": "2024-01-01T11:00:00Z", "value": 25.5},
-        {"timestamp": "2024-01-01T11:01:00Z", "value": 28.3}
+        { "timestamp": "2024-01-01T11:00:00Z", "value": 25.5 },
+        { "timestamp": "2024-01-01T11:01:00Z", "value": 28.3 }
       ],
       "response_time_ms": [
-        {"timestamp": "2024-01-01T11:00:00Z", "value": 125},
-        {"timestamp": "2024-01-01T11:01:00Z", "value": 98}
+        { "timestamp": "2024-01-01T11:00:00Z", "value": 125 },
+        { "timestamp": "2024-01-01T11:01:00Z", "value": 98 }
       ],
       "error_rate": [
-        {"timestamp": "2024-01-01T11:00:00Z", "value": 0.002},
-        {"timestamp": "2024-01-01T11:01:00Z", "value": 0.001}
+        { "timestamp": "2024-01-01T11:00:00Z", "value": 0.002 },
+        { "timestamp": "2024-01-01T11:01:00Z", "value": 0.001 }
       ],
       "memory_usage_mb": [
-        {"timestamp": "2024-01-01T11:00:00Z", "value": 45},
-        {"timestamp": "2024-01-01T11:01:00Z", "value": 47}
+        { "timestamp": "2024-01-01T11:00:00Z", "value": 45 },
+        { "timestamp": "2024-01-01T11:01:00Z", "value": 47 }
       ]
     }
   }
@@ -641,6 +657,7 @@ Authorization: Bearer <token>
 ```
 
 **Query Parameters:**
+
 - `level` (string): Log level filter (DEBUG, INFO, WARNING, ERROR)
 - `start_time` (string): Start time for logs
 - `end_time` (string): End time for logs
@@ -649,6 +666,7 @@ Authorization: Bearer <token>
 - `per_page` (integer): Logs per page (max 1000)
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -708,6 +726,7 @@ Content-Type: application/json
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -758,6 +777,7 @@ Authorization: Bearer <token>
 ```
 
 **Query Parameters:**
+
 - `query` (string): Search term
 - `category` (string): Plugin category
 - `author` (string): Plugin author
@@ -766,6 +786,7 @@ Authorization: Bearer <token>
 - `sort` (string): Sort by (name, rating, downloads, updated)
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -810,6 +831,7 @@ Authorization: Bearer <token>
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -848,6 +870,7 @@ Authorization: Bearer <token>
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -859,14 +882,8 @@ Authorization: Bearer <token>
         "events:emit",
         "http:external"
       ],
-      "granted": [
-        "database:read",
-        "database:write",
-        "events:emit"
-      ],
-      "denied": [
-        "http:external"
-      ]
+      "granted": ["database:read", "database:write", "events:emit"],
+      "denied": ["http:external"]
     },
     "security_level": "medium",
     "sandbox_enabled": true,
@@ -899,17 +916,17 @@ Content-Type: application/json
 
 ### Plugin-Specific Errors
 
-| Code | HTTP Status | Description |
-|------|-------------|-------------|
-| `PLUGIN_NOT_FOUND` | 404 | Plugin not found |
-| `PLUGIN_ALREADY_INSTALLED` | 409 | Plugin already installed |
-| `PLUGIN_DEPENDENCY_ERROR` | 409 | Missing or incompatible dependencies |
-| `PLUGIN_PERMISSION_DENIED` | 403 | Insufficient permissions for operation |
-| `PLUGIN_INSTALLATION_FAILED` | 500 | Plugin installation failed |
-| `PLUGIN_STARTUP_FAILED` | 500 | Plugin failed to start |
-| `PLUGIN_INCOMPATIBLE` | 400 | Plugin not compatible with current Nexus version |
-| `PLUGIN_CONFIGURATION_ERROR` | 400 | Invalid plugin configuration |
-| `PLUGIN_COMMUNICATION_TIMEOUT` | 408 | Plugin communication timeout |
+| Code                           | HTTP Status | Description                                      |
+| ------------------------------ | ----------- | ------------------------------------------------ |
+| `PLUGIN_NOT_FOUND`             | 404         | Plugin not found                                 |
+| `PLUGIN_ALREADY_INSTALLED`     | 409         | Plugin already installed                         |
+| `PLUGIN_DEPENDENCY_ERROR`      | 409         | Missing or incompatible dependencies             |
+| `PLUGIN_PERMISSION_DENIED`     | 403         | Insufficient permissions for operation           |
+| `PLUGIN_INSTALLATION_FAILED`   | 500         | Plugin installation failed                       |
+| `PLUGIN_STARTUP_FAILED`        | 500         | Plugin failed to start                           |
+| `PLUGIN_INCOMPATIBLE`          | 400         | Plugin not compatible with current Nexus version |
+| `PLUGIN_CONFIGURATION_ERROR`   | 400         | Invalid plugin configuration                     |
+| `PLUGIN_COMMUNICATION_TIMEOUT` | 408         | Plugin communication timeout                     |
 
 ## 📝 Usage Examples
 
@@ -975,6 +992,7 @@ curl -X POST "https://api.nexus.dev/v1/plugins/broadcast" \
 ## 🎯 Best Practices
 
 ### Plugin Management
+
 1. **Test in development** before installing in production
 2. **Review permissions** before granting to plugins
 3. **Monitor plugin health** regularly
@@ -982,6 +1000,7 @@ curl -X POST "https://api.nexus.dev/v1/plugins/broadcast" \
 5. **Backup before major changes**
 
 ### Plugin Development
+
 1. **Follow semantic versioning** for plugin releases
 2. **Declare all dependencies** clearly
 3. **Request minimal permissions** needed

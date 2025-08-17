@@ -153,9 +153,9 @@ Mermaid diagrams illustrate concepts visually for better understanding.
 
 ### Documentation Issues
 
-- Missing information? [Open an issue](https://github.com/nexus-team/nexus/issues)
-- Found an error? [Submit a fix](https://github.com/nexus-team/nexus/pulls)
-- Have a suggestion? [Start a discussion](https://github.com/nexus-team/nexus/discussions)
+- Missing information? [Open an issue](https://github.com/dnviti/Nexus/issues)
+- Found an error? [Submit a fix](https://github.com/dnviti/Nexus/pulls)
+- Have a suggestion? [Start a discussion](https://github.com/dnviti/Nexus/discussions)
 
 ### Community Support
 

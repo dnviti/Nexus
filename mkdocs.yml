@@ -3,8 +3,8 @@ site_description: The Ultimate Plugin-Based Application Platform
 site_author: Nexus Team
 site_url: https://docs.nexus.dev
 
-repo_name: nexus-team/nexus
-repo_url: https://github.com/nexus-team/nexus
+repo_name: dnviti/Nexus
+repo_url: https://github.com/dnviti/Nexus
 edit_uri: edit/main/docs/
 
 theme:

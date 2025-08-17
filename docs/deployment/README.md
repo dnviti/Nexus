@@ -8,13 +8,13 @@ This guide covers various deployment methods for Nexus applications, from develo
 
 ## 📋 Table of Contents
 
-| Section | Description | Best For |
-|---------|-------------|----------|
-| **[Docker Deployment](docker.md)** | Containerized deployment | Development, testing, production |
-| **[Kubernetes](kubernetes.md)** | Container orchestration | Large-scale production |
-| **[Cloud Platforms](cloud.md)** | Cloud-specific deployments | Managed infrastructure |
-| **[Bare Metal](bare-metal.md)** | Direct server deployment | On-premises, custom setups |
-| **[Development](development.md)** | Local development setup | Development workflow |
+| Section                            | Description                | Best For                         |
+| ---------------------------------- | -------------------------- | -------------------------------- |
+| **[Docker Deployment](docker.md)** | Containerized deployment   | Development, testing, production |
+| **[Kubernetes](kubernetes.md)**    | Container orchestration    | Large-scale production           |
+| **[Cloud Platforms](cloud.md)**    | Cloud-specific deployments | Managed infrastructure           |
+| **[Bare Metal](bare-metal.md)**    | Direct server deployment   | On-premises, custom setups       |
+| **[Development](development.md)**  | Local development setup    | Development workflow             |
 
 ## 🚀 Quick Start
 
@@ -24,7 +24,7 @@ The fastest way to get Nexus running:
 
 ```bash
 # Clone the repository
-git clone https://github.com/nexus-team/nexus.git
+git clone https://github.com/dnviti/Nexus.git
 cd nexus
 
 # Build and run with Docker Compose
@@ -95,7 +95,7 @@ CMD ["python", "main.py"]
 
 ```yaml
 # docker-compose.yml
-version: '3.8'
+version: "3.8"
 
 services:
   nexus:
@@ -177,40 +177,40 @@ spec:
         app: nexus
     spec:
       containers:
-      - name: nexus
-        image: nexus:latest
-        ports:
-        - containerPort: 8000
-        env:
-        - name: DATABASE_URL
-          valueFrom:
-            secretKeyRef:
-              name: nexus-secrets
-              key: database-url
-        - name: REDIS_URL
-          valueFrom:
-            configMapKeyRef:
-              name: nexus-config
-              key: redis-url
-        resources:
-          requests:
-            memory: "256Mi"
-            cpu: "250m"
-          limits:
-            memory: "512Mi"
-            cpu: "500m"
-        livenessProbe:
-          httpGet:
-            path: /api/v1/health
-            port: 8000
-          initialDelaySeconds: 30
-          periodSeconds: 10
-        readinessProbe:
-          httpGet:
-            path: /api/v1/health
-            port: 8000
-          initialDelaySeconds: 5
-          periodSeconds: 5
+        - name: nexus
+          image: nexus:latest
+          ports:
+            - containerPort: 8000
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: nexus-secrets
+                  key: database-url
+            - name: REDIS_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: nexus-config
+                  key: redis-url
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 5
 ---
 # k8s/service.yaml
 apiVersion: v1
@@ -222,9 +222,9 @@ spec:
   selector:
     app: nexus
   ports:
-  - protocol: TCP
-    port: 80
-    targetPort: 8000
+    - protocol: TCP
+      port: 80
+      targetPort: 8000
   type: ClusterIP
 ---
 # k8s/ingress.yaml
@@ -238,20 +238,20 @@ metadata:
     cert-manager.io/cluster-issuer: letsencrypt-prod
 spec:
   tls:
-  - hosts:
-    - nexus.yourdomain.com
-    secretName: nexus-tls
+    - hosts:
+        - nexus.yourdomain.com
+      secretName: nexus-tls
   rules:
-  - host: nexus.yourdomain.com
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: nexus-service
-            port:
-              number: 80
+    - host: nexus.yourdomain.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: nexus-service
+                port:
+                  number: 80
 ```
 
 ### Helm Chart
@@ -398,24 +398,24 @@ spec:
       containerConcurrency: 80
       timeoutSeconds: 300
       containers:
-      - image: gcr.io/PROJECT_ID/nexus:latest
-        ports:
-        - containerPort: 8000
-        env:
-        - name: DATABASE_URL
-          valueFrom:
-            secretKeyRef:
-              name: nexus-secrets
-              key: database-url
-        resources:
-          limits:
-            cpu: "2"
-            memory: "2Gi"
-        livenessProbe:
-          httpGet:
-            path: /api/v1/health
-          initialDelaySeconds: 60
-          periodSeconds: 10
+        - image: gcr.io/PROJECT_ID/nexus:latest
+          ports:
+            - containerPort: 8000
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: nexus-secrets
+                  key: database-url
+          resources:
+            limits:
+              cpu: "2"
+              memory: "2Gi"
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health
+            initialDelaySeconds: 60
+            periodSeconds: 10
 ```
 
 ### Azure Container Instances
@@ -427,28 +427,28 @@ location: eastus
 name: nexus-container-group
 properties:
   containers:
-  - name: nexus
-    properties:
-      image: youracr.azurecr.io/nexus:latest
-      resources:
-        requests:
-          cpu: 1.0
-          memoryInGb: 1.5
-      ports:
-      - port: 8000
-        protocol: TCP
-      environmentVariables:
-      - name: LOG_LEVEL
-        value: INFO
-      - name: DATABASE_URL
-        secureValue: postgresql://...
+    - name: nexus
+      properties:
+        image: youracr.azurecr.io/nexus:latest
+        resources:
+          requests:
+            cpu: 1.0
+            memoryInGb: 1.5
+        ports:
+          - port: 8000
+            protocol: TCP
+        environmentVariables:
+          - name: LOG_LEVEL
+            value: INFO
+          - name: DATABASE_URL
+            secureValue: postgresql://...
   osType: Linux
   restartPolicy: Always
   ipAddress:
     type: Public
     ports:
-    - protocol: tcp
-      port: 8000
+      - protocol: tcp
+        port: 8000
 ```
 
 ## 🛠️ Production Considerations
@@ -501,13 +501,13 @@ spec:
         app: grafana
     spec:
       containers:
-      - name: grafana
-        image: grafana/grafana:latest
-        ports:
-        - containerPort: 3000
-        env:
-        - name: GF_SECURITY_ADMIN_PASSWORD
-          value: admin123
+        - name: grafana
+          image: grafana/grafana:latest
+          ports:
+            - containerPort: 3000
+          env:
+            - name: GF_SECURITY_ADMIN_PASSWORD
+              value: admin123
 ```
 
 ### Backup Strategy
@@ -549,18 +549,18 @@ spec:
   minReplicas: 3
   maxReplicas: 20
   metrics:
-  - type: Resource
-    resource:
-      name: cpu
-      target:
-        type: Utilization
-        averageUtilization: 70
-  - type: Resource
-    resource:
-      name: memory
-      target:
-        type: Utilization
-        averageUtilization: 80
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80
 ```
 
 ## 🔧 Environment Configuration
@@ -652,7 +652,7 @@ monitoring:
 
 backup:
   enabled: true
-  schedule: "0 2 * * *"  # Daily at 2 AM
+  schedule: "0 2 * * *" # Daily at 2 AM
   retention_days: 30
 ```
 
