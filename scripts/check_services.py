@@ -7,10 +7,10 @@ and ready to accept connections. It's designed to replace redis-cli and other
 command-line tools that might not be available in CI environments.
 """
 
-import sys
-import time
 import socket
 import subprocess
+import sys
+import time
 from typing import Dict, Optional
 
 
@@ -27,6 +27,7 @@ def check_redis(host: str = "localhost", port: int = 6379, timeout: int = 5) -> 
     """Check Redis connectivity using Python redis library."""
     try:
         import redis  # type: ignore
+
         r = redis.Redis(host=host, port=port, socket_connect_timeout=timeout)
         r.ping()
         return True
@@ -40,10 +41,10 @@ def check_postgres(host: str = "localhost", port: int = 5432, timeout: int = 5) 
     # Try pg_isready first (if available)
     try:
         result = subprocess.run(
-            ['pg_isready', '-h', host, '-p', str(port)],
+            ["pg_isready", "-h", host, "-p", str(port)],
             capture_output=True,
             text=True,
-            timeout=timeout
+            timeout=timeout,
         )
         if result.returncode == 0:
             return True
@@ -53,13 +54,14 @@ def check_postgres(host: str = "localhost", port: int = 5432, timeout: int = 5) 
     # Try with psycopg2 if available
     try:
         import psycopg2  # type: ignore
+
         conn = psycopg2.connect(
             host=host,
             port=port,
             user="postgres",
             password="postgres",
             database="postgres",
-            connect_timeout=timeout
+            connect_timeout=timeout,
         )
         conn.close()
         return True
@@ -75,10 +77,10 @@ def check_mysql(host: str = "localhost", port: int = 3306, timeout: int = 5) -> 
     # Try mysqladmin ping first (if available)
     try:
         result = subprocess.run(
-            ['mysqladmin', 'ping', f'-h{host}', f'-P{port}', '-uroot', '-proot', '--silent'],
+            ["mysqladmin", "ping", f"-h{host}", f"-P{port}", "-uroot", "-proot", "--silent"],
             capture_output=True,
             text=True,
-            timeout=timeout
+            timeout=timeout,
         )
         if result.returncode == 0:
             return True
@@ -88,12 +90,9 @@ def check_mysql(host: str = "localhost", port: int = 3306, timeout: int = 5) -> 
     # Try with pymysql if available
     try:
         import pymysql  # type: ignore
+
         conn = pymysql.connect(
-            host=host,
-            port=port,
-            user="root",
-            password="root",
-            connect_timeout=timeout
+            host=host, port=port, user="root", password="root", connect_timeout=timeout
         )
         conn.close()
         return True
@@ -105,11 +104,7 @@ def check_mysql(host: str = "localhost", port: int = 3306, timeout: int = 5) -> 
 
 
 def wait_for_service(
-    service_name: str,
-    check_func,
-    max_attempts: int = 30,
-    interval: int = 2,
-    **kwargs
+    service_name: str, check_func, max_attempts: int = 30, interval: int = 2, **kwargs
 ) -> bool:
     """Wait for a service to become available."""
     print(f"Waiting for {service_name}...")
@@ -132,7 +127,7 @@ def wait_for_services(services: Dict[str, Dict]) -> bool:
     all_ready = True
 
     for service_name, config in services.items():
-        check_func = config.pop('check_func')
+        check_func = config.pop("check_func")
         if not wait_for_service(service_name, check_func, **config):
             all_ready = False
 
@@ -145,66 +140,47 @@ def main():
 
     parser = argparse.ArgumentParser(description="Check service connectivity")
     parser.add_argument(
-        '--services',
-        nargs='+',
-        choices=['redis', 'postgres', 'mysql', 'all'],
-        default=['all'],
-        help='Services to check'
+        "--services",
+        nargs="+",
+        choices=["redis", "postgres", "mysql", "all"],
+        default=["all"],
+        help="Services to check",
     )
     parser.add_argument(
-        '--max-attempts',
-        type=int,
-        default=30,
-        help='Maximum number of connection attempts'
+        "--max-attempts", type=int, default=30, help="Maximum number of connection attempts"
     )
     parser.add_argument(
-        '--interval',
-        type=int,
-        default=2,
-        help='Interval between attempts in seconds'
+        "--interval", type=int, default=2, help="Interval between attempts in seconds"
     )
-    parser.add_argument(
-        '--timeout',
-        type=int,
-        default=5,
-        help='Connection timeout in seconds'
-    )
+    parser.add_argument("--timeout", type=int, default=5, help="Connection timeout in seconds")
 
     args = parser.parse_args()
 
     # Define available services
     available_services = {
-        'redis': {
-            'check_func': check_redis,
-            'timeout': args.timeout
-        },
-        'postgres': {
-            'check_func': check_postgres,
-            'timeout': args.timeout
-        },
-        'mysql': {
-            'check_func': check_mysql,
-            'timeout': args.timeout
-        }
+        "redis": {"check_func": check_redis, "timeout": args.timeout},
+        "postgres": {"check_func": check_postgres, "timeout": args.timeout},
+        "mysql": {"check_func": check_mysql, "timeout": args.timeout},
     }
 
     # Determine which services to check
-    if 'all' in args.services:
+    if "all" in args.services:
         services_to_check = available_services
     else:
         services_to_check = {
-            name: config for name, config in available_services.items()
-            if name in args.services
+            name: config for name, config in available_services.items() if name in args.services
         }
 
     # Add common parameters
     for config in services_to_check.values():
-        config['max_attempts'] = args.max_attempts
-        config['interval'] = args.interval
+        config["max_attempts"] = args.max_attempts
+        config["interval"] = args.interval
 
     print("🔍 Starting service connectivity checks...")
     print(f"Services to check: {list(services_to_check.keys())}")
-    print(f"Max attempts: {args.max_attempts}, Interval: {args.interval}s, Timeout: {args.timeout}s")
+    print(
+        f"Max attempts: {args.max_attempts}, Interval: {args.interval}s, Timeout: {args.timeout}s"
+    )
     print("-" * 50)
 
     # Wait for all services

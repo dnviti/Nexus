@@ -978,9 +978,9 @@ class TestPluginValidatorErrorPaths:
         plugin = CompletePlugin()
 
         # Mock hasattr to simulate missing method for validation test
-        with patch('builtins.hasattr') as mock_hasattr:
+        with patch("builtins.hasattr") as mock_hasattr:
             # Return False for get_database_schema to simulate missing method
-            mock_hasattr.side_effect = lambda obj, attr: attr != 'get_database_schema'
+            mock_hasattr.side_effect = lambda obj, attr: attr != "get_database_schema"
             result = validator.validate_plugin(plugin)
             assert result == False
 
