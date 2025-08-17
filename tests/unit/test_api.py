@@ -4,17 +4,13 @@ Unit tests for the Nexus API module.
 Tests cover existing API response models and router functionality.
 """
 
-import pytest
 from datetime import datetime
+
+import pytest
 from fastapi import APIRouter
 from fastapi.testclient import TestClient
 
-from nexus.api import (
-    APIResponse,
-    HealthResponse,
-    ErrorResponse,
-    create_api_router,
-)
+from nexus.api import APIResponse, ErrorResponse, HealthResponse, create_api_router
 
 
 class TestAPIResponse:
@@ -31,11 +27,7 @@ class TestAPIResponse:
     def test_api_response_custom(self):
         """Test APIResponse with custom values."""
         data = {"key": "value"}
-        response = APIResponse(
-            success=False,
-            message="Error occurred",
-            data=data
-        )
+        response = APIResponse(success=False, message="Error occurred", data=data)
         assert response.success == False
         assert response.message == "Error occurred"
         assert response.data == data
@@ -66,10 +58,7 @@ class TestHealthResponse:
         """Test HealthResponse with custom values."""
         services = {"database": "ok", "redis": "ok"}
         response = HealthResponse(
-            status="degraded",
-            version="1.0.0",
-            services=services,
-            uptime=3600.5
+            status="degraded", version="1.0.0", services=services, uptime=3600.5
         )
         assert response.status == "degraded"
         assert response.version == "1.0.0"
@@ -78,11 +67,7 @@ class TestHealthResponse:
 
     def test_health_response_with_services(self):
         """Test HealthResponse with service status."""
-        services = {
-            "database": "healthy",
-            "cache": "degraded",
-            "queue": "unhealthy"
-        }
+        services = {"database": "healthy", "cache": "degraded", "queue": "unhealthy"}
         response = HealthResponse(services=services)
         assert len(response.services) == 3
         assert response.services["database"] == "healthy"
@@ -94,10 +79,7 @@ class TestErrorResponse:
 
     def test_error_response_basic(self):
         """Test ErrorResponse with basic values."""
-        response = ErrorResponse(
-            error="VALIDATION_ERROR",
-            message="Invalid input provided"
-        )
+        response = ErrorResponse(error="VALIDATION_ERROR", message="Invalid input provided")
         assert response.success == False
         assert response.error == "VALIDATION_ERROR"
         assert response.message == "Invalid input provided"
@@ -108,19 +90,14 @@ class TestErrorResponse:
         """Test ErrorResponse with details."""
         details = {"field": "email", "reason": "invalid format"}
         response = ErrorResponse(
-            error="FIELD_ERROR",
-            message="Field validation failed",
-            details=details
+            error="FIELD_ERROR", message="Field validation failed", details=details
         )
         assert response.details == details
         assert response.details["field"] == "email"
 
     def test_error_response_serialization(self):
         """Test ErrorResponse can be serialized."""
-        response = ErrorResponse(
-            error="TEST_ERROR",
-            message="Test error message"
-        )
+        response = ErrorResponse(error="TEST_ERROR", message="Test error message")
         response_dict = response.dict()
         assert response_dict["success"] == False
         assert "error" in response_dict
@@ -196,14 +173,9 @@ class TestAPIIntegration:
 
     def test_error_response_in_api_response(self):
         """Test using ErrorResponse within APIResponse."""
-        error_data = ErrorResponse(
-            error="TEST_ERROR",
-            message="Test error"
-        )
+        error_data = ErrorResponse(error="TEST_ERROR", message="Test error")
         api_response = APIResponse(
-            success=False,
-            message="Operation failed",
-            data=error_data.dict()
+            success=False, message="Operation failed", data=error_data.dict()
         )
 
         assert api_response.success == False

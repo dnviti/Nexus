@@ -71,19 +71,21 @@ class HealthChecker:
         self.check_configs = {}
         self.alert_handlers = []
 
-    def add_check(self, name: str, check_function: Callable, interval: int = 30,
-                  timeout: int = 5, enabled: bool = True) -> str:
+    def add_check(
+        self,
+        name: str,
+        check_function: Callable,
+        interval: int = 30,
+        timeout: int = 5,
+        enabled: bool = True,
+    ) -> str:
         """Add a health check."""
         check_id = f"{name}_{len(self.checks)}"
-        self.checks[check_id] = {
-            "name": name,
-            "function": check_function,
-            "enabled": enabled
-        }
+        self.checks[check_id] = {"name": name, "function": check_function, "enabled": enabled}
         self.check_configs[check_id] = {
             "interval": interval,
             "timeout": timeout,
-            "enabled": enabled
+            "enabled": enabled,
         }
         return check_id
 
@@ -106,11 +108,7 @@ class HealthChecker:
                 status = "unhealthy"
                 message = f"Check failed: {str(e)}"
 
-            health_status = HealthStatus(
-                name=check_data["name"],
-                status=status,
-                message=message
-            )
+            health_status = HealthStatus(name=check_data["name"], status=status, message=message)
             results.append(health_status)
 
         return results
@@ -177,11 +175,7 @@ class MetricsCollector:
     def record_histogram(self, name: str, value: float) -> None:
         """Record a histogram value."""
         if name not in self.histograms:
-            self.histograms[name] = {
-                "count": 0,
-                "sum": 0.0,
-                "values": []
-            }
+            self.histograms[name] = {"count": 0, "sum": 0.0, "values": []}
 
         self.histograms[name]["count"] += 1
         self.histograms[name]["sum"] += value
@@ -196,10 +190,7 @@ class MetricsCollector:
         if name not in self.time_series:
             self.time_series[name] = []
 
-        self.time_series[name].append({
-            "value": value,
-            "timestamp": timestamp
-        })
+        self.time_series[name].append({"value": value, "timestamp": timestamp})
 
     def get_time_series(self, name: str) -> List[Dict[str, Any]]:
         """Get time series data for a metric."""
@@ -216,8 +207,12 @@ class MetricsCollector:
 class SystemMonitor:
     """System monitor for collecting system metrics."""
 
-    def __init__(self, interval: int = 60, enable_network_monitoring: bool = False,
-                 enable_process_monitoring: bool = False):
+    def __init__(
+        self,
+        interval: int = 60,
+        enable_network_monitoring: bool = False,
+        enable_process_monitoring: bool = False,
+    ):
         self.interval = interval
         self.enable_network_monitoring = enable_network_monitoring
         self.enable_process_monitoring = enable_process_monitoring
@@ -243,13 +238,13 @@ class SystemMonitor:
         """Get current system metrics."""
         cpu_percent = psutil.cpu_percent(interval=1)
         memory = psutil.virtual_memory()
-        disk = psutil.disk_usage('/')
+        disk = psutil.disk_usage("/")
 
         metrics = SystemMetrics(
             cpu_percent=cpu_percent,
             memory_percent=memory.percent,
             disk_percent=disk.percent,
-            load_average=list(psutil.getloadavg()) if hasattr(psutil, 'getloadavg') else []
+            load_average=list(psutil.getloadavg()) if hasattr(psutil, "getloadavg") else [],
         )
 
         if self.enable_network_monitoring:
@@ -258,7 +253,7 @@ class SystemMonitor:
                 "bytes_sent": net_io.bytes_sent,
                 "bytes_recv": net_io.bytes_recv,
                 "packets_sent": net_io.packets_sent,
-                "packets_recv": net_io.packets_recv
+                "packets_recv": net_io.packets_recv,
             }
 
         return metrics
@@ -268,7 +263,7 @@ class SystemMonitor:
         return {
             "interval": self.interval,
             "enable_network_monitoring": self.enable_network_monitoring,
-            "enable_process_monitoring": self.enable_process_monitoring
+            "enable_process_monitoring": self.enable_process_monitoring,
         }
 
     def set_threshold(self, metric: str, max_value: float) -> None:
@@ -284,12 +279,14 @@ class SystemMonitor:
             if hasattr(current_metrics, metric):
                 value = getattr(current_metrics, metric)
                 if value > threshold["max"]:
-                    alerts.append({
-                        "metric": metric,
-                        "value": value,
-                        "threshold": threshold["max"],
-                        "message": f"{metric} exceeded threshold: {value} > {threshold['max']}"
-                    })
+                    alerts.append(
+                        {
+                            "metric": metric,
+                            "value": value,
+                            "threshold": threshold["max"],
+                            "message": f"{metric} exceeded threshold: {value} > {threshold['max']}",
+                        }
+                    )
 
         return alerts
 
@@ -310,8 +307,6 @@ class SystemMonitor:
     def add_custom_collector(self, name: str, collector_func: Callable) -> None:
         """Add custom metrics collector."""
         self.custom_collectors[name] = collector_func
-
-
 
 
 class ApplicationMetrics(BaseModel):

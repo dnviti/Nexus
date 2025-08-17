@@ -6,24 +6,25 @@ TransactionContext, PluginInfo, PluginStatus, and PluginManager.
 """
 
 import asyncio
-import pytest
-from datetime import datetime
-from unittest.mock import AsyncMock, MagicMock, patch
-from pathlib import Path
-import tempfile
 import os
+import tempfile
+from datetime import datetime
+from pathlib import Path
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 from nexus.core import (
+    DatabaseAdapter,
+    DatabaseConfig,
     Event,
     EventBus,
     EventPriority,
-    ServiceRegistry,
-    DatabaseAdapter,
-    TransactionContext,
     PluginInfo,
-    PluginStatus,
     PluginManager,
-    DatabaseConfig,
+    PluginStatus,
+    ServiceRegistry,
+    TransactionContext,
     create_default_config,
 )
 
@@ -50,7 +51,7 @@ class TestEvent:
             data=data,
             timestamp=timestamp,
             source="test_source",
-            correlation_id="12345"
+            correlation_id="12345",
         )
 
         assert event.name == "custom.event"
@@ -61,11 +62,7 @@ class TestEvent:
 
     def test_event_serialization(self):
         """Test event can be serialized to dict."""
-        event = Event(
-            name="serialize.test",
-            data={"test": True},
-            source="serializer"
-        )
+        event = Event(name="serialize.test", data={"test": True}, source="serializer")
 
         # Event should be serializable via Pydantic
         event_dict = event.dict()
@@ -90,7 +87,7 @@ class TestEventPriority:
             EventPriority.CRITICAL,
             EventPriority.LOW,
             EventPriority.HIGH,
-            EventPriority.NORMAL
+            EventPriority.NORMAL,
         ]
 
         sorted_priorities = sorted(priorities, key=lambda x: x.value)
@@ -98,7 +95,7 @@ class TestEventPriority:
             EventPriority.LOW,
             EventPriority.NORMAL,
             EventPriority.HIGH,
-            EventPriority.CRITICAL
+            EventPriority.CRITICAL,
         ]
 
         assert sorted_priorities == expected_order
@@ -399,28 +396,46 @@ class TestDatabaseAdapter:
 
     def test_database_adapter_methods_are_abstract(self):
         """Test that all methods are abstract."""
+
         # Create a concrete implementation to test interface
         class TestAdapter(DatabaseAdapter):
-            async def connect(self): pass
-            async def disconnect(self): pass
-            async def get(self, key): pass
-            async def set(self, key, value): pass
-            async def delete(self, key): pass
-            async def exists(self, key): pass
-            async def list_keys(self, pattern=None): pass
-            async def transaction(self): pass
-            async def migrate(self, version): pass
+            async def connect(self):
+                pass
+
+            async def disconnect(self):
+                pass
+
+            async def get(self, key):
+                pass
+
+            async def set(self, key, value):
+                pass
+
+            async def delete(self, key):
+                pass
+
+            async def exists(self, key):
+                pass
+
+            async def list_keys(self, pattern=None):
+                pass
+
+            async def transaction(self):
+                pass
+
+            async def migrate(self, version):
+                pass
 
         adapter = TestAdapter()
-        assert hasattr(adapter, 'connect')
-        assert hasattr(adapter, 'disconnect')
-        assert hasattr(adapter, 'get')
-        assert hasattr(adapter, 'set')
-        assert hasattr(adapter, 'delete')
-        assert hasattr(adapter, 'exists')
-        assert hasattr(adapter, 'list_keys')
-        assert hasattr(adapter, 'transaction')
-        assert hasattr(adapter, 'migrate')
+        assert hasattr(adapter, "connect")
+        assert hasattr(adapter, "disconnect")
+        assert hasattr(adapter, "get")
+        assert hasattr(adapter, "set")
+        assert hasattr(adapter, "delete")
+        assert hasattr(adapter, "exists")
+        assert hasattr(adapter, "list_keys")
+        assert hasattr(adapter, "transaction")
+        assert hasattr(adapter, "migrate")
 
 
 class TestTransactionContext:
@@ -498,7 +513,7 @@ class TestPluginInfo:
             author="Test Author",
             category="test",
             dependencies={"python": ["dep1", "dep2"]},
-            permissions=["read", "write"]
+            permissions=["read", "write"],
         )
 
         assert info.name == "test_plugin"
@@ -517,7 +532,7 @@ class TestPluginInfo:
             version="1.0.0",
             category="simple",
             description="A simple plugin",
-            author="Simple Author"
+            author="Simple Author",
         )
 
         assert info.name == "simple_plugin"
@@ -721,9 +736,10 @@ class TestDatabaseConfig:
         # This should be imported from core module, not config module
         try:
             from nexus.core import DatabaseConfig as CoreDatabaseConfig
+
             config = CoreDatabaseConfig()
             # Test basic attributes exist
-            assert hasattr(config, 'url')
+            assert hasattr(config, "url")
         except ImportError:
             # If not available in core, skip this test
             pytest.skip("DatabaseConfig not available in core module")
@@ -739,9 +755,9 @@ class TestCreateDefaultConfig:
         assert config is not None
 
         # Check it has expected attributes
-        assert hasattr(config, 'app')
-        assert hasattr(config, 'database')
-        assert hasattr(config, 'auth')
+        assert hasattr(config, "app")
+        assert hasattr(config, "database")
+        assert hasattr(config, "auth")
 
 
 if __name__ == "__main__":

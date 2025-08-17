@@ -4,22 +4,23 @@ Comprehensive unit tests for the Nexus middleware module.
 Tests cover error handling, CORS, rate limiting, logging, and timing middleware.
 """
 
-import pytest
 import asyncio
 import time
 from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 from fastapi import HTTPException, Request, Response, status
 from fastapi.responses import JSONResponse
 
 from nexus.middleware import (
+    CORSMiddleware,
     ErrorHandlerMiddleware,
     LoggingMiddleware,
     RateLimitMiddleware,
-    CORSMiddleware,
+    RequestIDMiddleware,
     SecurityMiddleware,
     TimingMiddleware,
-    RequestIDMiddleware,
 )
 
 
@@ -82,8 +83,7 @@ class TestErrorHandlerMiddleware:
 
         # Mock app to raise HTTP exception
         self.mock_app.side_effect = HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Not found"
         )
 
         await self.middleware(scope, receive, send)
@@ -119,16 +119,11 @@ class TestLoggingMiddleware:
     @pytest.mark.asyncio
     async def test_request_logging(self):
         """Test that requests are logged."""
-        scope = {
-            "type": "http",
-            "method": "GET",
-            "path": "/test",
-            "query_string": b"param=value"
-        }
+        scope = {"type": "http", "method": "GET", "path": "/test", "query_string": b"param=value"}
         receive = AsyncMock()
         send = AsyncMock()
 
-        with patch('nexus.middleware.logger') as mock_logger:
+        with patch("nexus.middleware.logger") as mock_logger:
             await self.middleware(scope, receive, send)
 
             # Should have logged the request
@@ -139,15 +134,11 @@ class TestLoggingMiddleware:
     @pytest.mark.asyncio
     async def test_response_logging(self):
         """Test that responses are logged."""
-        scope = {
-            "type": "http",
-            "method": "GET",
-            "path": "/test"
-        }
+        scope = {"type": "http", "method": "GET", "path": "/test"}
         receive = AsyncMock()
         send = AsyncMock()
 
-        with patch('nexus.middleware.logger') as mock_logger:
+        with patch("nexus.middleware.logger") as mock_logger:
             await self.middleware(scope, receive, send)
 
             # Should have logged both request and response
@@ -156,18 +147,14 @@ class TestLoggingMiddleware:
     @pytest.mark.asyncio
     async def test_error_logging(self):
         """Test that errors are logged."""
-        scope = {
-            "type": "http",
-            "method": "GET",
-            "path": "/test"
-        }
+        scope = {"type": "http", "method": "GET", "path": "/test"}
         receive = AsyncMock()
         send = AsyncMock()
 
         # Mock app to raise exception
         self.mock_app.side_effect = ValueError("Test error")
 
-        with patch('nexus.middleware.logger') as mock_logger:
+        with patch("nexus.middleware.logger") as mock_logger:
             # Error should propagate but be logged
             try:
                 await self.middleware(scope, receive, send)
@@ -184,10 +171,7 @@ class TestRateLimitMiddleware:
     def setup_method(self):
         """Set up test fixtures."""
         self.mock_app = AsyncMock()
-        self.middleware = RateLimitMiddleware(
-            self.mock_app,
-            requests_per_minute=60
-        )
+        self.middleware = RateLimitMiddleware(self.mock_app, requests_per_minute=60)
 
     @pytest.mark.asyncio
     async def test_middleware_creation(self):
@@ -210,11 +194,7 @@ class TestRateLimitMiddleware:
     @pytest.mark.asyncio
     async def test_request_within_limit(self):
         """Test request within rate limit."""
-        scope = {
-            "type": "http",
-            "client": ("127.0.0.1", 8000),
-            "method": "GET"
-        }
+        scope = {"type": "http", "client": ("127.0.0.1", 8000), "method": "GET"}
         receive = AsyncMock()
         send = AsyncMock()
 
@@ -226,11 +206,7 @@ class TestRateLimitMiddleware:
     @pytest.mark.asyncio
     async def test_rate_limit_tracking(self):
         """Test that rate limiting tracks requests per client."""
-        scope = {
-            "type": "http",
-            "client": ("127.0.0.1", 8000),
-            "method": "GET"
-        }
+        scope = {"type": "http", "client": ("127.0.0.1", 8000), "method": "GET"}
         receive = AsyncMock()
         send = AsyncMock()
 
@@ -244,16 +220,8 @@ class TestRateLimitMiddleware:
     @pytest.mark.asyncio
     async def test_different_clients_separate_limits(self):
         """Test that different clients have separate rate limits."""
-        scope1 = {
-            "type": "http",
-            "client": ("127.0.0.1", 8000),
-            "method": "GET"
-        }
-        scope2 = {
-            "type": "http",
-            "client": ("192.168.1.1", 8000),
-            "method": "GET"
-        }
+        scope1 = {"type": "http", "client": ("127.0.0.1", 8000), "method": "GET"}
+        scope2 = {"type": "http", "client": ("192.168.1.1", 8000), "method": "GET"}
         receive = AsyncMock()
         send = AsyncMock()
 
@@ -274,7 +242,7 @@ class TestCORSMiddleware:
         self.cors_config = {
             "allow_origins": ["https://example.com"],
             "allow_methods": ["GET", "POST"],
-            "allow_headers": ["Content-Type"]
+            "allow_headers": ["Content-Type"],
         }
         self.middleware = CORSMiddleware(self.mock_app, **self.cors_config)
 
@@ -305,8 +273,8 @@ class TestCORSMiddleware:
             "method": "OPTIONS",
             "headers": [
                 (b"origin", b"https://example.com"),
-                (b"access-control-request-method", b"POST")
-            ]
+                (b"access-control-request-method", b"POST"),
+            ],
         }
         receive = AsyncMock()
         send = AsyncMock()
@@ -319,11 +287,7 @@ class TestCORSMiddleware:
     @pytest.mark.asyncio
     async def test_regular_request_with_cors(self):
         """Test handling regular requests with CORS headers."""
-        scope = {
-            "type": "http",
-            "method": "GET",
-            "headers": [(b"origin", b"https://example.com")]
-        }
+        scope = {"type": "http", "method": "GET", "headers": [(b"origin", b"https://example.com")]}
         receive = AsyncMock()
         send = AsyncMock()
 
@@ -338,7 +302,7 @@ class TestCORSMiddleware:
         scope = {
             "type": "http",
             "method": "GET",
-            "headers": [(b"origin", b"https://malicious.com")]
+            "headers": [(b"origin", b"https://malicious.com")],
         }
         receive = AsyncMock()
         send = AsyncMock()
@@ -376,11 +340,7 @@ class TestSecurityMiddleware:
     @pytest.mark.asyncio
     async def test_security_headers_added(self):
         """Test that security headers are added."""
-        scope = {
-            "type": "http",
-            "method": "GET",
-            "path": "/test"
-        }
+        scope = {"type": "http", "method": "GET", "path": "/test"}
         receive = AsyncMock()
         send = AsyncMock()
 
@@ -392,12 +352,7 @@ class TestSecurityMiddleware:
     @pytest.mark.asyncio
     async def test_https_request_handling(self):
         """Test handling HTTPS requests."""
-        scope = {
-            "type": "http",
-            "method": "GET",
-            "path": "/test",
-            "scheme": "https"
-        }
+        scope = {"type": "http", "method": "GET", "path": "/test", "scheme": "https"}
         receive = AsyncMock()
         send = AsyncMock()
 
@@ -434,11 +389,7 @@ class TestTimingMiddleware:
     @pytest.mark.asyncio
     async def test_timing_measurement(self):
         """Test that request timing is measured."""
-        scope = {
-            "type": "http",
-            "method": "GET",
-            "path": "/test"
-        }
+        scope = {"type": "http", "method": "GET", "path": "/test"}
         receive = AsyncMock()
         send = AsyncMock()
 
@@ -456,11 +407,7 @@ class TestTimingMiddleware:
     @pytest.mark.asyncio
     async def test_timing_header_added(self):
         """Test that timing information is handled."""
-        scope = {
-            "type": "http",
-            "method": "GET",
-            "path": "/test"
-        }
+        scope = {"type": "http", "method": "GET", "path": "/test"}
         receive = AsyncMock()
         send = AsyncMock()
 
@@ -498,11 +445,7 @@ class TestRequestIDMiddleware:
     @pytest.mark.asyncio
     async def test_request_id_generation(self):
         """Test that request IDs are generated."""
-        scope = {
-            "type": "http",
-            "method": "GET",
-            "path": "/test"
-        }
+        scope = {"type": "http", "method": "GET", "path": "/test"}
         receive = AsyncMock()
         send = AsyncMock()
 
@@ -514,11 +457,7 @@ class TestRequestIDMiddleware:
     @pytest.mark.asyncio
     async def test_request_counter_increment(self):
         """Test that request counter increments."""
-        scope = {
-            "type": "http",
-            "method": "GET",
-            "path": "/test"
-        }
+        scope = {"type": "http", "method": "GET", "path": "/test"}
         receive = AsyncMock()
         send = AsyncMock()
 
@@ -532,11 +471,7 @@ class TestRequestIDMiddleware:
     @pytest.mark.asyncio
     async def test_unique_request_ids(self):
         """Test that request IDs are unique."""
-        scope = {
-            "type": "http",
-            "method": "GET",
-            "path": "/test"
-        }
+        scope = {"type": "http", "method": "GET", "path": "/test"}
         receive = AsyncMock()
         send = AsyncMock()
 
@@ -559,9 +494,7 @@ class TestMiddlewareIntegration:
         # Stack multiple middleware
         app_with_error_handler = ErrorHandlerMiddleware(mock_app)
         app_with_cors = CORSMiddleware(
-            app_with_error_handler,
-            allow_origins=["*"],
-            allow_methods=["*"]
+            app_with_error_handler, allow_origins=["*"], allow_methods=["*"]
         )
         app_with_logging = LoggingMiddleware(app_with_cors)
         app_with_timing = TimingMiddleware(app_with_logging)
@@ -570,7 +503,7 @@ class TestMiddlewareIntegration:
             "type": "http",
             "method": "GET",
             "path": "/test",
-            "headers": [(b"origin", b"https://example.com")]
+            "headers": [(b"origin", b"https://example.com")],
         }
         receive = AsyncMock()
         send = AsyncMock()
@@ -590,11 +523,7 @@ class TestMiddlewareIntegration:
         app_with_error_handler = ErrorHandlerMiddleware(mock_app)
         app_with_logging = LoggingMiddleware(app_with_error_handler)
 
-        scope = {
-            "type": "http",
-            "method": "GET",
-            "path": "/test"
-        }
+        scope = {"type": "http", "method": "GET", "path": "/test"}
         receive = AsyncMock()
         send = AsyncMock()
 
@@ -630,11 +559,7 @@ class TestMiddlewareIntegration:
             else:
                 app = middleware_class(app)
 
-        scope = {
-            "type": "http",
-            "method": "GET",
-            "path": "/test"
-        }
+        scope = {"type": "http", "method": "GET", "path": "/test"}
         receive = AsyncMock()
         send = AsyncMock()
 
@@ -657,11 +582,7 @@ class TestMiddlewareIntegration:
         stack1 = TimingMiddleware(LoggingMiddleware(mock_app))
         stack2 = LoggingMiddleware(TimingMiddleware(mock_app))
 
-        scope = {
-            "type": "http",
-            "method": "GET",
-            "path": "/test"
-        }
+        scope = {"type": "http", "method": "GET", "path": "/test"}
         receive = AsyncMock()
         send = AsyncMock()
 

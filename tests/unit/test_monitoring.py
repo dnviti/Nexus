@@ -4,17 +4,18 @@ Comprehensive unit tests for the Nexus monitoring module.
 Tests cover system monitoring, health checks, and metrics collection functionality.
 """
 
-import pytest
 import time
-from unittest.mock import patch, MagicMock
 from datetime import datetime
+from unittest.mock import MagicMock, patch
+
+import pytest
 
 from nexus.monitoring import (
-    HealthStatus,
-    SystemMetrics,
-    PerformanceMetrics,
     HealthChecker,
+    HealthStatus,
     MetricsCollector,
+    PerformanceMetrics,
+    SystemMetrics,
     SystemMonitor,
 )
 
@@ -25,9 +26,7 @@ class TestHealthStatus:
     def test_health_status_creation(self):
         """Test creating health status."""
         status = HealthStatus(
-            name="test_service",
-            status="healthy",
-            message="Service is operational"
+            name="test_service", status="healthy", message="Service is operational"
         )
 
         assert status.name == "test_service"
@@ -39,10 +38,7 @@ class TestHealthStatus:
         """Test health status with additional details."""
         details = {"response_time": 150, "connections": 10}
         status = HealthStatus(
-            name="database",
-            status="healthy",
-            message="Database is operational",
-            details=details
+            name="database", status="healthy", message="Database is operational", details=details
         )
 
         assert status.details == details
@@ -51,10 +47,7 @@ class TestHealthStatus:
     def test_health_status_unhealthy(self):
         """Test unhealthy status."""
         status = HealthStatus(
-            name="api_service",
-            status="unhealthy",
-            message="Service is down",
-            response_time_ms=None
+            name="api_service", status="unhealthy", message="Service is down", response_time_ms=None
         )
 
         assert status.status == "unhealthy"
@@ -66,7 +59,7 @@ class TestHealthStatus:
             name="cache_service",
             status="degraded",
             message="Service is slow",
-            response_time_ms=5000.0
+            response_time_ms=5000.0,
         )
 
         assert status.status == "degraded"
@@ -79,10 +72,7 @@ class TestSystemMetrics:
     def test_system_metrics_creation(self):
         """Test creating system metrics."""
         metrics = SystemMetrics(
-            cpu_percent=45.5,
-            memory_percent=60.0,
-            disk_percent=75.0,
-            load_average=[1.2, 1.1, 1.0]
+            cpu_percent=45.5, memory_percent=60.0, disk_percent=75.0, load_average=[1.2, 1.1, 1.0]
         )
 
         assert metrics.cpu_percent == 45.5
@@ -96,14 +86,11 @@ class TestSystemMetrics:
             "bytes_sent": 1024000,
             "bytes_recv": 2048000,
             "packets_sent": 1000,
-            "packets_recv": 1500
+            "packets_recv": 1500,
         }
 
         metrics = SystemMetrics(
-            cpu_percent=30.0,
-            memory_percent=50.0,
-            disk_percent=40.0,
-            network_stats=network_stats
+            cpu_percent=30.0, memory_percent=50.0, disk_percent=40.0, network_stats=network_stats
         )
 
         assert metrics.network_stats == network_stats
@@ -111,11 +98,7 @@ class TestSystemMetrics:
 
     def test_system_metrics_timestamp(self):
         """Test system metrics timestamp."""
-        metrics = SystemMetrics(
-            cpu_percent=25.0,
-            memory_percent=45.0,
-            disk_percent=35.0
-        )
+        metrics = SystemMetrics(cpu_percent=25.0, memory_percent=45.0, disk_percent=35.0)
 
         assert isinstance(metrics.timestamp, datetime)
         # Timestamp should be recent
@@ -133,7 +116,7 @@ class TestPerformanceMetrics:
             error_count=25,
             avg_response_time=150.5,
             max_response_time=2000.0,
-            min_response_time=50.0
+            min_response_time=50.0,
         )
 
         assert metrics.request_count == 1000
@@ -144,11 +127,7 @@ class TestPerformanceMetrics:
 
     def test_performance_metrics_error_rate(self):
         """Test performance metrics error rate calculation."""
-        metrics = PerformanceMetrics(
-            request_count=1000,
-            error_count=50,
-            avg_response_time=100.0
-        )
+        metrics = PerformanceMetrics(request_count=1000, error_count=50, avg_response_time=100.0)
 
         # Error rate should be calculated
         expected_error_rate = 50 / 1000 * 100  # 5%
@@ -156,17 +135,10 @@ class TestPerformanceMetrics:
 
     def test_performance_metrics_percentiles(self):
         """Test performance metrics with percentiles."""
-        percentiles = {
-            "p50": 100.0,
-            "p95": 500.0,
-            "p99": 1000.0
-        }
+        percentiles = {"p50": 100.0, "p95": 500.0, "p99": 1000.0}
 
         metrics = PerformanceMetrics(
-            request_count=10000,
-            error_count=100,
-            avg_response_time=150.0,
-            percentiles=percentiles
+            request_count=10000, error_count=100, avg_response_time=150.0, percentiles=percentiles
         )
 
         assert metrics.percentiles == percentiles
@@ -178,7 +150,7 @@ class TestPerformanceMetrics:
             request_count=3600,
             error_count=36,
             avg_response_time=100.0,
-            time_window_seconds=3600  # 1 hour
+            time_window_seconds=3600,  # 1 hour
         )
 
         # Throughput should be requests per second
@@ -193,8 +165,8 @@ class TestHealthChecker:
         """Test creating health checker."""
         checker = HealthChecker()
         assert checker is not None
-        assert hasattr(checker, 'add_check')
-        assert hasattr(checker, 'run_checks')
+        assert hasattr(checker, "add_check")
+        assert hasattr(checker, "run_checks")
 
     def test_health_checker_add_check(self):
         """Test adding health check."""
@@ -215,11 +187,7 @@ class TestHealthChecker:
             return True
 
         check_id = checker.add_check(
-            "api_service",
-            sample_check,
-            interval=60,
-            timeout=10,
-            enabled=True
+            "api_service", sample_check, interval=60, timeout=10, enabled=True
         )
 
         assert check_id is not None
@@ -306,8 +274,8 @@ class TestMetricsCollector:
         """Test creating metrics collector."""
         collector = MetricsCollector()
         assert collector is not None
-        assert hasattr(collector, 'record_metric')
-        assert hasattr(collector, 'get_metrics')
+        assert hasattr(collector, "record_metric")
+        assert hasattr(collector, "get_metrics")
 
     def test_metrics_collector_record_metric(self):
         """Test recording metrics."""
@@ -370,7 +338,9 @@ class TestMetricsCollector:
         collector = MetricsCollector()
 
         collector.record_metric("http_requests_total", 1, labels={"method": "GET", "status": "200"})
-        collector.record_metric("http_requests_total", 1, labels={"method": "POST", "status": "404"})
+        collector.record_metric(
+            "http_requests_total", 1, labels={"method": "POST", "status": "404"}
+        )
 
         metrics = collector.get_metrics()
         assert "http_requests_total" in metrics
@@ -399,13 +369,13 @@ class TestSystemMonitor:
         """Test creating system monitor."""
         monitor = SystemMonitor()
         assert monitor is not None
-        assert hasattr(monitor, 'start_monitoring')
-        assert hasattr(monitor, 'stop_monitoring')
-        assert hasattr(monitor, 'get_current_metrics')
+        assert hasattr(monitor, "start_monitoring")
+        assert hasattr(monitor, "stop_monitoring")
+        assert hasattr(monitor, "get_current_metrics")
 
-    @patch('nexus.monitoring.psutil.cpu_percent')
-    @patch('nexus.monitoring.psutil.virtual_memory')
-    @patch('nexus.monitoring.psutil.disk_usage')
+    @patch("nexus.monitoring.psutil.cpu_percent")
+    @patch("nexus.monitoring.psutil.virtual_memory")
+    @patch("nexus.monitoring.psutil.disk_usage")
     def test_system_monitor_get_current_metrics(self, mock_disk, mock_memory, mock_cpu):
         """Test getting current system metrics."""
         # Mock psutil responses
@@ -439,9 +409,7 @@ class TestSystemMonitor:
     def test_system_monitor_configuration(self):
         """Test system monitor configuration."""
         monitor = SystemMonitor(
-            interval=30,
-            enable_network_monitoring=True,
-            enable_process_monitoring=True
+            interval=30, enable_network_monitoring=True, enable_process_monitoring=True
         )
 
         config = monitor.get_configuration()
@@ -449,7 +417,7 @@ class TestSystemMonitor:
         assert config["enable_network_monitoring"] == True
         assert config["enable_process_monitoring"] == True
 
-    @patch('nexus.monitoring.psutil.cpu_percent')
+    @patch("nexus.monitoring.psutil.cpu_percent")
     def test_system_monitor_threshold_alerts(self, mock_cpu):
         """Test system monitor threshold alerts."""
         monitor = SystemMonitor()
@@ -474,9 +442,7 @@ class TestSystemMonitor:
         # Simulate collecting metrics over time
         for i in range(10):
             mock_metrics = SystemMetrics(
-                cpu_percent=30.0 + i,
-                memory_percent=50.0,
-                disk_percent=40.0
+                cpu_percent=30.0 + i, memory_percent=50.0, disk_percent=40.0
             )
             monitor._add_to_history(mock_metrics)
 
@@ -513,7 +479,7 @@ class TestSystemMonitor:
 
         # Custom metrics should be included in current metrics
         metrics = monitor.get_current_metrics()
-        assert hasattr(metrics, 'custom_metrics') or 'custom_metrics' in metrics.__dict__
+        assert hasattr(metrics, "custom_metrics") or "custom_metrics" in metrics.__dict__
 
 
 class TestIntegrationScenarios:
@@ -579,19 +545,20 @@ class TestIntegrationScenarios:
         # Process alerts
         for result in failing_results:
             if result.status == "unhealthy":
-                alert_handler({
-                    "service": result.name,
-                    "status": result.status,
-                    "message": result.message,
-                    "timestamp": result.timestamp
-                })
+                alert_handler(
+                    {
+                        "service": result.name,
+                        "status": result.status,
+                        "message": result.message,
+                        "timestamp": result.timestamp,
+                    }
+                )
 
         assert len(alerts) > 0
 
 
 # Import asyncio for async tests
 import asyncio
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

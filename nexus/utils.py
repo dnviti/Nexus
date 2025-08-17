@@ -307,12 +307,13 @@ def sanitize_string(value, max_length: int = 100) -> str:
 
     # Remove HTML tags and script content
     import re
-    sanitized = re.sub(r'<[^>]*>', '', sanitized)
-    sanitized = re.sub(r'script.*?/script', '', sanitized, flags=re.IGNORECASE | re.DOTALL)
+
+    sanitized = re.sub(r"<[^>]*>", "", sanitized)
+    sanitized = re.sub(r"script.*?/script", "", sanitized, flags=re.IGNORECASE | re.DOTALL)
 
     # Truncate if too long
     if len(sanitized) > max_length:
-        sanitized = sanitized[:max_length - 3] + "..."
+        sanitized = sanitized[: max_length - 3] + "..."
 
     return sanitized
 

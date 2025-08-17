@@ -8,66 +8,67 @@ import json
 import logging
 import os
 import tempfile
-import pytest
 from pathlib import Path
-from unittest.mock import patch, mock_open, MagicMock
+from unittest.mock import MagicMock, mock_open, patch
+
+import pytest
 
 from nexus.utils import (
-    setup_logging,
     JsonFormatter,
-    load_config_file,
-    save_config_file,
-    get_env_var,
+    create_directory_if_not_exists,
+    deep_merge_dicts,
     ensure_directory,
-    get_project_root,
-    get_app_root,
     format_bytes,
     format_duration,
-    sanitize_string,
-    deep_merge_dicts,
-    validate_email,
+    format_file_size,
     generate_id,
     generate_random_string,
-    format_file_size,
-    validate_config,
+    get_app_root,
+    get_env_var,
+    get_environment_var,
+    get_file_modification_time,
+    get_project_root,
+    is_valid_email,
+    load_config_file,
     merge_dicts,
     safe_import,
-    get_environment_var,
-    is_valid_email,
-    create_directory_if_not_exists,
-    get_file_modification_time,
+    sanitize_string,
+    save_config_file,
+    setup_logging,
+    validate_config,
+    validate_email,
 )
 
 
 class TestLoggingSetup:
     """Test logging setup functionality."""
 
-    @patch('nexus.utils.logging.basicConfig')
+    @patch("nexus.utils.logging.basicConfig")
     def test_setup_logging_default(self, mock_basic_config):
         """Test setup logging with default parameters."""
         setup_logging()
         mock_basic_config.assert_called_once()
 
-    @patch('nexus.utils.logging.basicConfig')
+    @patch("nexus.utils.logging.basicConfig")
     def test_setup_logging_with_level(self, mock_basic_config):
         """Test setup logging with custom level."""
         setup_logging(level="DEBUG")
         mock_basic_config.assert_called_once()
 
-    @patch('nexus.utils.logging.basicConfig')
+    @patch("nexus.utils.logging.basicConfig")
     def test_setup_logging_with_format(self, mock_basic_config):
         """Test setup logging with custom format."""
         custom_format = "%(asctime)s - %(message)s"
         setup_logging(format_string=custom_format)
         mock_basic_config.assert_called_once()
 
-    @patch('nexus.utils.logging.basicConfig')
+    @patch("nexus.utils.logging.basicConfig")
     def test_setup_logging_with_file(self, mock_basic_config):
         """Test setup logging with file output."""
         setup_logging(log_file="test.log")
         mock_basic_config.assert_called_once()
 
-    @patch('nexus.utils.logging.basicConfig')
+    @patch("nexus.utils.logging.basicConfig")
     def test_setup_logging_json_format(self, mock_basic_config):
         """Test setup logging with JSON format."""
         setup_logging(enable_json=True)
@@ -94,7 +95,7 @@ class TestJsonFormatter:
             lineno=10,
             msg="Test message",
             args=(),
-            exc_info=None
+            exc_info=None,
         )
 
         formatted = formatter.format(record)
@@ -114,6 +115,7 @@ class TestJsonFormatter:
             raise ValueError("Test exception")
         except ValueError:
             import sys
+
             record = logging.LogRecord(
                 name="test",
                 level=logging.ERROR,
@@ -121,7 +123,7 @@ class TestJsonFormatter:
                 lineno=10,
                 msg="Error occurred",
                 args=(),
-                exc_info=sys.exc_info()
+                exc_info=sys.exc_info(),
             )
 
             formatted = formatter.format(record)
@@ -144,7 +146,7 @@ app:
 server:
   port: 8080
 """
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
             f.write(yaml_content)
             f.flush()
 
@@ -158,17 +160,9 @@ server:
 
     def test_load_config_file_json(self):
         """Test loading JSON configuration file."""
-        json_content = {
-            "app": {
-                "name": "Test App",
-                "version": "1.0.0"
-            },
-            "server": {
-                "port": 8080
-            }
-        }
+        json_content = {"app": {"name": "Test App", "version": "1.0.0"}, "server": {"port": 8080}}
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump(json_content, f)
             f.flush()
 
@@ -187,7 +181,7 @@ server:
 
     def test_load_config_file_unsupported_format(self):
         """Test loading unsupported file format raises error."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
             f.write("some content")
             f.flush()
 
@@ -199,12 +193,9 @@ server:
 
     def test_save_config_file_yaml(self):
         """Test saving configuration to YAML file."""
-        config = {
-            "app": {"name": "Test App"},
-            "server": {"port": 8080}
-        }
+        config = {"app": {"name": "Test App"}, "server": {"port": 8080}}
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
             try:
                 save_config_file(config, f.name)
 
@@ -216,12 +207,9 @@ server:
 
     def test_save_config_file_json(self):
         """Test saving configuration to JSON file."""
-        config = {
-            "app": {"name": "Test App"},
-            "server": {"port": 8080}
-        }
+        config = {"app": {"name": "Test App"}, "server": {"port": 8080}}
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             try:
                 save_config_file(config, f.name)
 
@@ -235,7 +223,7 @@ server:
         """Test saving to unsupported format raises error."""
         config = {"test": "data"}
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
             try:
                 with pytest.raises(ValueError, match="Unsupported configuration file format"):
                     save_config_file(config, f.name)
@@ -455,7 +443,7 @@ class TestStringUtilities:
             "user@example.com",
             "test.email@domain.co.uk",
             "user+tag@example.org",
-            "user123@test-domain.com"
+            "user123@test-domain.com",
         ]
 
         for email in valid_emails:
@@ -464,13 +452,7 @@ class TestStringUtilities:
 
     def test_validate_email_invalid(self):
         """Test email validation with invalid emails."""
-        invalid_emails = [
-            "invalid-email",
-            "@example.com",
-            "user@",
-            "user@example",
-            ""
-        ]
+        invalid_emails = ["invalid-email", "@example.com", "user@", "user@example", ""]
 
         for email in invalid_emails:
             assert validate_email(email) == False
@@ -558,20 +540,12 @@ class TestDictionaryUtilities:
 
     def test_validate_config_valid(self):
         """Test config validation with valid config."""
-        config = {
-            "app": {"name": "Test App"},
-            "server": {"port": 8080}
-        }
+        config = {"app": {"name": "Test App"}, "server": {"port": 8080}}
         assert validate_config(config) == True
 
     def test_validate_config_invalid(self):
         """Test config validation with invalid config."""
-        invalid_configs = [
-            None,
-            "not a dict",
-            [],
-            {"app": None}
-        ]
+        invalid_configs = [None, "not a dict", [], {"app": None}]
 
         for config in invalid_configs:
             assert validate_config(config) == False

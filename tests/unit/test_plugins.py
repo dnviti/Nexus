@@ -5,37 +5,38 @@ Tests cover BasePlugin, plugin decorators, plugin types, validation, and all plu
 """
 
 import asyncio
-import pytest
 from datetime import datetime
+from typing import Any, Dict
 from unittest.mock import AsyncMock, MagicMock, patch
-from typing import Dict, Any
+
+import pytest
 
 from nexus.plugins import (
+    AnalyticsPlugin,
     BasePlugin,
-    PluginMetadata,
-    PluginLifecycle,
+    BusinessPlugin,
+    HealthStatus,
+    IntegrationPlugin,
+    NotificationPlugin,
+    PluginConfigSchema,
+    PluginConfigurationError,
     PluginContext,
     PluginDependency,
-    PluginPermission,
-    PluginHook,
-    PluginConfigSchema,
-    plugin_hook,
-    requires_permission,
-    requires_dependency,
-    HealthStatus,
-    PluginError,
-    PluginInitializationError,
-    PluginConfigurationError,
     PluginDependencyError,
-    BusinessPlugin,
-    IntegrationPlugin,
-    AnalyticsPlugin,
-    SecurityPlugin,
-    UIPlugin,
-    NotificationPlugin,
-    StoragePlugin,
-    WorkflowPlugin,
+    PluginError,
+    PluginHook,
+    PluginInitializationError,
+    PluginLifecycle,
+    PluginMetadata,
+    PluginPermission,
     PluginValidator,
+    SecurityPlugin,
+    StoragePlugin,
+    UIPlugin,
+    WorkflowPlugin,
+    plugin_hook,
+    requires_dependency,
+    requires_permission,
 )
 
 
@@ -59,7 +60,7 @@ class TestPluginMetadata:
             permissions=["read", "write"],
             config_schema={"type": "object"},
             min_nexus_version="2.0.0",
-            max_nexus_version="3.0.0"
+            max_nexus_version="3.0.0",
         )
 
         assert metadata.name == "test_plugin"
@@ -80,11 +81,7 @@ class TestPluginMetadata:
 
     def test_plugin_metadata_defaults(self):
         """Test plugin metadata with default values."""
-        metadata = PluginMetadata(
-            name="simple_plugin",
-            version="1.0.0",
-            author="Author"
-        )
+        metadata = PluginMetadata(name="simple_plugin", version="1.0.0", author="Author")
 
         assert metadata.name == "simple_plugin"
         assert metadata.version == "1.0.0"
@@ -139,11 +136,7 @@ class TestPluginContext:
 
     def test_plugin_context_get_config(self):
         """Test getting plugin config from context."""
-        app_config = {
-            "plugins": {
-                "test_plugin": {"setting": "value"}
-            }
-        }
+        app_config = {"plugins": {"test_plugin": {"setting": "value"}}}
         context = PluginContext(app_config, MagicMock(), MagicMock())
 
         config = context.get_config("test_plugin")
@@ -164,11 +157,7 @@ class TestPluginDependency:
 
     def test_plugin_dependency_creation(self):
         """Test creating plugin dependency."""
-        dep = PluginDependency(
-            name="required_plugin",
-            version=">=1.0.0",
-            optional=False
-        )
+        dep = PluginDependency(name="required_plugin", version=">=1.0.0", optional=False)
 
         assert dep.name == "required_plugin"
         assert dep.version == ">=1.0.0"
@@ -188,10 +177,7 @@ class TestPluginPermission:
 
     def test_plugin_permission_creation(self):
         """Test creating plugin permission."""
-        perm = PluginPermission(
-            name="read_data",
-            description="Read application data"
-        )
+        perm = PluginPermission(name="read_data", description="Read application data")
 
         assert perm.name == "read_data"
         assert perm.description == "Read application data"
@@ -209,10 +195,7 @@ class TestPluginHook:
 
     def test_plugin_hook_creation(self):
         """Test creating plugin hook."""
-        hook = PluginHook(
-            name="data_processed",
-            priority=10
-        )
+        hook = PluginHook(name="data_processed", priority=10)
 
         assert hook.name == "data_processed"
         assert hook.priority == 10
@@ -232,7 +215,7 @@ class TestPluginConfigSchema:
         """Test creating plugin config schema."""
         schema = PluginConfigSchema(
             schema={"type": "object", "properties": {"setting": {"type": "string"}}},
-            required=["setting"]
+            required=["setting"],
         )
 
         assert schema.schema == {"type": "object", "properties": {"setting": {"type": "string"}}}
@@ -251,51 +234,56 @@ class TestPluginDecorators:
 
     def test_plugin_hook_decorator(self):
         """Test plugin_hook decorator."""
+
         @plugin_hook("test_event")
         def test_handler():
             return "handled"
 
         # Decorator should add metadata to function
-        assert hasattr(test_handler, '_nexus_hook')
+        assert hasattr(test_handler, "_nexus_hook")
         assert test_handler._nexus_hook == "test_event"
 
     def test_plugin_hook_decorator_with_priority(self):
         """Test plugin_hook decorator with priority."""
+
         @plugin_hook("priority_event", priority=5)
         def priority_handler():
             return "priority_handled"
 
-        assert hasattr(priority_handler, '_nexus_hook')
-        assert hasattr(priority_handler, '_nexus_priority')
+        assert hasattr(priority_handler, "_nexus_hook")
+        assert hasattr(priority_handler, "_nexus_priority")
         assert priority_handler._nexus_hook == "priority_event"
         assert priority_handler._nexus_priority == 5
 
     def test_requires_permission_decorator(self):
         """Test requires_permission decorator."""
+
         @requires_permission("admin")
         def admin_function():
             return "admin_action"
 
-        assert hasattr(admin_function, '_required_permission')
+        assert hasattr(admin_function, "_required_permission")
         assert admin_function._required_permission == "admin"
 
     def test_requires_dependency_decorator(self):
         """Test requires_dependency decorator."""
+
         @requires_dependency("database")
         def db_function():
             return "db_action"
 
-        assert hasattr(db_function, '_required_dependency')
+        assert hasattr(db_function, "_required_dependency")
         assert db_function._required_dependency == "database"
 
     def test_requires_dependency_decorator_with_version(self):
         """Test requires_dependency decorator with version."""
+
         @requires_dependency("cache", version=">=2.0.0")
         def cache_function():
             return "cache_action"
 
-        assert hasattr(cache_function, '_required_dependency')
-        assert hasattr(cache_function, '_dependency_version')
+        assert hasattr(cache_function, "_required_dependency")
+        assert hasattr(cache_function, "_dependency_version")
         assert cache_function._required_dependency == "cache"
         assert cache_function._dependency_version == ">=2.0.0"
 
@@ -309,10 +297,7 @@ class TestHealthStatus:
         metrics = {"cpu": 50.0}
 
         status = HealthStatus(
-            healthy=True,
-            message="All systems operational",
-            components=components,
-            metrics=metrics
+            healthy=True, message="All systems operational", components=components, metrics=metrics
         )
 
         assert status.healthy == True
@@ -364,6 +349,7 @@ class TestBasePlugin:
 
     def create_test_plugin(self):
         """Create a concrete test plugin implementation."""
+
         class TestPluginImpl(BasePlugin):
             def __init__(self):
                 super().__init__()
@@ -713,10 +699,17 @@ class TestPluginValidator:
                 self.name = "valid_plugin"
                 self.version = "1.0.0"
 
-            async def initialize(self): pass
-            async def shutdown(self): pass
-            def get_api_routes(self): return []
-            def get_database_schema(self): return {}
+            async def initialize(self):
+                pass
+
+            async def shutdown(self):
+                pass
+
+            def get_api_routes(self):
+                return []
+
+            def get_database_schema(self):
+                return {}
 
         plugin = ValidPlugin()
         result = validator.validate_plugin(plugin)
@@ -733,10 +726,17 @@ class TestPluginValidator:
                 super().__init__()
                 self.name = ""  # Invalid empty name
 
-            async def initialize(self): pass
-            async def shutdown(self): pass
-            def get_api_routes(self): return []
-            def get_database_schema(self): return {}
+            async def initialize(self):
+                pass
+
+            async def shutdown(self):
+                pass
+
+            def get_api_routes(self):
+                return []
+
+            def get_database_schema(self):
+                return {}
 
         plugin = InvalidPlugin()
         result = validator.validate_plugin(plugin)
@@ -752,7 +752,7 @@ class TestPluginValidator:
             "version": "1.0.0",
             "description": "A test plugin",
             "author": "Test Author",
-            "category": "test"
+            "category": "test",
         }
 
         result = validator.validate_manifest(manifest)
@@ -763,9 +763,7 @@ class TestPluginValidator:
         validator = PluginValidator()
 
         # Missing required fields
-        manifest = {
-            "description": "A test plugin"
-        }
+        manifest = {"description": "A test plugin"}
 
         result = validator.validate_manifest(manifest)
         assert result == False
@@ -778,7 +776,7 @@ class TestPluginValidator:
             "name": "test_plugin",
             "version": "invalid_version",  # Invalid version format
             "author": "Test Author",
-            "category": "test"
+            "category": "test",
         }
 
         result = validator.validate_manifest(manifest)

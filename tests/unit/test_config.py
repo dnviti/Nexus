@@ -6,12 +6,14 @@ Tests cover configuration loading, validation, merging, and all configuration cl
 
 import os
 import tempfile
-import pytest
 from pathlib import Path
-from unittest.mock import patch, mock_open
+from unittest.mock import mock_open, patch
+
+import pytest
 
 from nexus.config import (
     AppConfig,
+    AppSettings,
     AuthConfig,
     CacheConfig,
     ConfigLoader,
@@ -21,12 +23,11 @@ from nexus.config import (
     DatabasePoolConfig,
     DatabaseType,
     Environment,
-    LogLevel,
     LoggingConfig,
+    LogLevel,
     PluginConfig,
     SecurityConfig,
     ServerConfig,
-    AppSettings,
     create_default_config,
     deep_merge,
     load_config,
@@ -88,7 +89,7 @@ class TestCORSConfig:
             methods=["GET", "POST"],
             headers=["Content-Type"],
             credentials=False,
-            max_age=1800
+            max_age=1800,
         )
         assert config.enabled == False
         assert config.origins == ["http://localhost:3000"]
@@ -112,13 +113,7 @@ class TestServerConfig:
 
     def test_server_config_custom_values(self):
         """Test server config with custom values."""
-        config = ServerConfig(
-            host="127.0.0.1",
-            port=9000,
-            workers=4,
-            reload=True,
-            access_log=False
-        )
+        config = ServerConfig(host="127.0.0.1", port=9000, workers=4, reload=True, access_log=False)
         assert config.host == "127.0.0.1"
         assert config.port == 9000
         assert config.workers == 4
@@ -141,11 +136,7 @@ class TestDatabaseConnectionConfig:
     def test_database_connection_custom_values(self):
         """Test database connection with custom values."""
         config = DatabaseConnectionConfig(
-            host="db.example.com",
-            port=3306,
-            username="admin",
-            password="secret",
-            database="myapp"
+            host="db.example.com", port=3306, username="admin", password="secret", database="myapp"
         )
         assert config.host == "db.example.com"
         assert config.port == 3306
@@ -167,12 +158,7 @@ class TestDatabasePoolConfig:
 
     def test_database_pool_custom_values(self):
         """Test database pool with custom values."""
-        config = DatabasePoolConfig(
-            min_size=2,
-            max_size=10,
-            pool_timeout=60,
-            pool_recycle=7200
-        )
+        config = DatabasePoolConfig(min_size=2, max_size=10, pool_timeout=60, pool_recycle=7200)
         assert config.min_size == 2
         assert config.max_size == 10
         assert config.pool_timeout == 60
@@ -254,11 +240,7 @@ class TestCacheConfig:
 
     def test_cache_config_get_redis_url(self):
         """Test Redis URL generation for cache."""
-        config = CacheConfig(
-            redis_host="cache.example.com",
-            redis_port=6380,
-            redis_db=1
-        )
+        config = CacheConfig(redis_host="cache.example.com", redis_port=6380, redis_db=1)
         url = config.get_redis_url()
         assert url == "redis://cache.example.com:6380/1"
 
@@ -284,7 +266,7 @@ class TestAuthConfig:
             token_expiry=7200,
             refresh_token_expiry=1209600,
             session_max_age=172800,
-            password_min_length=12
+            password_min_length=12,
         )
         assert config.jwt_secret == "custom-secret-that-is-long-enough-for-validation"
         assert config.jwt_algorithm == "HS512"
@@ -326,7 +308,7 @@ class TestLoggingConfig:
         assert config.file_backup_count == 5
         assert config.console_enabled == True
 
-    @patch('nexus.config.logging.config.dictConfig')
+    @patch("nexus.config.logging.config.dictConfig")
     def test_logging_config_configure_logging(self, mock_dict_config):
         """Test logging configuration setup."""
         config = LoggingConfig()
@@ -370,7 +352,7 @@ class TestAppSettings:
             description="Custom app",
             version="2.0.0",
             environment=Environment.PRODUCTION,
-            debug=True
+            debug=True,
         )
         assert config.name == "My App"
         assert config.description == "Custom app"
@@ -434,7 +416,7 @@ server:
   port: 9000
   debug: true
 """
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
             f.write(yaml_content)
             f.flush()
 
@@ -461,7 +443,7 @@ server:
         "debug": true
     }
 }"""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             f.write(json_content)
             f.flush()
 
@@ -478,7 +460,7 @@ server:
 
     def test_load_unsupported_file_format(self):
         """Test loading unsupported file format raises error."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
             f.write("some content")
             f.flush()
 
@@ -502,9 +484,7 @@ server:
             "key1": "${TEST_VAR}",
             "key2": "prefix_${TEST_VAR}_suffix",
             "key3": "no_substitution",
-            "nested": {
-                "key4": "${TEST_VAR}"
-            }
+            "nested": {"key4": "${TEST_VAR}"},
         }
 
         result = loader._substitute_env_vars(data)
@@ -528,22 +508,9 @@ class TestUtilityFunctions:
 
     def test_deep_merge(self):
         """Test deep merge functionality."""
-        base = {
-            "a": 1,
-            "b": {
-                "c": 2,
-                "d": 3
-            },
-            "e": [1, 2, 3]
-        }
+        base = {"a": 1, "b": {"c": 2, "d": 3}, "e": [1, 2, 3]}
 
-        override = {
-            "b": {
-                "d": 4,
-                "f": 5
-            },
-            "g": 6
-        }
+        override = {"b": {"d": 4, "f": 5}, "g": 6}
 
         result = deep_merge(base, override)
 
@@ -570,7 +537,7 @@ app:
 auth:
   jwt_secret: "very-long-secret-key-for-testing-file-loading-functionality"
 """
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
             f.write(yaml_content)
             f.flush()
 
@@ -586,15 +553,7 @@ auth:
 
     def test_load_config_from_dict(self):
         """Test loading config from dictionary."""
-        config_dict = {
-            "app": {
-                "name": "Dict App",
-                "version": "3.0.0"
-            },
-            "server": {
-                "port": 8080
-            }
-        }
+        config_dict = {"app": {"name": "Dict App", "version": "3.0.0"}, "server": {"port": 8080}}
 
         config = load_config(defaults=config_dict)
         assert isinstance(config, AppConfig)

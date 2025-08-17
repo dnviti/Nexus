@@ -4,16 +4,12 @@ Comprehensive unit tests for the Nexus auth module.
 Tests cover authentication, authorization, user management, and basic auth functionality.
 """
 
-import pytest
 from datetime import datetime
-from unittest.mock import patch, MagicMock, AsyncMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
-from nexus.auth import (
-    User,
-    AuthenticationManager,
-    create_default_admin,
-    get_current_user,
-)
+import pytest
+
+from nexus.auth import AuthenticationManager, User, create_default_admin, get_current_user
 
 
 class TestUser:
@@ -26,7 +22,7 @@ class TestUser:
             username="testuser",
             email="test@example.com",
             full_name="Test User",
-            created_at=datetime.now()
+            created_at=datetime.now(),
         )
 
         assert user.id == "user123"
@@ -44,7 +40,7 @@ class TestUser:
             id="user456",
             username="defaultuser",
             email="default@example.com",
-            created_at=datetime.now()
+            created_at=datetime.now(),
         )
 
         assert user.full_name is None
@@ -63,7 +59,7 @@ class TestUser:
             created_at=datetime.now(),
             is_superuser=True,
             permissions=["read", "write", "delete"],
-            roles=["admin", "moderator"]
+            roles=["admin", "moderator"],
         )
 
         assert user.is_superuser == True
@@ -80,7 +76,7 @@ class TestUser:
             username="inactive",
             email="inactive@example.com",
             created_at=datetime.now(),
-            is_active=False
+            is_active=False,
         )
 
         assert user.is_active == False
@@ -93,7 +89,7 @@ class TestUser:
             username="loggeduser",
             email="logged@example.com",
             created_at=datetime.now(),
-            last_login=login_time
+            last_login=login_time,
         )
 
         assert user.last_login == login_time
@@ -116,9 +112,7 @@ class TestAuthenticationManager:
     async def test_create_user_basic(self):
         """Test creating a basic user."""
         user = await self.auth_manager.create_user(
-            username="testuser",
-            email="test@example.com",
-            password="test_password"
+            username="testuser", email="test@example.com", password="test_password"
         )
 
         assert user.username == "testuser"
@@ -137,7 +131,7 @@ class TestAuthenticationManager:
             username="testuser",
             email="test@example.com",
             password="test_password",
-            full_name="Test User"
+            full_name="Test User",
         )
 
         assert user.full_name == "Test User"
@@ -149,7 +143,7 @@ class TestAuthenticationManager:
             username="admin",
             email="admin@example.com",
             password="admin_password",
-            is_superuser=True
+            is_superuser=True,
         )
 
         assert user.is_superuser == True
@@ -163,14 +157,10 @@ class TestAuthenticationManager:
     async def test_create_multiple_users(self):
         """Test creating multiple users."""
         user1 = await self.auth_manager.create_user(
-            username="user1",
-            email="user1@example.com",
-            password="password1"
+            username="user1", email="user1@example.com", password="password1"
         )
         user2 = await self.auth_manager.create_user(
-            username="user2",
-            email="user2@example.com",
-            password="password2"
+            username="user2", email="user2@example.com", password="password2"
         )
 
         assert len(self.auth_manager.users) == 2
@@ -182,9 +172,7 @@ class TestAuthenticationManager:
     async def test_authenticate_existing_user(self):
         """Test authenticating existing user."""
         user = await self.auth_manager.create_user(
-            username="testuser",
-            email="test@example.com",
-            password="test_password"
+            username="testuser", email="test@example.com", password="test_password"
         )
 
         authenticated_user = await self.auth_manager.authenticate("testuser", "test_password")
@@ -204,9 +192,7 @@ class TestAuthenticationManager:
     async def test_get_user_existing(self):
         """Test getting existing user by ID."""
         user = await self.auth_manager.create_user(
-            username="testuser",
-            email="test@example.com",
-            password="test_password"
+            username="testuser", email="test@example.com", password="test_password"
         )
 
         retrieved_user = await self.auth_manager.get_user(user.id)
@@ -226,9 +212,7 @@ class TestAuthenticationManager:
     async def test_create_session(self):
         """Test creating authentication session."""
         user = await self.auth_manager.create_user(
-            username="testuser",
-            email="test@example.com",
-            password="test_password"
+            username="testuser", email="test@example.com", password="test_password"
         )
 
         token = await self.auth_manager.create_session(user)
@@ -243,9 +227,7 @@ class TestAuthenticationManager:
     async def test_get_user_by_token_valid(self):
         """Test getting user by valid token."""
         user = await self.auth_manager.create_user(
-            username="testuser",
-            email="test@example.com",
-            password="test_password"
+            username="testuser", email="test@example.com", password="test_password"
         )
         token = await self.auth_manager.create_session(user)
 
@@ -265,9 +247,7 @@ class TestAuthenticationManager:
     async def test_validate_permission_allowed(self):
         """Test validating permission when user has it."""
         user = await self.auth_manager.create_user(
-            username="testuser",
-            email="test@example.com",
-            password="test_password"
+            username="testuser", email="test@example.com", password="test_password"
         )
 
         result = await self.auth_manager.validate_permission(user, "read")
@@ -278,9 +258,7 @@ class TestAuthenticationManager:
     async def test_validate_permission_denied(self):
         """Test validating permission when user doesn't have it."""
         user = await self.auth_manager.create_user(
-            username="testuser",
-            email="test@example.com",
-            password="test_password"
+            username="testuser", email="test@example.com", password="test_password"
         )
 
         result = await self.auth_manager.validate_permission(user, "admin")
@@ -294,7 +272,7 @@ class TestAuthenticationManager:
             username="admin",
             email="admin@example.com",
             password="admin_password",
-            is_superuser=True
+            is_superuser=True,
         )
 
         result = await self.auth_manager.validate_permission(user, "any_permission")
@@ -305,9 +283,7 @@ class TestAuthenticationManager:
     async def test_validate_role_allowed(self):
         """Test validating role when user has it."""
         user = await self.auth_manager.create_user(
-            username="testuser",
-            email="test@example.com",
-            password="test_password"
+            username="testuser", email="test@example.com", password="test_password"
         )
 
         result = await self.auth_manager.validate_role(user, "user")
@@ -318,9 +294,7 @@ class TestAuthenticationManager:
     async def test_validate_role_denied(self):
         """Test validating role when user doesn't have it."""
         user = await self.auth_manager.create_user(
-            username="testuser",
-            email="test@example.com",
-            password="test_password"
+            username="testuser", email="test@example.com", password="test_password"
         )
 
         result = await self.auth_manager.validate_role(user, "admin")
@@ -334,7 +308,7 @@ class TestAuthenticationManager:
             username="admin",
             email="admin@example.com",
             password="admin_password",
-            is_superuser=True
+            is_superuser=True,
         )
 
         result = await self.auth_manager.validate_role(user, "admin")
@@ -354,9 +328,7 @@ class TestAuthenticationIntegration:
         """Test complete authentication flow."""
         # Create user
         user = await self.auth_manager.create_user(
-            username="testuser",
-            email="test@example.com",
-            password="test_password"
+            username="testuser", email="test@example.com", password="test_password"
         )
 
         # Authenticate user
@@ -388,7 +360,7 @@ class TestAuthenticationIntegration:
             username="admin",
             email="admin@example.com",
             password="admin_password",
-            is_superuser=True
+            is_superuser=True,
         )
 
         # Verify admin permissions
@@ -408,9 +380,7 @@ class TestAuthenticationIntegration:
     async def test_multiple_sessions(self):
         """Test multiple sessions for same user."""
         user = await self.auth_manager.create_user(
-            username="testuser",
-            email="test@example.com",
-            password="test_password"
+            username="testuser", email="test@example.com", password="test_password"
         )
 
         # Create multiple sessions
@@ -481,8 +451,8 @@ class TestGetCurrentUser:
     @pytest.mark.asyncio
     async def test_get_current_user_without_token(self):
         """Test getting current user without token."""
-        from fastapi import HTTPException
         import pytest
+        from fastapi import HTTPException
 
         with pytest.raises(HTTPException) as exc_info:
             await get_current_user(None)
@@ -493,8 +463,8 @@ class TestGetCurrentUser:
     @pytest.mark.asyncio
     async def test_get_current_user_empty_token(self):
         """Test getting current user with empty token."""
-        from fastapi import HTTPException
         import pytest
+        from fastapi import HTTPException
 
         with pytest.raises(HTTPException) as exc_info:
             await get_current_user("")
@@ -509,10 +479,7 @@ class TestUserModel:
         """Test user model with various inputs."""
         # Test with minimal required fields
         user = User(
-            id="test_id",
-            username="test",
-            email="test@example.com",
-            created_at=datetime.now()
+            id="test_id", username="test", email="test@example.com", created_at=datetime.now()
         )
 
         assert user.id == "test_id"
@@ -534,7 +501,7 @@ class TestUserModel:
             created_at=now,
             last_login=login_time,
             permissions=["read", "write", "admin"],
-            roles=["user", "admin", "moderator"]
+            roles=["user", "admin", "moderator"],
         )
 
         assert user.id == "full_user"
@@ -555,7 +522,7 @@ class TestUserModel:
             username="permuser",
             email="perm@example.com",
             created_at=datetime.now(),
-            permissions=["read", "write"]
+            permissions=["read", "write"],
         )
 
         assert "read" in user.permissions
@@ -570,7 +537,7 @@ class TestUserModel:
             username="roleuser",
             email="role@example.com",
             created_at=datetime.now(),
-            roles=["user", "editor"]
+            roles=["user", "editor"],
         )
 
         assert "user" in user.roles
