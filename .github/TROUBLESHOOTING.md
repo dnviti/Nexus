@@ -68,33 +68,34 @@ rm -rf .venv
 poetry install
 ```
 
-## Local Testing
+### Local Testing
 
-### Quick Pre-Push Check
+### Development Workflow
 
 ```bash
+# Quick check during development
 python scripts/test_ci_locally.py --fast
-```
 
-### Full CI Simulation
-
-```bash
+# Full check (same as git commit)
 python scripts/test_ci_locally.py
+
+# Auto-commit with full validation
+git commit -m "Your changes"  # Runs full check automatically
 ```
 
 ### Manual Commands
 
 ```bash
-# Code quality
+# Code quality (runs on every commit)
 poetry run black --check nexus/ tests/
 poetry run isort --check-only nexus/ tests/
 poetry run flake8 nexus/ tests/
 poetry run mypy nexus/
 
-# Tests
+# Tests (runs on every commit)
 poetry run pytest tests/ --cov=nexus
 
-# Security
+# Security (runs on every commit)
 poetry run bandit -r nexus/
 ```
 
@@ -121,6 +122,8 @@ Fork PRs have limited permissions by design. Maintainers should:
 1. Review the changes
 2. Re-run workflows if needed
 3. Merge when ready
+
+**Note:** All commits are validated with full checks automatically via git hooks.
 
 ## Getting Help
 

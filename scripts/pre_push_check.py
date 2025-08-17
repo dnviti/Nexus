@@ -529,7 +529,7 @@ class PrePushChecker:
 # Auto-generated pre-commit hook for Nexus Framework
 
 echo "Running pre-commit checks..."
-if ! python scripts/pre_push_check.py --fast; then
+if ! python scripts/pre_push_check.py; then
     echo ""
     echo "❌ Pre-commit checks failed!"
     echo "💡 Fix issues or run: python scripts/pre_push_check.py --fix"

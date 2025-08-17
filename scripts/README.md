@@ -41,6 +41,8 @@ python scripts/test_ci_locally.py --verbose
 
 ## What Gets Checked
 
+**On Every Commit (Full Check):**
+
 - ✅ **Code Formatting** (Black)
 - ✅ **Import Sorting** (isort)
 - ✅ **Linting** (Flake8)
@@ -52,18 +54,29 @@ python scripts/test_ci_locally.py --verbose
 
 ## Performance
 
-| Mode     | Duration | Coverage | Use Case              |
-| -------- | -------- | -------- | --------------------- |
-| **Fast** | ~30s     | ❌       | Development iteration |
-| **Full** | ~60s     | ✅       | Pre-push validation   |
+| Mode     | Duration | Coverage | Use Case               |
+| -------- | -------- | -------- | ---------------------- |
+| **Fast** | ~30s     | ❌       | Development iteration  |
+| **Full** | ~60s     | ✅       | Auto-commit & pre-push |
+
+**Note:** Git commits automatically run full checks for maximum quality assurance.
 
 ## Setup
 
 ### Automatic Git Hooks
 
+The pre-push script automatically sets up git hooks that run **full validation** on every commit.
+
 ```bash
 python scripts/pre_push_check.py  # Sets up hooks automatically
 ```
+
+**What happens on commit:**
+
+- Full code quality checks (Black, isort, Flake8, MyPy)
+- Security scan (Bandit)
+- Complete test suite with coverage
+- Build validation
 
 ### Manual Setup
 
@@ -115,12 +128,14 @@ python scripts/test_ci_locally.py --verbose
 ```bash
 # Development workflow
 make dev-setup              # Initial setup
-make fast-check             # Quick validation
+make fast-check             # Quick validation during development
 make fix                    # Auto-fix issues
-make pre-push               # Full validation
+git commit                  # Triggers full validation automatically
+git push                    # Ready to push after commit validation
 
 # Direct script usage
-python scripts/pre_push_check.py --fast --fix
+python scripts/pre_push_check.py --fast --fix  # Quick dev check
+python scripts/pre_push_check.py               # Full check (runs on commit)
 python scripts/test_ci_locally.py --fast
 ./scripts/pre-push-check.sh --help
 ```
