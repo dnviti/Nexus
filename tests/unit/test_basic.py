@@ -71,7 +71,7 @@ class TestAppCreation:
         from fastapi.testclient import TestClient
 
         app = create_nexus_app(title="Test App")
-        client = TestClient(app)
+        client = TestClient(app.app)
 
         response = client.get("/health")
         assert response.status_code == 200
@@ -81,7 +81,7 @@ class TestAppCreation:
         from fastapi.testclient import TestClient
 
         app = create_nexus_app(title="Test App")
-        client = TestClient(app)
+        client = TestClient(app.app)
 
         response = client.get("/docs")
         assert response.status_code == 200

@@ -18,13 +18,14 @@ from typing import Any, Callable, Dict, List, Optional, Type, Union
 import uvicorn
 
 # FastAPI and async support
-from fastapi import Depends, FastAPI, HTTPException, Request, Response
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from .config import AppConfig, create_default_config
+
 # Core imports
 from .core import (
-    AppConfig,
     DatabaseAdapter,
     DatabaseConfig,
     Event,
@@ -34,18 +35,12 @@ from .core import (
     PluginManager,
     PluginStatus,
     ServiceRegistry,
-    TransactionContext,
-    create_default_config,
 )
 from .plugins import (
     BasePlugin,
-    PluginConfigSchema,
     PluginContext,
-    PluginDependency,
-    PluginHook,
     PluginLifecycle,
     PluginMetadata,
-    PluginPermission,
     plugin_hook,
     requires_dependency,
     requires_permission,
@@ -178,8 +173,9 @@ class NexusApp:
         logger.info("Event bus started")
 
         # Discover and load plugins
-        if self.config.plugins.auto_load:
-            await self.plugin_manager.discover_plugins()
+        plugins_path = Path(self.config.plugins.directory)
+        if plugins_path.exists():
+            await self.plugin_manager.discover_plugins(plugins_path)
             logger.info(f"Loaded {len(self.plugin_manager.get_loaded_plugins())} plugins")
 
         # Register plugin routes
@@ -194,7 +190,7 @@ class NexusApp:
 
         # Publish startup event
         await self.event_bus.publish(
-            Event(type="app.started", data={"app": self.title, "version": self.version})
+            event_name="app.started", data={"app": self.title, "version": self.version}
         )
 
         logger.info(f"{self.title} started successfully")
@@ -204,7 +200,7 @@ class NexusApp:
         logger.info(f"Shutting down {self.title}...")
 
         # Publish shutdown event
-        await self.event_bus.publish(Event(type="app.stopping", data={"app": self.title}))
+        await self.event_bus.publish(event_name="app.stopping", data={"app": self.title})
 
         # Run custom shutdown handlers
         for handler in self._shutdown_handlers:
@@ -231,13 +227,14 @@ class NexusApp:
     def _setup_middleware(self):
         """Setup application middleware."""
         # CORS middleware
-        if self.config.app.cors.enabled:
+        # CORS middleware configuration
+        if self.config.cors.enabled:
             self.app.add_middleware(
                 CORSMiddleware,
-                allow_origins=self.config.app.cors.origins,
-                allow_credentials=self.config.app.cors.credentials,
-                allow_methods=self.config.app.cors.methods,
-                allow_headers=self.config.app.cors.headers,
+                allow_origins=self.config.cors.origins,
+                allow_credentials=self.config.cors.credentials,
+                allow_methods=self.config.cors.methods,
+                allow_headers=self.config.cors.headers,
             )
 
         # Custom error handler
@@ -301,7 +298,7 @@ class NexusApp:
                         [
                             p
                             for p in self.plugin_manager.get_loaded_plugins()
-                            if self.plugin_manager.get_plugin_status(p) == PluginStatus.ACTIVE
+                            if self.plugin_manager.get_plugin_status(p) == PluginStatus.ENABLED
                         ]
                     ),
                 },
@@ -348,9 +345,9 @@ class NexusApp:
             raise HTTPException(status_code=400, detail=f"Failed to disable plugin {plugin_name}")
 
     def _register_plugin_routes(self):
-        """Register routes from all loaded plugins."""
+        """Register routes from loaded plugins."""
         for plugin_name in self.plugin_manager.get_loaded_plugins():
-            plugin = self.plugin_manager.plugins.get(plugin_name)
+            plugin = self.plugin_manager._plugins.get(plugin_name)
             if plugin and hasattr(plugin, "get_api_routes"):
                 routes = plugin.get_api_routes()
                 if routes:
@@ -358,7 +355,7 @@ class NexusApp:
                         # Add plugin prefix to router
                         prefix = f"/api/plugins/{plugin_name}"
                         if hasattr(router, "prefix") and router.prefix:
-                            prefix = router.prefix
+                            prefix = f"{prefix}{router.prefix}"
 
                         self.app.include_router(router, prefix=prefix, tags=[plugin_name])
                         logger.info(f"Registered routes for plugin: {plugin_name}")
@@ -377,7 +374,7 @@ class NexusApp:
         self, event_type: str, data: Any = None, priority: EventPriority = EventPriority.NORMAL
     ):
         """Emit an event to the event bus."""
-        await self.event_bus.publish(Event(type=event_type, data=data, priority=priority))
+        await self.event_bus.publish(event_name=event_type, data=data or {}, priority=priority)
 
     def register_service(self, name: str, service: Any, interface: Optional[Type] = None):
         """Register a service in the service registry."""
@@ -389,7 +386,7 @@ class NexusApp:
 
     def get_plugin(self, name: str) -> Optional[BasePlugin]:
         """Get a loaded plugin by name."""
-        return self.plugin_manager.plugins.get(name)
+        return self.plugin_manager._plugins.get(name)
 
     async def load_plugin(self, plugin_path: str) -> bool:
         """Load a plugin dynamically."""
@@ -490,30 +487,12 @@ import sys
 from typing import Union
 
 # Re-export commonly used FastAPI components
-from fastapi import (
-    APIRouter,
-    Body,
-    Cookie,
-    File,
-    Form,
-    Header,
-    Path,
-    Query,
-    Security,
-    UploadFile,
-    WebSocket,
-    status,
-)
-from fastapi.responses import (
-    FileResponse,
-    HTMLResponse,
-    PlainTextResponse,
-    RedirectResponse,
-    StreamingResponse,
-)
+# Import all FastAPI components for convenience
+from fastapi import APIRouter, Depends, WebSocket
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 
 # Re-export Pydantic for model creation
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field
 
 if sys.version_info < (3, 11):
     import warnings

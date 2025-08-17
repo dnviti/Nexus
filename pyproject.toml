@@ -153,6 +153,9 @@ pre-commit = "^3.6.0"
 
 # Additional testing tools
 twine = "^5.0.0"
+types-pyyaml = "^6.0.12.20250809"
+types-psutil = "^7.0.0.20250801"
+types-toml = "^0.10.8.20240310"
 
 [tool.poetry.group.test]
 optional = true
@@ -303,7 +306,7 @@ addopts = [
     "--cov-report=term-missing:skip-covered",
     "--cov-report=html",
     "--cov-report=xml",
-    "--cov-fail-under=70",
+    "--cov-fail-under=75",
     "--asyncio-mode=auto",
     "--tb=short",
     "--maxfail=3",

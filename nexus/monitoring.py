@@ -29,14 +29,289 @@ class HealthStatus(BaseModel):
 class SystemMetrics(BaseModel):
     """System metrics model."""
 
-    cpu_percent: float
-    memory_percent: float
-    memory_used_mb: float
-    memory_total_mb: float
-    disk_usage_percent: float
-    load_average: List[float]
-    uptime_seconds: float
+    cpu_percent: float = 0.0
+    memory_percent: float = 0.0
+    disk_percent: float = 0.0
+    load_average: List[float] = []
+    network_stats: Dict[str, Any] = {}
     timestamp: datetime = datetime.utcnow()
+
+
+class PerformanceMetrics(BaseModel):
+    """Performance metrics model."""
+
+    request_count: int = 0
+    error_count: int = 0
+    avg_response_time: float = 0.0
+    max_response_time: float = 0.0
+    min_response_time: float = 0.0
+    percentiles: Dict[str, float] = {}
+    time_window_seconds: int = 3600
+
+    @property
+    def error_rate(self) -> float:
+        """Calculate error rate as percentage."""
+        if self.request_count == 0:
+            return 0.0
+        return (self.error_count / self.request_count) * 100
+
+    @property
+    def throughput(self) -> float:
+        """Calculate throughput as requests per second."""
+        if self.time_window_seconds == 0:
+            return 0.0
+        return self.request_count / self.time_window_seconds
+
+
+class HealthChecker:
+    """Health checker class for managing health checks."""
+
+    def __init__(self):
+        self.checks = {}
+        self.check_configs = {}
+        self.alert_handlers = []
+
+    def add_check(self, name: str, check_function: Callable, interval: int = 30,
+                  timeout: int = 5, enabled: bool = True) -> str:
+        """Add a health check."""
+        check_id = f"{name}_{len(self.checks)}"
+        self.checks[check_id] = {
+            "name": name,
+            "function": check_function,
+            "enabled": enabled
+        }
+        self.check_configs[check_id] = {
+            "interval": interval,
+            "timeout": timeout,
+            "enabled": enabled
+        }
+        return check_id
+
+    def get_check_config(self, check_id: str) -> Optional[Dict[str, Any]]:
+        """Get configuration for a check."""
+        return self.check_configs.get(check_id)
+
+    async def run_checks(self) -> List[HealthStatus]:
+        """Run all enabled health checks."""
+        results = []
+        for check_id, check_data in self.checks.items():
+            if not check_data["enabled"]:
+                continue
+
+            try:
+                result = check_data["function"]()
+                status = "healthy" if result else "unhealthy"
+                message = "Check passed" if result else "Check failed"
+            except Exception as e:
+                status = "unhealthy"
+                message = f"Check failed: {str(e)}"
+
+            health_status = HealthStatus(
+                name=check_data["name"],
+                status=status,
+                message=message
+            )
+            results.append(health_status)
+
+        return results
+
+    def remove_check(self, check_id: str) -> bool:
+        """Remove a health check."""
+        if check_id in self.checks:
+            del self.checks[check_id]
+            del self.check_configs[check_id]
+            return True
+        return False
+
+    def disable_check(self, check_id: str) -> None:
+        """Disable a health check."""
+        if check_id in self.checks:
+            self.checks[check_id]["enabled"] = False
+            self.check_configs[check_id]["enabled"] = False
+
+    def enable_check(self, check_id: str) -> None:
+        """Enable a health check."""
+        if check_id in self.checks:
+            self.checks[check_id]["enabled"] = True
+            self.check_configs[check_id]["enabled"] = True
+
+    def add_alert_handler(self, handler: Callable) -> None:
+        """Add an alert handler."""
+        self.alert_handlers.append(handler)
+
+
+class MetricsCollector:
+    """Metrics collector for recording and retrieving metrics."""
+
+    def __init__(self):
+        self.metrics = {}
+        self.counters = {}
+        self.gauges = {}
+        self.histograms = {}
+        self.time_series = {}
+
+    def record_metric(self, name: str, value: Any, labels: Optional[Dict[str, str]] = None) -> None:
+        """Record a metric value."""
+        metric_key = self._build_metric_key(name, labels)
+        self.metrics[metric_key] = value
+
+    def get_metrics(self) -> Dict[str, Any]:
+        """Get all recorded metrics."""
+        result = {}
+        result.update(self.metrics)
+        result.update(self.counters)
+        result.update(self.gauges)
+
+        # Add histogram data
+        for name, data in self.histograms.items():
+            result[name] = data
+
+        return result
+
+    def increment_counter(self, name: str, amount: int = 1) -> None:
+        """Increment a counter metric."""
+        if name not in self.counters:
+            self.counters[name] = 0
+        self.counters[name] += amount
+
+    def record_histogram(self, name: str, value: float) -> None:
+        """Record a histogram value."""
+        if name not in self.histograms:
+            self.histograms[name] = {
+                "count": 0,
+                "sum": 0.0,
+                "values": []
+            }
+
+        self.histograms[name]["count"] += 1
+        self.histograms[name]["sum"] += value
+        self.histograms[name]["values"].append(value)
+
+    def set_gauge(self, name: str, value: float) -> None:
+        """Set a gauge metric value."""
+        self.gauges[name] = value
+
+    def record_metric_with_timestamp(self, name: str, value: Any, timestamp: float) -> None:
+        """Record a metric with timestamp for time series."""
+        if name not in self.time_series:
+            self.time_series[name] = []
+
+        self.time_series[name].append({
+            "value": value,
+            "timestamp": timestamp
+        })
+
+    def get_time_series(self, name: str) -> List[Dict[str, Any]]:
+        """Get time series data for a metric."""
+        return self.time_series.get(name, [])
+
+    def _build_metric_key(self, name: str, labels: Optional[Dict[str, str]]) -> str:
+        """Build a metric key with labels."""
+        if labels:
+            label_str = ",".join(f"{k}={v}" for k, v in labels.items())
+            return f"{name}{{{label_str}}}"
+        return name
+
+
+class SystemMonitor:
+    """System monitor for collecting system metrics."""
+
+    def __init__(self, interval: int = 60, enable_network_monitoring: bool = False,
+                 enable_process_monitoring: bool = False):
+        self.interval = interval
+        self.enable_network_monitoring = enable_network_monitoring
+        self.enable_process_monitoring = enable_process_monitoring
+        self.monitoring = False
+        self.history = []
+        self.max_history_entries = 1000
+        self.thresholds = {}
+        self.custom_collectors = {}
+
+    def start_monitoring(self) -> None:
+        """Start system monitoring."""
+        self.monitoring = True
+
+    def stop_monitoring(self) -> None:
+        """Stop system monitoring."""
+        self.monitoring = False
+
+    def is_monitoring(self) -> bool:
+        """Check if monitoring is active."""
+        return self.monitoring
+
+    def get_current_metrics(self) -> SystemMetrics:
+        """Get current system metrics."""
+        cpu_percent = psutil.cpu_percent(interval=1)
+        memory = psutil.virtual_memory()
+        disk = psutil.disk_usage('/')
+
+        metrics = SystemMetrics(
+            cpu_percent=cpu_percent,
+            memory_percent=memory.percent,
+            disk_percent=disk.percent,
+            load_average=list(psutil.getloadavg()) if hasattr(psutil, 'getloadavg') else []
+        )
+
+        if self.enable_network_monitoring:
+            net_io = psutil.net_io_counters()
+            metrics.network_stats = {
+                "bytes_sent": net_io.bytes_sent,
+                "bytes_recv": net_io.bytes_recv,
+                "packets_sent": net_io.packets_sent,
+                "packets_recv": net_io.packets_recv
+            }
+
+        return metrics
+
+    def get_configuration(self) -> Dict[str, Any]:
+        """Get monitor configuration."""
+        return {
+            "interval": self.interval,
+            "enable_network_monitoring": self.enable_network_monitoring,
+            "enable_process_monitoring": self.enable_process_monitoring
+        }
+
+    def set_threshold(self, metric: str, max_value: float) -> None:
+        """Set threshold for a metric."""
+        self.thresholds[metric] = {"max": max_value}
+
+    def check_thresholds(self) -> List[Dict[str, Any]]:
+        """Check if any thresholds are exceeded."""
+        alerts = []
+        current_metrics = self.get_current_metrics()
+
+        for metric, threshold in self.thresholds.items():
+            if hasattr(current_metrics, metric):
+                value = getattr(current_metrics, metric)
+                if value > threshold["max"]:
+                    alerts.append({
+                        "metric": metric,
+                        "value": value,
+                        "threshold": threshold["max"],
+                        "message": f"{metric} exceeded threshold: {value} > {threshold['max']}"
+                    })
+
+        return alerts
+
+    def enable_history_collection(self, max_entries: int = 1000) -> None:
+        """Enable metrics history collection."""
+        self.max_history_entries = max_entries
+
+    def _add_to_history(self, metrics: SystemMetrics) -> None:
+        """Add metrics to history."""
+        self.history.append(metrics)
+        if len(self.history) > self.max_history_entries:
+            self.history.pop(0)
+
+    def get_metrics_history(self, limit: int = 100) -> List[SystemMetrics]:
+        """Get metrics history."""
+        return self.history[-limit:]
+
+    def add_custom_collector(self, name: str, collector_func: Callable) -> None:
+        """Add custom metrics collector."""
+        self.custom_collectors[name] = collector_func
+
+
 
 
 class ApplicationMetrics(BaseModel):

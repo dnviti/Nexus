@@ -247,6 +247,89 @@ def generate_id(prefix: str = "", length: int = 8) -> str:
     return random_part
 
 
+def generate_random_string(length: int = 32) -> str:
+    """Generate a random string of specified length."""
+    import random
+    import string
+
+    chars = string.ascii_lowercase + string.digits
+    return "".join(random.choices(chars, k=length))
+
+
+def format_file_size(size_bytes: int) -> str:
+    """Format file size into human readable format."""
+    return format_bytes(size_bytes)
+
+
+def validate_config(config) -> bool:
+    """Validate configuration object."""
+    if config is None:
+        return False
+    if not isinstance(config, dict):
+        return False
+    if "app" in config and config["app"] is None:
+        return False
+    return True
+
+
+def merge_dicts(dict1: Dict[str, Any], dict2: Dict[str, Any]) -> Dict[str, Any]:
+    """Merge two dictionaries."""
+    return deep_merge_dicts(dict1, dict2)
+
+
+def safe_import(module_name: str, fallback=None):
+    """Safely import a module, return fallback if import fails."""
+    try:
+        return __import__(module_name)
+    except ImportError:
+        return fallback
+
+
+def get_environment_var(name: str, default=None):
+    """Get environment variable with default."""
+    return os.getenv(name, default)
+
+
+def is_valid_email(email: str) -> bool:
+    """Validate email address."""
+    return validate_email(email)
+
+
+def sanitize_string(value, max_length: int = 100) -> str:
+    """Sanitize string for safe usage."""
+    if value is None:
+        return ""
+    if not isinstance(value, str):
+        return str(value)
+
+    # Strip whitespace and replace multiple whitespace with single space
+    sanitized = " ".join(value.split())
+
+    # Remove HTML tags and script content
+    import re
+    sanitized = re.sub(r'<[^>]*>', '', sanitized)
+    sanitized = re.sub(r'script.*?/script', '', sanitized, flags=re.IGNORECASE | re.DOTALL)
+
+    # Truncate if too long
+    if len(sanitized) > max_length:
+        sanitized = sanitized[:max_length - 3] + "..."
+
+    return sanitized
+
+
+def create_directory_if_not_exists(path: str) -> None:
+    """Create directory if it doesn't exist."""
+    ensure_directory(path)
+
+
+def get_file_modification_time(file_path: str) -> Optional[float]:
+    """Get file modification time."""
+    try:
+        return os.path.getmtime(file_path)
+    except (OSError, FileNotFoundError):
+        return None
+
+
 __all__ = [
     "setup_logging",
     "JsonFormatter",
@@ -262,4 +345,13 @@ __all__ = [
     "deep_merge_dicts",
     "validate_email",
     "generate_id",
+    "generate_random_string",
+    "format_file_size",
+    "validate_config",
+    "merge_dicts",
+    "safe_import",
+    "get_environment_var",
+    "is_valid_email",
+    "create_directory_if_not_exists",
+    "get_file_modification_time",
 ]

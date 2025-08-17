@@ -259,7 +259,7 @@ class LoggingConfig(BaseModel):
             },
             "handlers": {},
             "root": {
-                "level": self.level,
+                "level": self.level.value,
                 "handlers": [],
             },
         }
@@ -267,7 +267,7 @@ class LoggingConfig(BaseModel):
         if self.console_enabled:
             config["handlers"]["console"] = {
                 "class": "logging.StreamHandler",
-                "level": self.level,
+                "level": self.level.value,
                 "formatter": "default",
                 "stream": "ext://sys.stdout",
             }
@@ -276,7 +276,7 @@ class LoggingConfig(BaseModel):
         if self.file_enabled:
             config["handlers"]["file"] = {
                 "class": "logging.handlers.RotatingFileHandler",
-                "level": self.level,
+                "level": self.level.value,
                 "formatter": "default",
                 "filename": self.file_path,
                 "maxBytes": self.file_max_size,
