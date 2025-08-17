@@ -109,7 +109,7 @@ async def create_default_admin(auth_manager: AuthenticationManager) -> User:
 
 
 # Authentication dependency for FastAPI
-async def get_current_user(token: str = None) -> Optional[User]:
+async def get_current_user(token: Optional[str] = None) -> Optional[User]:
     """Get current authenticated user."""
     if not token:
         raise HTTPException(

@@ -225,6 +225,94 @@ class TestDatabaseConfig:
         url = config.get_connection_url()
         assert "mongodb://user:pass@localhost:27017/testdb" in url
 
+    def test_mongodb_config_with_replica_set(self):
+        """Test MongoDB config with replica set."""
+        config = DatabaseConfig()
+        config.type = DatabaseType.MONGODB
+        config.connection.host = "localhost"
+        config.connection.port = 27017
+        config.connection.database = "testdb"
+        config.connection.replica_set = "rs0"
+
+        url = config.get_connection_url()
+        assert "mongodb://localhost:27017/testdb?replicaSet=rs0" in url
+
+    def test_mongodb_config_with_auth_source(self):
+        """Test MongoDB config with auth source."""
+        config = DatabaseConfig()
+        config.type = DatabaseType.MONGODB
+        config.connection.host = "localhost"
+        config.connection.port = 27017
+        config.connection.database = "testdb"
+        config.connection.replica_set = "rs0"
+        config.connection.auth_source = "admin"
+
+        url = config.get_connection_url()
+        assert "mongodb://localhost:27017/testdb?replicaSet=rs0&authSource=admin" in url
+
+    def test_mongodb_config_full_options(self):
+        """Test MongoDB config with all options."""
+        config = DatabaseConfig()
+        config.type = DatabaseType.MONGODB
+        config.connection.host = "localhost"
+        config.connection.port = 27017
+        config.connection.username = "user"
+        config.connection.password = "pass"
+        config.connection.database = "testdb"
+        config.connection.replica_set = "rs0"
+        config.connection.auth_source = "admin"
+
+        url = config.get_connection_url()
+        assert "mongodb://user:pass@localhost:27017/testdb?replicaSet=rs0&authSource=admin" in url
+
+    def test_redis_config_with_password(self):
+        """Test Redis config with password."""
+        config = CacheConfig()
+        config.redis_host = "localhost"
+        config.redis_port = 6379
+        config.redis_db = 0
+        config.redis_password = "secret123"
+
+        url = config.get_redis_url()
+        assert "redis://:secret123@localhost:6379/0" in url
+
+
+class TestAuthConfig:
+    """Test authentication configuration."""
+
+    def test_auth_config_defaults(self):
+        """Test auth config defaults."""
+        config = AuthConfig()
+        assert config.jwt_secret == "change-me-in-production"
+        assert config.jwt_algorithm == "HS256"
+
+    def test_auth_config_custom_values(self):
+        """Test auth config with custom values."""
+        config = AuthConfig()
+        config.jwt_secret = "my-super-secure-jwt-secret-key-32-chars"
+        config.jwt_algorithm = "HS512"
+
+        assert config.jwt_secret == "my-super-secure-jwt-secret-key-32-chars"
+        assert config.jwt_algorithm == "HS512"
+
+    def test_auth_config_jwt_warning(self):
+        """Test JWT secret validation warning."""
+        import logging
+        from unittest.mock import patch
+
+        # Test the JWT secret validator function directly
+        from nexus.config import AuthConfig
+
+        with patch("nexus.config.logger.warning") as mock_warning:
+            # Create config with default secret and trigger validation
+            config = AuthConfig(jwt_secret="change-me-in-production")
+
+            # The validator should be called during model creation
+            # and should log a warning for the default value
+            mock_warning.assert_called_once_with(
+                "Using default JWT secret. Please change in production!"
+            )
+
 
 class TestCacheConfig:
     """Test cache configuration."""

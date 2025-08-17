@@ -615,5 +615,55 @@ class TestFileUtilities:
         assert mod_time is None
 
 
+class TestFormatUtilities:
+    """Test format utility functions."""
+
+    def test_format_bytes_small_values(self):
+        """Test format_bytes with small values."""
+        from nexus.utils import format_bytes
+
+        assert format_bytes(0) == "0.0 B"
+        assert format_bytes(512) == "512.0 B"
+        assert format_bytes(1023) == "1023.0 B"
+
+    def test_format_bytes_kilobytes(self):
+        """Test format_bytes with kilobyte values."""
+        from nexus.utils import format_bytes
+
+        assert format_bytes(1024) == "1.0 KB"
+        assert format_bytes(2048) == "2.0 KB"
+        assert format_bytes(1536) == "1.5 KB"
+
+    def test_format_bytes_megabytes(self):
+        """Test format_bytes with megabyte values."""
+        from nexus.utils import format_bytes
+
+        assert format_bytes(1024 * 1024) == "1.0 MB"
+        assert format_bytes(1024 * 1024 * 2) == "2.0 MB"
+
+    def test_format_bytes_gigabytes(self):
+        """Test format_bytes with gigabyte values."""
+        from nexus.utils import format_bytes
+
+        assert format_bytes(1024 * 1024 * 1024) == "1.0 GB"
+        assert format_bytes(1024 * 1024 * 1024 * 3) == "3.0 GB"
+
+    def test_format_bytes_terabytes(self):
+        """Test format_bytes with terabyte values."""
+        from nexus.utils import format_bytes
+
+        assert format_bytes(1024 * 1024 * 1024 * 1024) == "1.0 TB"
+
+    def test_format_bytes_petabytes(self):
+        """Test format_bytes with huge values (petabytes)."""
+        from nexus.utils import format_bytes
+
+        # This should hit the final return statement (line 184)
+        huge_value = 1024 * 1024 * 1024 * 1024 * 1024 * 2  # 2 PB
+        result = format_bytes(huge_value)
+        assert "PB" in result
+        assert "2.0 PB" == result
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

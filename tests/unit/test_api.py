@@ -220,5 +220,152 @@ class TestAPIIntegration:
         assert "timestamp" in timestamp_str
 
 
+class TestAPIUtilities:
+    """Test API utility functions."""
+
+    def test_validate_api_key_valid(self):
+        """Test validate_api_key with valid key."""
+        from nexus.api import validate_api_key
+
+        result = validate_api_key("demo-api-key")
+        assert result == True
+
+    def test_validate_api_key_invalid(self):
+        """Test validate_api_key with invalid key."""
+        from nexus.api import validate_api_key
+
+        result = validate_api_key("invalid-key")
+        assert result == False
+
+    def test_validate_api_key_none(self):
+        """Test validate_api_key with None."""
+        from nexus.api import validate_api_key
+
+        result = validate_api_key(None)
+        assert result == False
+
+    def test_validate_api_key_empty(self):
+        """Test validate_api_key with empty string."""
+        from nexus.api import validate_api_key
+
+        result = validate_api_key("")
+        assert result == False
+
+    def test_require_api_key_valid(self):
+        """Test require_api_key with valid key."""
+        import asyncio
+
+        from nexus.api import require_api_key
+
+        # Should not raise exception
+        async def test_func():
+            await require_api_key("demo-api-key")
+
+        asyncio.run(test_func())
+
+    def test_require_api_key_invalid(self):
+        """Test require_api_key with invalid key."""
+        import asyncio
+
+        from fastapi import HTTPException
+
+        from nexus.api import require_api_key
+
+        async def test_func():
+            with pytest.raises(HTTPException) as exc_info:
+                await require_api_key("invalid-key")
+
+            assert exc_info.value.status_code == 401
+            assert "Invalid or missing API key" in str(exc_info.value.detail)
+
+        asyncio.run(test_func())
+
+    def test_require_api_key_none(self):
+        """Test require_api_key with None."""
+        import asyncio
+
+        from fastapi import HTTPException
+
+        from nexus.api import require_api_key
+
+        async def test_func():
+            with pytest.raises(HTTPException) as exc_info:
+                await require_api_key(None)
+
+            assert exc_info.value.status_code == 401
+
+        asyncio.run(test_func())
+
+
+class TestAPIRouterEndpoints:
+    """Test API router endpoints for coverage."""
+
+    def test_router_info_endpoint(self):
+        """Test the /info endpoint."""
+        from fastapi import FastAPI
+        from fastapi.testclient import TestClient
+
+        app = FastAPI()
+        router = create_api_router()
+        app.include_router(router)
+
+        client = TestClient(app)
+        response = client.get("/api/info")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["success"] == True
+        assert "name" in data["data"]
+        assert data["data"]["name"] == "Nexus Framework"
+        assert data["data"]["version"] == "2.0.0"
+        assert "documentation" in data["data"]
+        assert "repository" in data["data"]
+
+    def test_router_status_endpoint(self):
+        """Test the /status endpoint."""
+        from fastapi import FastAPI
+        from fastapi.testclient import TestClient
+
+        app = FastAPI()
+        router = create_api_router()
+        app.include_router(router)
+
+        client = TestClient(app)
+        response = client.get("/api/status")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["success"] == True
+        assert "status" in data["data"]
+        assert data["data"]["status"] == "running"
+        assert "uptime" in data["data"]
+        assert "plugins_loaded" in data["data"]
+        assert "active_connections" in data["data"]
+        assert "memory_usage" in data["data"]
+        assert "cpu_usage" in data["data"]
+
+    def test_router_version_endpoint(self):
+        """Test the /version endpoint."""
+        from fastapi import FastAPI
+        from fastapi.testclient import TestClient
+
+        app = FastAPI()
+        router = create_api_router()
+        app.include_router(router)
+
+        client = TestClient(app)
+        response = client.get("/api/version")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["success"] == True
+        assert "version" in data["data"]
+        assert data["data"]["version"] == "2.0.0"
+        assert "build" in data["data"]
+        assert "release_date" in data["data"]
+        assert "python_version" in data["data"]
+        assert "framework" in data["data"]
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

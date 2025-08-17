@@ -209,10 +209,10 @@ def sanitize_string(value: str, max_length: int = 100) -> str:
         return str(value)
 
     # Remove HTML tags but keep content
-    sanitized = re.sub(r'<[^>]+>', '', value)
+    sanitized = re.sub(r"<[^>]+>", "", value)
 
     # Normalize whitespace (replace tabs/newlines with spaces, collapse multiple spaces)
-    sanitized = re.sub(r'\s+', ' ', sanitized)
+    sanitized = re.sub(r"\s+", " ", sanitized)
 
     # Trim whitespace from beginning and end
     sanitized = sanitized.strip()

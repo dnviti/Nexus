@@ -9,7 +9,7 @@ import logging
 import os
 import sys
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import click
 
@@ -27,7 +27,7 @@ logger = logging.getLogger("nexus.cli")
 @click.option("--verbose", "-v", is_flag=True, help="Enable verbose output")
 @click.option("--config", "-c", type=click.Path(exists=True), help="Configuration file path")
 @click.pass_context
-def cli(ctx, verbose, config):
+def cli(ctx: Any, verbose: bool, config: Optional[str]) -> None:
     """Nexus - The Ultimate Plugin-Based Application Platform"""
     ctx.ensure_object(dict)
     ctx.obj["verbose"] = verbose
@@ -44,7 +44,7 @@ def cli(ctx, verbose, config):
 @click.option("--reload", is_flag=True, help="Enable auto-reload for development")
 @click.option("--workers", default=1, type=int, help="Number of worker processes")
 @click.pass_context
-def run(ctx, host, port, reload, workers):
+def run(ctx: Any, host: str, port: int, reload: bool, workers: int) -> None:
     """Run the Nexus application server"""
     click.echo(f"🚀 Starting Nexus Framework v{__version__}")
 
@@ -58,7 +58,7 @@ def run(ctx, host, port, reload, workers):
 
         # Run the server
         uvicorn.run(
-            app,
+            app.app,
             host=host,
             port=port,
             reload=reload,
@@ -77,7 +77,7 @@ def run(ctx, host, port, reload, workers):
 @cli.command()
 @click.option("--output", "-o", type=click.Path(), help="Output file for configuration")
 @click.pass_context
-def init(ctx, output):
+def init(ctx: Any, output: str) -> None:
     """Initialize a new Nexus project"""
     click.echo("🎯 Initializing new Nexus project...")
 
@@ -143,14 +143,14 @@ if __name__ == "__main__":
 
 
 @cli.group()
-def plugin():
+def plugin() -> None:
     """Plugin management commands"""
     pass
 
 
 @plugin.command("list")
 @click.pass_context
-def plugin_list(ctx):
+def plugin_list(ctx: Any) -> None:
     """List available plugins"""
     click.echo("📦 Available Plugins:")
 
@@ -169,7 +169,7 @@ def plugin_list(ctx):
 @click.argument("name")
 @click.option("--template", default="basic", help="Plugin template to use")
 @click.pass_context
-def plugin_create(ctx, name, template):
+def plugin_create(ctx: Any, name: str, template: str) -> None:
     """Create a new plugin"""
     click.echo(f"🔌 Creating plugin: {name}")
 
@@ -258,7 +258,7 @@ def create_plugin():
 
 @plugin.command("info")
 @click.argument("name")
-def plugin_info(name):
+def plugin_info(name: str) -> None:
     """Show plugin information"""
     click.echo(f"🔍 Plugin Information: {name}")
 
@@ -272,7 +272,7 @@ def plugin_info(name):
 
 @cli.command()
 @click.pass_context
-def status(ctx):
+def status(ctx: Any) -> None:
     """Show application status"""
     click.echo("📊 Nexus Framework Status")
     click.echo("=" * 40)
@@ -296,7 +296,7 @@ def status(ctx):
     type=click.Choice(["text", "json"]),
     help="Output format",
 )
-def health(output_format):
+def health(output_format: str) -> None:
     """Check application health"""
     click.echo("🏥 Health Check")
 
@@ -314,9 +314,11 @@ def health(output_format):
             click.echo(json.dumps(health_data, indent=2))
         else:
             click.echo(f"Overall Status: {health_data['status']}")
-            for check, status in health_data["checks"].items():
-                status_icon = "✅" if status == "healthy" else "❌"
-                click.echo(f"  {status_icon} {check}: {status}")
+            checks = health_data.get("checks", {})
+            if isinstance(checks, dict):
+                for check, status in checks.items():
+                    status_icon = "✅" if status == "healthy" else "❌"
+                    click.echo(f"  {status_icon} {check}: {status}")
 
     except Exception as e:
         click.echo(f"❌ Error checking health: {e}", err=True)
@@ -325,7 +327,7 @@ def health(output_format):
 
 @cli.command()
 @click.option("--config-file", help="Path to configuration file")
-def validate(config_file):
+def validate(config_file: str) -> None:
     """Validate configuration"""
     click.echo("🔍 Validating Configuration")
 
@@ -353,7 +355,7 @@ def validate(config_file):
         sys.exit(1)
 
 
-def main():
+def main() -> None:
     """Main CLI entry point"""
     try:
         cli()

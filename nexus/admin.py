@@ -30,7 +30,7 @@ logger = logging.getLogger("nexus.admin")
 @click.option("--verbose", "-v", is_flag=True, help="Enable verbose output")
 @click.option("--config", "-c", type=click.Path(exists=True), help="Configuration file path")
 @click.pass_context
-def admin(ctx, verbose, config):
+def admin(ctx: Any, verbose: bool, config: Optional[str]) -> None:
     """Nexus Admin - Administrative tools and utilities"""
     ctx.ensure_object(dict)
     ctx.obj["verbose"] = verbose
@@ -42,7 +42,7 @@ def admin(ctx, verbose, config):
 
 
 @admin.group()
-def user():
+def user() -> None:
     """User management commands"""
     pass
 
@@ -53,13 +53,13 @@ def user():
 @click.option("--email", prompt=True, help="User email address")
 @click.option("--admin", is_flag=True, help="Create admin user")
 @click.pass_context
-def user_create(ctx, username, password, email, admin):
+def user_create(ctx: Any, username: str, password: str, email: str, admin: bool) -> None:
     """Create a new user"""
     click.echo(f"👤 Creating user: {username}")
 
     try:
 
-        async def create_user_async():
+        async def create_user_async() -> bool:
             auth_manager = AuthenticationManager()
             user = await auth_manager.create_user(username=username, password=password, email=email)
 
@@ -91,13 +91,13 @@ def user_create(ctx, username, password, email, admin):
     help="Output format",
 )
 @click.pass_context
-def user_list(ctx, output_format):
+def user_list(ctx: Any, output_format: str) -> None:
     """List all users"""
     click.echo("📋 User List")
 
     try:
 
-        async def list_users_async():
+        async def list_users_async() -> None:
             auth_manager = AuthenticationManager()
             # In a real implementation, this would get all users
             users = [
@@ -123,7 +123,7 @@ def user_list(ctx, output_format):
 @click.argument("username")
 @click.option("--confirm", is_flag=True, help="Skip confirmation prompt")
 @click.pass_context
-def user_delete(ctx, username, confirm):
+def user_delete(ctx: Any, username: str, confirm: bool) -> None:
     """Delete a user"""
     if not confirm:
         if not click.confirm(f"Are you sure you want to delete user '{username}'?"):
@@ -142,7 +142,7 @@ def user_delete(ctx, username, confirm):
 
 
 @admin.group()
-def plugin():
+def plugin() -> None:
     """Plugin administration commands"""
     pass
 
@@ -150,13 +150,13 @@ def plugin():
 @plugin.command("status")
 @click.option("--detailed", is_flag=True, help="Show detailed plugin information")
 @click.pass_context
-def plugin_status(ctx, detailed):
+def plugin_status(ctx: Any, detailed: bool) -> None:
     """Show plugin status"""
     click.echo("🔌 Plugin Status")
 
     try:
 
-        async def get_plugin_status():
+        async def get_plugin_status() -> None:
             config = create_default_config()
             service_registry = ServiceRegistry()
             plugin_manager = PluginManager(config, service_registry)
@@ -190,7 +190,7 @@ def plugin_status(ctx, detailed):
 @plugin.command("enable")
 @click.argument("plugin_name")
 @click.pass_context
-def plugin_enable(ctx, plugin_name):
+def plugin_enable(ctx: Any, plugin_name: str) -> None:
     """Enable a plugin"""
     click.echo(f"🔌 Enabling plugin: {plugin_name}")
 
@@ -206,7 +206,7 @@ def plugin_enable(ctx, plugin_name):
 @plugin.command("disable")
 @click.argument("plugin_name")
 @click.pass_context
-def plugin_disable(ctx, plugin_name):
+def plugin_disable(ctx: Any, plugin_name: str) -> None:
     """Disable a plugin"""
     click.echo(f"🔌 Disabling plugin: {plugin_name}")
 
@@ -220,7 +220,7 @@ def plugin_disable(ctx, plugin_name):
 
 
 @admin.group()
-def system():
+def system() -> None:
     """System administration commands"""
     pass
 
@@ -234,13 +234,13 @@ def system():
     help="Output format",
 )
 @click.pass_context
-def system_info(ctx, output_format):
+def system_info(ctx: Any, output_format: str) -> None:
     """Show system information"""
     click.echo("💻 System Information")
 
     try:
 
-        async def get_system_info():
+        async def get_system_info() -> None:
             metrics_collector = MetricsCollector()
             system_metrics = metrics_collector.get_system_metrics()
             app_metrics = metrics_collector.get_application_metrics()
@@ -289,13 +289,13 @@ def system_info(ctx, output_format):
     help="Output format",
 )
 @click.pass_context
-def system_health(ctx, output_format):
+def system_health(ctx: Any, output_format: str) -> None:
     """Perform comprehensive health check"""
     click.echo("🏥 System Health Check")
 
     try:
 
-        async def run_health_checks():
+        async def run_health_checks() -> None:
             metrics_collector = MetricsCollector()
             health_checks = create_default_health_checks()
 
@@ -346,7 +346,7 @@ def system_health(ctx, output_format):
     "--level", type=click.Choice(["DEBUG", "INFO", "WARNING", "ERROR"]), help="Filter by log level"
 )
 @click.pass_context
-def system_logs(ctx, lines, follow, level):
+def system_logs(ctx: Any, lines: int, follow: bool, level: Optional[str]) -> None:
     """Show system logs"""
     click.echo(f"📋 System Logs (last {lines} lines)")
 
@@ -376,7 +376,7 @@ def system_logs(ctx, lines, follow, level):
 
 
 @admin.group()
-def backup():
+def backup() -> None:
     """Backup and restore commands"""
     pass
 
@@ -385,7 +385,7 @@ def backup():
 @click.option("--output", "-o", type=click.Path(), help="Backup file path")
 @click.option("--include-plugins", is_flag=True, help="Include plugin data")
 @click.pass_context
-def backup_create(ctx, output, include_plugins):
+def backup_create(ctx: Any, output: Optional[str], include_plugins: bool) -> None:
     """Create system backup"""
     if not output:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -417,7 +417,7 @@ def backup_create(ctx, output, include_plugins):
 @click.argument("backup_file", type=click.Path(exists=True))
 @click.option("--confirm", is_flag=True, help="Skip confirmation prompt")
 @click.pass_context
-def backup_restore(ctx, backup_file, confirm):
+def backup_restore(ctx: Any, backup_file: str, confirm: bool) -> None:
     """Restore from backup"""
     if not confirm:
         if not click.confirm(
@@ -441,7 +441,7 @@ def backup_restore(ctx, backup_file, confirm):
 @admin.command()
 @click.option("--dry-run", is_flag=True, help="Show what would be done without making changes")
 @click.pass_context
-def maintenance(ctx, dry_run):
+def maintenance(ctx: Any, dry_run: bool) -> None:
     """Perform system maintenance tasks"""
     click.echo("🔧 Running system maintenance")
 
@@ -474,7 +474,7 @@ def maintenance(ctx, dry_run):
         sys.exit(1)
 
 
-def main():
+def main() -> None:
     """Main admin CLI entry point"""
     try:
         admin()

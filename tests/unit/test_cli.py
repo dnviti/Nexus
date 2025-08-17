@@ -213,7 +213,9 @@ class TestPluginCommands:
     def test_plugin_create_with_template(self):
         """Test plugin creation with template."""
         with self.runner.isolated_filesystem():
-            result = self.runner.invoke(cli, ["plugin", "create", "--template", "basic", "test_plugin"])
+            result = self.runner.invoke(
+                cli, ["plugin", "create", "--template", "basic", "test_plugin"]
+            )
 
             # Should handle template option
             assert result.exit_code == 0

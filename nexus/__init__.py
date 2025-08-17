@@ -13,7 +13,7 @@ import asyncio
 import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Type, Union
+from typing import Any, AsyncGenerator, Callable, Dict, List, Optional, Type, Union
 
 import uvicorn
 
@@ -99,8 +99,8 @@ class NexusApp:
         version: str = "1.0.0",
         description: str = "A Nexus Framework Application",
         config: Optional[AppConfig] = None,
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> None:
         """
         Initialize a new Nexus application.
 
@@ -145,13 +145,13 @@ class NexusApp:
         self._setup_core_routes()
 
         # Store startup and shutdown handlers
-        self._startup_handlers: List[Callable] = []
-        self._shutdown_handlers: List[Callable] = []
+        self._startup_handlers: List[Callable[[], Any]] = []
+        self._shutdown_handlers: List[Callable[[], Any]] = []
 
         logger.info(f"Initialized Nexus application: {self.title} v{self.version}")
 
     @asynccontextmanager
-    async def _lifespan(self, app: FastAPI):
+    async def _lifespan(self, app: FastAPI) -> AsyncGenerator[None, None]:
         """Manage application lifecycle."""
         # Startup
         await self._startup()
@@ -159,7 +159,7 @@ class NexusApp:
         # Shutdown
         await self._shutdown()
 
-    async def _startup(self):
+    async def _startup(self) -> None:
         """Handle application startup."""
         logger.info(f"Starting {self.title}...")
 
@@ -195,7 +195,7 @@ class NexusApp:
 
         logger.info(f"{self.title} started successfully")
 
-    async def _shutdown(self):
+    async def _shutdown(self) -> None:
         """Handle application shutdown."""
         logger.info(f"Shutting down {self.title}...")
 
@@ -224,7 +224,7 @@ class NexusApp:
 
         logger.info(f"{self.title} shut down successfully")
 
-    def _setup_middleware(self):
+    def _setup_middleware(self) -> None:
         """Setup application middleware."""
         # CORS middleware
         # CORS middleware configuration
@@ -239,7 +239,7 @@ class NexusApp:
 
         # Custom error handler
         @self.app.exception_handler(HTTPException)
-        async def http_exception_handler(request: Request, exc: HTTPException):
+        async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
             return JSONResponse(
                 status_code=exc.status_code,
                 content={
@@ -253,7 +253,7 @@ class NexusApp:
 
         # Global exception handler
         @self.app.exception_handler(Exception)
-        async def global_exception_handler(request: Request, exc: Exception):
+        async def global_exception_handler(request: Request, exc: Exception) -> JSONResponse:
             logger.error(f"Unhandled exception: {exc}", exc_info=True)
             return JSONResponse(
                 status_code=500,
@@ -266,11 +266,11 @@ class NexusApp:
                 },
             )
 
-    def _setup_core_routes(self):
+    def _setup_core_routes(self) -> None:
         """Setup core application routes."""
 
         @self.app.get("/health")
-        async def health_check():
+        async def health_check() -> Dict[str, Any]:
             """Health check endpoint."""
             return {
                 "status": "healthy",
@@ -280,7 +280,7 @@ class NexusApp:
             }
 
         @self.app.get("/api/system/info")
-        async def system_info():
+        async def system_info() -> Dict[str, Any]:
             """Get system information."""
             return {
                 "app": {
@@ -308,7 +308,7 @@ class NexusApp:
             }
 
         @self.app.get("/api/plugins")
-        async def list_plugins():
+        async def list_plugins() -> Dict[str, Any]:
             """List all loaded plugins."""
             plugins = []
             for plugin_name in self.plugin_manager.get_loaded_plugins():
@@ -329,7 +329,7 @@ class NexusApp:
             return {"plugins": plugins}
 
         @self.app.post("/api/plugins/{plugin_name}/enable")
-        async def enable_plugin(plugin_name: str):
+        async def enable_plugin(plugin_name: str) -> Dict[str, Any]:
             """Enable a plugin."""
             success = await self.plugin_manager.enable_plugin(plugin_name)
             if success:
@@ -337,14 +337,14 @@ class NexusApp:
             raise HTTPException(status_code=400, detail=f"Failed to enable plugin {plugin_name}")
 
         @self.app.post("/api/plugins/{plugin_name}/disable")
-        async def disable_plugin(plugin_name: str):
+        async def disable_plugin(plugin_name: str) -> Dict[str, Any]:
             """Disable a plugin."""
             success = await self.plugin_manager.disable_plugin(plugin_name)
             if success:
                 return {"message": f"Plugin {plugin_name} disabled successfully"}
             raise HTTPException(status_code=400, detail=f"Failed to disable plugin {plugin_name}")
 
-    def _register_plugin_routes(self):
+    def _register_plugin_routes(self) -> None:
         """Register routes from loaded plugins."""
         for plugin_name in self.plugin_manager.get_loaded_plugins():
             plugin = self.plugin_manager._plugins.get(plugin_name)
@@ -360,23 +360,25 @@ class NexusApp:
                         self.app.include_router(router, prefix=prefix, tags=[plugin_name])
                         logger.info(f"Registered routes for plugin: {plugin_name}")
 
-    def on_startup(self, func: Callable):
+    def on_startup(self, func: Callable[[], Any]) -> Callable[[], Any]:
         """Register a startup handler."""
         self._startup_handlers.append(func)
         return func
 
-    def on_shutdown(self, func: Callable):
+    def on_shutdown(self, func: Callable[[], Any]) -> Callable[[], Any]:
         """Register a shutdown handler."""
         self._shutdown_handlers.append(func)
         return func
 
     async def emit_event(
-        self, event_type: str, data: Any = None, priority: EventPriority = EventPriority.NORMAL
-    ):
+        self, event_type: str, data: Optional[Dict[str, Any]] = None, priority: int = 0
+    ) -> None:
         """Emit an event to the event bus."""
         await self.event_bus.publish(event_name=event_type, data=data or {}, priority=priority)
 
-    def register_service(self, name: str, service: Any, interface: Optional[Type] = None):
+    def register_service(
+        self, name: str, service: Any, interface: Optional[Type[Any]] = None
+    ) -> None:
         """Register a service in the service registry."""
         self.service_registry.register(name, service, interface)
 
@@ -396,7 +398,7 @@ class NexusApp:
         """Unload a plugin dynamically."""
         return await self.plugin_manager.unload_plugin(plugin_name)
 
-    def run(self, host: str = "0.0.0.0", port: int = 8000, **kwargs):
+    def run(self, host: str = "0.0.0.0", port: int = 8000, **kwargs: Any) -> None:
         """Run the application using uvicorn."""
         uvicorn.run(self.app, host=host, port=port, **kwargs)
 
@@ -406,7 +408,7 @@ def create_nexus_app(
     version: str = "1.0.0",
     description: str = "A Nexus Framework Application",
     config: Optional[Union[AppConfig, Dict[str, Any], str]] = None,
-    **kwargs,
+    **kwargs: Any,
 ) -> NexusApp:
     """
     Factory function to create a Nexus application.
@@ -445,7 +447,7 @@ def create_nexus_app(
 
 
 def create_plugin(
-    name: str, version: str = "1.0.0", description: str = "", author: str = "", **kwargs
+    name: str, version: str = "1.0.0", description: str = "", author: str = "", **kwargs: Any
 ) -> Type[BasePlugin]:
     """
     Factory function to create a plugin class.
@@ -470,7 +472,7 @@ def create_plugin(
     """
 
     class DynamicPlugin(BasePlugin):
-        def __init__(self):
+        def __init__(self) -> None:
             super().__init__()
             self.metadata = PluginMetadata(
                 name=name, version=version, description=description, author=author, **kwargs

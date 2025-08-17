@@ -7,7 +7,7 @@ import asyncio
 import logging
 import time
 from datetime import datetime
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 from fastapi import HTTPException, Request, Response, status
 from fastapi.responses import JSONResponse
@@ -63,7 +63,7 @@ class LoggingMiddleware:
 
         logger.info(f"Request: {method} {path} from {client_ip}")
 
-        async def send_wrapper(message):
+        async def send_wrapper(message: Any) -> None:
             if message["type"] == "http.response.start":
                 status_code = message["status"]
                 process_time = time.time() - start_time
@@ -76,10 +76,10 @@ class LoggingMiddleware:
 class RateLimitMiddleware:
     """Basic rate limiting middleware."""
 
-    def __init__(self, app, requests_per_minute: int = 60):
+    def __init__(self, app: Any, requests_per_minute: int = 60) -> None:
         self.app = app
         self.requests_per_minute = requests_per_minute
-        self.request_counts: Dict[str, list] = {}
+        self.request_counts: Dict[str, List[float]] = {}
 
     async def __call__(self, scope: Any, receive: Any, send: Any) -> None:
         if scope["type"] != "http":
@@ -124,10 +124,10 @@ class CORSMiddleware:
 
     def __init__(
         self,
-        app,
-        allow_origins: list = None,
-        allow_methods: list = None,
-        allow_headers: list = None,
+        app: Any,
+        allow_origins: Optional[List[str]] = None,
+        allow_methods: Optional[List[str]] = None,
+        allow_headers: Optional[List[str]] = None,
     ):
         self.app = app
         self.allow_origins = allow_origins or ["*"]
@@ -150,7 +150,7 @@ class CORSMiddleware:
             await response(scope, receive, send)
             return
 
-        async def send_wrapper(message):
+        async def send_wrapper(message: Any) -> None:
             if message["type"] == "http.response.start":
                 headers = dict(message.get("headers", []))
                 headers[b"access-control-allow-origin"] = ", ".join(self.allow_origins).encode()
@@ -171,7 +171,7 @@ class SecurityMiddleware:
             await self.app(scope, receive, send)
             return
 
-        async def send_wrapper(message):
+        async def send_wrapper(message: Any) -> None:
             if message["type"] == "http.response.start":
                 headers = dict(message.get("headers", []))
 
@@ -200,7 +200,7 @@ class TimingMiddleware:
 
         start_time = time.time()
 
-        async def send_wrapper(message):
+        async def send_wrapper(message: Any) -> None:
             if message["type"] == "http.response.start":
                 process_time = time.time() - start_time
                 headers = dict(message.get("headers", []))
@@ -230,7 +230,7 @@ class RequestIDMiddleware:
         # Add to scope for access in handlers
         scope["request_id"] = request_id
 
-        async def send_wrapper(message):
+        async def send_wrapper(message: Any) -> None:
             if message["type"] == "http.response.start":
                 headers = dict(message.get("headers", []))
                 headers[b"x-request-id"] = request_id.encode()

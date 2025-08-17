@@ -474,6 +474,7 @@ class TestSystemMonitor:
         if len(history) == 0:
             # Fallback: manually test the history functionality
             from nexus.monitoring import SystemMetrics
+
             test_metrics = SystemMetrics(cpu_percent=25.0, memory_percent=60.0)
             monitor._add_to_history(test_metrics)
             history = monitor.get_metrics_history(limit=2)

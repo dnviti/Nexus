@@ -102,14 +102,12 @@ class PluginHook:
 class PluginConfigSchema(BaseModel):
     """Plugin configuration schema."""
 
-    schema: Dict[str, Any] = Field(default_factory=dict)
+    config_schema: Dict[str, Any] = Field(default_factory=dict)
     required: List[str] = Field(default_factory=list)
 
 
 # Plugin Decorators
-def plugin_hook(
-    name: str, priority: int = 0
-) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+def plugin_hook(name: str, priority: int = 0) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     """Decorator for plugin hook methods."""
 
     def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
@@ -442,6 +440,7 @@ class BasePlugin(ABC):
         """
         if self.db_adapter:
             import json
+
             try:
                 result = await self.db_adapter.get(key)
                 if result:
@@ -757,7 +756,7 @@ class PluginValidator:
             bool: True if valid, False otherwise.
         """
         # Check if plugin has a valid name
-        if not hasattr(plugin, 'name') or not plugin.name or plugin.name.strip() == "":
+        if not hasattr(plugin, "name") or not plugin.name or plugin.name.strip() == "":
             logger.error("Plugin has invalid or empty name")
             return False
 

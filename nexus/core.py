@@ -141,6 +141,11 @@ class EventBus:
         self._running = False
         self._processor_task: Optional[asyncio.Task[None]] = None
 
+    async def start(self) -> None:
+        """Start the event bus processor."""
+        if not self._processor_task:
+            self._processor_task = asyncio.create_task(self.process_events())
+
     async def publish(
         self,
         event_name: str,
@@ -171,26 +176,70 @@ class EventBus:
         """Process events from the queue."""
         self._running = True
 
-        while self._running:
-            try:
-                # Get event with priority
-                priority, event = await asyncio.wait_for(self._queue.get(), timeout=1.0)
+        try:
+            while self._running:
+                try:
+                    # Check if event loop is still running
+                    try:
+                        loop = asyncio.get_running_loop()
+                        if loop.is_closed():
+                            break
+                    except RuntimeError:
+                        # No event loop running, exit gracefully
+                        break
 
-                # Call all subscribers
-                if event.name in self._subscribers:
-                    for handler in self._subscribers[event.name]:
-                        try:
-                            if asyncio.iscoroutinefunction(handler):
-                                await handler(event)
-                            else:
-                                handler(event)
-                        except Exception as e:
-                            logger.error(f"Error in event handler for {event.name}: {e}")
+                    # Get event with priority
+                    priority, event = await asyncio.wait_for(self._queue.get(), timeout=1.0)
 
-            except asyncio.TimeoutError:
-                continue
-            except Exception as e:
-                logger.error(f"Error processing events: {e}")
+                    # Call all subscribers
+                    if event.name in self._subscribers:
+                        for handler in self._subscribers[event.name]:
+                            try:
+                                if asyncio.iscoroutinefunction(handler):
+                                    await handler(event)
+                                else:
+                                    handler(event)
+                            except Exception as e:
+                                # Suppress logging if event loop is closing
+                                try:
+                                    logger.error(f"Error in event handler for {event.name}: {e}")
+                                except (ValueError, RuntimeError):
+                                    # Logger or event loop is closed, ignore
+                                    pass
+
+                except asyncio.TimeoutError:
+                    continue
+                except asyncio.CancelledError:
+                    # Task was cancelled, exit gracefully
+                    self._running = False
+                    break
+                except RuntimeError as e:
+                    if "no running event loop" in str(e) or "event loop is closed" in str(e):
+                        # Event loop is shutting down, exit gracefully
+                        self._running = False
+                        break
+                    # Suppress logging if event loop is closing
+                    try:
+                        logger.error(f"Runtime error in event processing: {e}")
+                    except (ValueError, RuntimeError):
+                        # Logger or event loop is closed, ignore
+                        pass
+                except Exception as e:
+                    # Suppress logging if event loop is closing
+                    try:
+                        logger.error(f"Error processing events: {e}")
+                    except (ValueError, RuntimeError):
+                        # Logger or event loop is closed, ignore
+                        pass
+        except asyncio.CancelledError:
+            # Final cancellation handling
+            self._running = False
+        except RuntimeError:
+            # Event loop issues during shutdown
+            self._running = False
+        finally:
+            # Ensure we always mark as not running
+            self._running = False
 
     async def shutdown(self) -> None:
         """Shutdown the event bus."""

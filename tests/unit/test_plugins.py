@@ -214,18 +214,21 @@ class TestPluginConfigSchema:
     def test_plugin_config_schema_creation(self):
         """Test creating plugin config schema."""
         schema = PluginConfigSchema(
-            schema={"type": "object", "properties": {"setting": {"type": "string"}}},
+            config_schema={"type": "object", "properties": {"setting": {"type": "string"}}},
             required=["setting"],
         )
 
-        assert schema.schema == {"type": "object", "properties": {"setting": {"type": "string"}}}
+        assert schema.config_schema == {
+            "type": "object",
+            "properties": {"setting": {"type": "string"}},
+        }
         assert schema.required == ["setting"]
 
     def test_plugin_config_schema_defaults(self):
         """Test plugin config schema with defaults."""
         schema = PluginConfigSchema()
 
-        assert schema.schema == {}
+        assert schema.config_schema == {}
         assert schema.required == []
 
 
@@ -778,6 +781,210 @@ class TestPluginValidator:
             "version": "invalid_version",  # Invalid version format
             "author": "Test Author",
             "category": "test",
+        }
+
+        result = validator.validate_manifest(manifest)
+        assert result == False
+
+
+class TestSpecializedPluginMethods:
+    """Test specialized plugin methods for coverage."""
+
+    @pytest.mark.asyncio
+    async def test_business_plugin_methods(self):
+        """Test BusinessPlugin methods."""
+        plugin = BusinessPlugin()
+
+        # Test initialize
+        result = await plugin.initialize()
+        assert result == True
+
+        # Test shutdown
+        await plugin.shutdown()  # Should not raise error
+
+        # Test get_api_routes
+        routes = plugin.get_api_routes()
+        assert routes == []
+
+        # Test get_database_schema
+        schema = plugin.get_database_schema()
+        assert schema == {}
+
+    @pytest.mark.asyncio
+    async def test_integration_plugin_methods(self):
+        """Test IntegrationPlugin methods."""
+        plugin = IntegrationPlugin()
+
+        # Test initialize
+        result = await plugin.initialize()
+        assert result == True
+
+        # Test shutdown
+        await plugin.shutdown()  # Should not raise error
+
+        # Test get_api_routes
+        routes = plugin.get_api_routes()
+        assert routes == []
+
+        # Test get_database_schema
+        schema = plugin.get_database_schema()
+        assert schema == {}
+
+    @pytest.mark.asyncio
+    async def test_analytics_plugin_methods(self):
+        """Test AnalyticsPlugin methods."""
+        plugin = AnalyticsPlugin()
+
+        # Test initialize
+        result = await plugin.initialize()
+        assert result == True
+
+        # Test shutdown
+        await plugin.shutdown()  # Should not raise error
+
+        # Test get_api_routes
+        routes = plugin.get_api_routes()
+        assert routes == []
+
+        # Test get_database_schema
+        schema = plugin.get_database_schema()
+        assert schema == {}
+
+    @pytest.mark.asyncio
+    async def test_security_plugin_methods(self):
+        """Test SecurityPlugin methods."""
+        plugin = SecurityPlugin()
+
+        # Test initialize
+        result = await plugin.initialize()
+        assert result == True
+
+        # Test shutdown
+        await plugin.shutdown()  # Should not raise error
+
+        # Test get_api_routes
+        routes = plugin.get_api_routes()
+        assert routes == []
+
+        # Test get_database_schema
+        schema = plugin.get_database_schema()
+        assert schema == {}
+
+    @pytest.mark.asyncio
+    async def test_ui_plugin_methods(self):
+        """Test UIPlugin methods."""
+        plugin = UIPlugin()
+
+        # Test initialize
+        result = await plugin.initialize()
+        assert result == True
+
+        # Test shutdown
+        await plugin.shutdown()  # Should not raise error
+
+        # Test get_api_routes
+        routes = plugin.get_api_routes()
+        assert routes == []
+
+        # Test get_database_schema
+        schema = plugin.get_database_schema()
+        assert schema == {}
+
+    @pytest.mark.asyncio
+    async def test_notification_plugin_methods(self):
+        """Test NotificationPlugin methods."""
+        plugin = NotificationPlugin()
+
+        # Test initialize
+        result = await plugin.initialize()
+        assert result == True
+
+        # Test shutdown
+        await plugin.shutdown()  # Should not raise error
+
+        # Test get_api_routes
+        routes = plugin.get_api_routes()
+        assert routes == []
+
+        # Test get_database_schema
+        schema = plugin.get_database_schema()
+        assert schema == {}
+
+    @pytest.mark.asyncio
+    async def test_storage_plugin_methods(self):
+        """Test StoragePlugin methods."""
+        plugin = StoragePlugin()
+
+        # Test initialize
+        result = await plugin.initialize()
+        assert result == True
+
+        # Test shutdown
+        await plugin.shutdown()  # Should not raise error
+
+        # Test get_api_routes
+        routes = plugin.get_api_routes()
+        assert routes == []
+
+        # Test get_database_schema
+        schema = plugin.get_database_schema()
+        assert schema == {}
+
+    @pytest.mark.asyncio
+    async def test_workflow_plugin_methods(self):
+        """Test WorkflowPlugin methods."""
+        plugin = WorkflowPlugin()
+
+        # Test initialize
+        result = await plugin.initialize()
+        assert result == True
+
+        # Test shutdown
+        await plugin.shutdown()  # Should not raise error
+
+        # Test get_api_routes
+        routes = plugin.get_api_routes()
+        assert routes == []
+
+        # Test get_database_schema
+        schema = plugin.get_database_schema()
+        assert schema == {}
+
+
+class TestPluginValidatorErrorPaths:
+    """Test plugin validator error paths for coverage."""
+
+    def test_validate_plugin_missing_method(self):
+        """Test validating plugin with missing required method."""
+        validator = PluginValidator()
+
+        # Create a mock plugin missing a required method
+        class IncompletePlugin:
+            def __init__(self):
+                self.name = "incomplete_plugin"
+
+            async def initialize(self):
+                pass
+
+            async def shutdown(self):
+                pass
+
+            # Missing get_api_routes and get_database_schema methods
+
+        plugin = IncompletePlugin()
+        result = validator.validate_plugin(plugin)
+        assert result == False
+
+    def test_validate_manifest_invalid_category(self):
+        """Test validating manifest with invalid category."""
+        validator = PluginValidator()
+
+        manifest = {
+            "name": "test_plugin",
+            "version": "1.0.0",
+            "description": "A test plugin",
+            "author": "Test Author",
+            "category": "invalid_category",  # Invalid category
         }
 
         result = validator.validate_manifest(manifest)
