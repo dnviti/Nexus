@@ -76,8 +76,11 @@ jobs:
       - name: Check if version exists
         run: |
           VERSION="${{ steps.version.outputs.version }}"
-          echo "⏭️ Skipping version check for testing"
-          echo "✅ Version v$VERSION is being processed"
+          if git tag | grep -q "^v$VERSION$"; then
+            echo "❌ Version v$VERSION already exists"
+            exit 1
+          fi
+          echo "✅ Version v$VERSION is new"
 
   build:
     name: Build Package
@@ -158,12 +161,12 @@ jobs:
           import nexus
           import sys
           python_version = '.'.join(map(str, sys.version_info[:3]))
-          print(f'✓ Nexus v{nexus.__version__} works on Python {python_version}')
+          print(f'[OK] Nexus v{nexus.__version__} works on Python {python_version}')
 
           # Basic functionality test
           from nexus import create_nexus_app
           app = create_nexus_app('Test App', '1.0.0')
-          print('✓ App creation works')
+          print('[OK] App creation works')
           "
 
   publish-test:
