@@ -3,7 +3,7 @@
 [![PyPI version](https://badge.fury.io/py/nexus.svg)](https://badge.fury.io/py/nexus)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![CI/CD Pipeline](https://github.com/dnviti/Nexus/actions/workflows/ci.yml/badge.svg)](https://github.com/dnviti/Nexus/actions/workflows/ci.yml)
+[![CI/CD](https://github.com/dnviti/Nexus/actions/workflows/main.yml/badge.svg)](https://github.com/dnviti/Nexus/actions/workflows/main.yml)
 [![Documentation](https://github.com/dnviti/Nexus/actions/workflows/docs.yml/badge.svg)](https://github.com/dnviti/Nexus/actions/workflows/docs.yml)
 [![Codecov](https://codecov.io/gh/dnviti/Nexus/branch/main/graph/badge.svg)](https://codecov.io/gh/dnviti/Nexus)
 [![Code style: Black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
