@@ -16,7 +16,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
 from nexus.core import Event, EventPriority
-from nexus.plugins import BasePlugin, PluginLifecycle, PluginMetadata
+from nexus.plugins import BasePlugin, HealthStatus
 
 # Set up logging for this plugin
 logger = logging.getLogger(__name__)
@@ -83,28 +83,12 @@ class TemplatePlugin(BasePlugin):
         super().__init__()
 
         # Define plugin metadata
-        self.metadata = PluginMetadata(
-            name="template_plugin",
-            version="1.0.0",
-            description="A template plugin demonstrating best practices",
-            author="Your Name",
-            category="example",
-            tags=["template", "example", "starter"],
-            dependencies=[],  # Add required plugin dependencies here
-            permissions=[
-                "database.read",
-                "database.write",
-                "events.publish",
-                "api.register_routes",
-            ],
-        )
-
-        # Initialize plugin state
-        self.initialized = False
-        self.config = {}
-        self.db = None
-        self.event_bus = None
-        self.cache = None
+        self.name = "template_plugin"
+        self.version = "1.0.0"
+        self.description = "A template plugin demonstrating best practices"
+        self.author = "Your Name"
+        self.category = "example"
+        self.license = "MIT"
 
         # In-memory storage for demo (replace with real database)
         self.items = {}
@@ -113,7 +97,7 @@ class TemplatePlugin(BasePlugin):
     # Lifecycle Methods
     # ------------------------------------------------------------------------
 
-    async def initialize(self, context) -> bool:
+    async def initialize(self) -> bool:
         """
         Initialize the plugin.
 
@@ -124,16 +108,10 @@ class TemplatePlugin(BasePlugin):
             bool: True if initialization successful, False otherwise
         """
         try:
-            logger.info(f"Initializing {self.metadata.name} v{self.metadata.version}")
+            logger.info(f"Initializing {self.name} v{self.version}")
 
-            # Get configuration for this plugin
-            self.config = context.get_config(self.metadata.name, self._get_default_config())
-            logger.debug(f"Loaded configuration: {self.config}")
-
-            # Get core services
-            self.db = context.get_service("database")
-            self.event_bus = context.get_service("event_bus")
-            self.cache = context.get_service("cache")
+            # Load configuration
+            await self._load_configuration()
 
             # Validate required services
             if not self._validate_services():
@@ -142,58 +120,46 @@ class TemplatePlugin(BasePlugin):
 
             # Initialize plugin components
             await self._setup_database()
-            self._register_event_handlers()
+            await self._register_event_handlers()
 
             # Register this plugin's services
-            context.register_service(f"{self.metadata.name}.api", self)
+            self.register_service(f"{self.name}.api", self)
 
             self.initialized = True
-            logger.info(f"{self.metadata.name} initialized successfully")
+            logger.info(f"{self.name} initialized successfully")
 
             # Publish initialization event
-            if self.event_bus:
-                await self.event_bus.publish(
-                    Event(
-                        type=f"{self.metadata.name}.initialized",
-                        data={"version": self.metadata.version},
-                        priority=EventPriority.LOW,
-                    )
-                )
+            await self.publish_event(f"{self.name}.initialized", {"version": self.version})
 
             return True
 
         except Exception as e:
-            logger.error(f"Failed to initialize {self.metadata.name}: {e}", exc_info=True)
+            logger.error(f"Failed to initialize {self.name}: {e}", exc_info=True)
             return False
 
-    async def cleanup(self):
+    async def shutdown(self) -> None:
         """
         Clean up plugin resources.
 
         This method is called when the plugin is being shut down.
         """
         try:
-            logger.info(f"Cleaning up {self.metadata.name}")
+            logger.info(f"Cleaning up {self.name}")
 
             # Publish shutdown event
-            if self.event_bus:
-                await self.event_bus.publish(
-                    Event(
-                        type=f"{self.metadata.name}.shutdown",
-                        data={"timestamp": datetime.utcnow().isoformat()},
-                        priority=EventPriority.LOW,
-                    )
-                )
+            await self.publish_event(
+                f"{self.name}.shutdown", {"timestamp": datetime.utcnow().isoformat()}
+            )
 
             # Clean up resources
             # Close database connections, cancel tasks, etc.
             self.items.clear()
 
             self.initialized = False
-            logger.info(f"{self.metadata.name} cleaned up successfully")
+            logger.info(f"{self.name} cleaned up successfully")
 
         except Exception as e:
-            logger.error(f"Error during cleanup of {self.metadata.name}: {e}", exc_info=True)
+            logger.error(f"Error during cleanup of {self.name}: {e}", exc_info=True)
 
     # ------------------------------------------------------------------------
     # Configuration
@@ -226,7 +192,7 @@ class TemplatePlugin(BasePlugin):
         # For this template, we'll just check if services exist
         # In a real plugin, you might check specific capabilities
 
-        if self.config.get("require_database", False) and not self.db:
+        if self.config.get("require_database", False) and not self.db_adapter:
             logger.error("Database service required but not available")
             return False
 
@@ -240,7 +206,7 @@ class TemplatePlugin(BasePlugin):
         """Set up database tables and indexes."""
         # In a real plugin, you would create tables here
         # For example, using SQLAlchemy:
-        # Base.metadata.create_all(bind=self.db.engine)
+        # Base.metadata.create_all(bind=self.db_adapter.engine)
 
         logger.debug("Database setup completed (using in-memory storage for demo)")
 
@@ -248,14 +214,11 @@ class TemplatePlugin(BasePlugin):
     # Event Handling
     # ------------------------------------------------------------------------
 
-    def _register_event_handlers(self):
+    async def _register_event_handlers(self):
         """Register event handlers for this plugin."""
-        if not self.event_bus:
-            return
-
         # Subscribe to relevant events
-        self.event_bus.subscribe("user.created", self._handle_user_created)
-        self.event_bus.subscribe("system.maintenance", self._handle_maintenance)
+        await self.subscribe_to_event("user.created", self._handle_user_created)
+        await self.subscribe_to_event("system.maintenance", self._handle_maintenance)
 
         logger.debug("Event handlers registered")
 
@@ -290,30 +253,18 @@ class TemplatePlugin(BasePlugin):
         Returns:
             List of FastAPI routers with plugin endpoints
         """
-        router = APIRouter(prefix=f"/api/{self.metadata.name}", tags=[self.metadata.name])
+        router = APIRouter(prefix=f"/api/{self.name}", tags=[self.name])
 
         @router.get("/", summary="Get plugin information")
         async def get_plugin_info():
             """Get information about the plugin."""
-            return {
-                "name": self.metadata.name,
-                "version": self.metadata.version,
-                "description": self.metadata.description,
-                "status": "active" if self.initialized else "inactive",
-                "config": {k: v for k, v in self.config.items() if not k.startswith("_")},
-            }
+            return self.get_info()
 
         @router.get("/health", summary="Health check")
         async def health_check():
             """Check plugin health status."""
-            return {
-                "healthy": self.initialized,
-                "checks": {
-                    "database": self.db is not None,
-                    "event_bus": self.event_bus is not None,
-                    "cache": self.cache is not None,
-                },
-            }
+            health_status = await self.health_check()
+            return health_status.dict()
 
         @router.post("/items", response_model=Item, status_code=status.HTTP_201_CREATED)
         async def create_item(item_data: ItemCreate):
@@ -337,14 +288,9 @@ class TemplatePlugin(BasePlugin):
             self.items[item_id] = item
 
             # Publish event
-            if self.event_bus:
-                await self.event_bus.publish(
-                    Event(
-                        type=f"{self.metadata.name}.item_created",
-                        data={"item_id": item_id, "name": item_data.name},
-                        priority=EventPriority.NORMAL,
-                    )
-                )
+            await self.publish_event(
+                f"{self.name}.item_created", {"item_id": item_id, "name": item_data.name}
+            )
 
             return Item(**item)
 
@@ -390,14 +336,9 @@ class TemplatePlugin(BasePlugin):
             item["updated_at"] = datetime.utcnow()
 
             # Publish event
-            if self.event_bus:
-                await self.event_bus.publish(
-                    Event(
-                        type=f"{self.metadata.name}.item_updated",
-                        data={"item_id": item_id, "changes": update_data},
-                        priority=EventPriority.NORMAL,
-                    )
-                )
+            await self.publish_event(
+                f"{self.name}.item_updated", {"item_id": item_id, "changes": update_data}
+            )
 
             return Item(**item)
 
@@ -413,14 +354,7 @@ class TemplatePlugin(BasePlugin):
             del self.items[item_id]
 
             # Publish event
-            if self.event_bus:
-                await self.event_bus.publish(
-                    Event(
-                        type=f"{self.metadata.name}.item_deleted",
-                        data={"item_id": item_id},
-                        priority=EventPriority.NORMAL,
-                    )
-                )
+            await self.publish_event(f"{self.name}.item_deleted", {"item_id": item_id})
 
             return None
 
@@ -443,6 +377,28 @@ class TemplatePlugin(BasePlugin):
             }
 
         return [router]
+
+    def get_database_schema(self) -> Dict[str, Any]:
+        """
+        Return the database schema for this plugin.
+
+        Returns:
+            Dict[str, Any]: Database schema definition.
+        """
+        return {
+            "collections": {
+                "template_items": {
+                    "indexes": [
+                        {"field": "id", "unique": True},
+                        {"field": "name"},
+                        {"field": "created_at"},
+                    ]
+                }
+            },
+            "initial_data": {
+                "config": {"max_items": 1000, "cache_ttl": 300, "enable_notifications": True}
+            },
+        }
 
     # ------------------------------------------------------------------------
     # Public Methods (can be called by other plugins)
@@ -467,10 +423,27 @@ class TemplatePlugin(BasePlugin):
             "processed": True,
             "timestamp": datetime.utcnow().isoformat(),
             "input_keys": list(data.keys()),
-            "plugin": self.metadata.name,
+            "plugin": self.name,
         }
 
         return result
+
+    async def _load_configuration(self) -> None:
+        """Load plugin configuration."""
+        # Load default configuration
+        default_config = self._get_default_config()
+
+        # Update with stored configuration
+        for key, default_value in default_config.items():
+            self.config[key] = await self.get_config(key, default_value)
+
+        logger.debug(f"Loaded configuration: {self.config}")
+
+
+# Plugin factory function
+def create_plugin():
+    """Create and return the plugin instance."""
+    return TemplatePlugin()
 
 
 # Optional: Export the plugin class with a standard name

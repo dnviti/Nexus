@@ -3,6 +3,7 @@ Hello World Plugin for Nexus Framework
 A simple example plugin demonstrating the basics of plugin development.
 """
 
+import logging
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
@@ -86,6 +87,8 @@ class HelloWorldPlugin(BasePlugin):
             "ar": "مرحبا",
         }
 
+        # In-memory storage for messages (in production would use database)
+        self.messages: List[Dict[str, Any]] = []
         self.message_counter = 0
         self.greeting_counter = 0
 
@@ -130,7 +133,7 @@ class HelloWorldPlugin(BasePlugin):
 
         # Unsubscribe from events
         for event_name in list(self._event_subscriptions.keys()):
-            await self.unsubscribe_from_event(event_name)
+            await self.unsubscribe_from_event(event_name, self._event_subscriptions[event_name])
 
         # Mark shutdown time
         self._shutdown_time = datetime.utcnow()
@@ -212,42 +215,36 @@ class HelloWorldPlugin(BasePlugin):
         @router.get("/messages", response_model=List[Message])
         async def list_messages(limit: int = Query(10, ge=1, le=100), offset: int = Query(0, ge=0)):
             """List all messages."""
-            messages = await self.get_data("messages", [])
-            return messages[offset : offset + limit]
+            return [Message(**msg) for msg in self.messages[offset : offset + limit]]
 
         @router.post("/messages", response_model=Message, status_code=status.HTTP_201_CREATED)
         async def create_message(message_data: MessageCreate):
             """Create a new message."""
             self.message_counter += 1
 
-            message = Message(
-                id=f"msg_{self.message_counter}",
-                content=message_data.content,
-                author=message_data.author,
-                tags=message_data.tags,
-                created_at=datetime.utcnow(),
-                likes=0,
-            )
+            message_dict = {
+                "id": f"msg_{self.message_counter}",
+                "content": message_data.content,
+                "author": message_data.author,
+                "tags": message_data.tags,
+                "created_at": datetime.utcnow(),
+                "likes": 0,
+            }
 
             # Store message
-            messages = await self.get_data("messages", [])
-            messages.append(message.dict())
-            await self.set_data("messages", messages)
+            self.messages.append(message_dict)
 
             # Publish message created event
-            await self.publish_event("hello_world.message_created", message.dict())
+            await self.publish_event("hello_world.message_created", message_dict)
 
-            return message
+            return Message(**message_dict)
 
         @router.post("/messages/{message_id}/like")
         async def like_message(message_id: str):
             """Like a message."""
-            messages = await self.get_data("messages", [])
-
-            for msg in messages:
+            for msg in self.messages:
                 if msg["id"] == message_id:
                     msg["likes"] = msg.get("likes", 0) + 1
-                    await self.set_data("messages", messages)
 
                     # Publish like event
                     await self.publish_event(
@@ -264,14 +261,12 @@ class HelloWorldPlugin(BasePlugin):
         @router.get("/stats")
         async def get_statistics():
             """Get plugin statistics."""
-            messages = await self.get_data("messages", [])
-
             return {
                 "greeting_count": self.greeting_counter,
-                "message_count": len(messages),
-                "total_likes": sum(msg.get("likes", 0) for msg in messages),
+                "message_count": len(self.messages),
+                "total_likes": sum(msg.get("likes", 0) for msg in self.messages),
                 "languages_supported": len(self.greetings),
-                "uptime_seconds": self.get_metrics()["uptime_seconds"],
+                "uptime_seconds": self.get_metrics()["uptime"],
             }
 
         @router.get("/health")
@@ -315,17 +310,16 @@ class HelloWorldPlugin(BasePlugin):
 
         # Add custom health checks
         try:
-            messages = await self.get_data("messages", [])
-            health.components["messages"] = {"status": "healthy", "count": len(messages)}
+            health.components["messages"] = {"status": "healthy", "count": len(self.messages)}
         except Exception as e:
             health.components["messages"] = {"status": "unhealthy", "error": str(e)}
             health.healthy = False
 
         health.metrics.update(
             {
-                "greeting_count": self.greeting_counter,
-                "message_count": self.message_counter,
-                "languages": len(self.greetings),
+                "greeting_count": float(self.greeting_counter),
+                "message_count": float(len(self.messages)),
+                "languages": float(len(self.greetings)),
             }
         )
 
@@ -338,7 +332,7 @@ class HelloWorldPlugin(BasePlugin):
         metrics.update(
             {
                 "greetings_total": float(self.greeting_counter),
-                "messages_total": float(self.message_counter),
+                "messages_total": float(len(self.messages)),
                 "languages_supported": float(len(self.greetings)),
             }
         )
@@ -368,25 +362,29 @@ class HelloWorldPlugin(BasePlugin):
     async def _initialize_data(self) -> None:
         """Initialize plugin data."""
         # Check if messages exist
-        messages = await self.get_data("messages")
-        if messages is None:
+        stored_messages = await self.get_data("messages")
+        if stored_messages is None:
             # Create initial welcome message
             welcome_message = {
                 "id": "msg_welcome",
                 "content": "Welcome to Hello World Plugin!",
                 "author": "System",
                 "tags": ["welcome", "system"],
-                "created_at": datetime.utcnow().isoformat(),
+                "created_at": datetime.utcnow(),
                 "likes": 0,
             }
-            await self.set_data("messages", [welcome_message])
+            self.messages = [welcome_message]
+            await self.set_data("messages", self.messages)
             self.logger.info("Created initial welcome message")
+        else:
+            self.messages = stored_messages
 
     async def _save_state(self) -> None:
         """Save plugin state."""
         await self.set_config("greeting_counter", self.greeting_counter)
         await self.set_config("message_counter", self.message_counter)
         await self.set_config("greetings", self.greetings)
+        await self.set_data("messages", self.messages)
 
         self.logger.debug("Plugin state saved")
 
@@ -395,20 +393,26 @@ class HelloWorldPlugin(BasePlugin):
         self.logger.info(f"New user created: {event.data.get('username', 'Unknown')}")
 
         # Create a welcome message for the new user
+        self.message_counter += 1
         welcome_message = {
             "id": f"msg_welcome_{event.data.get('user_id', 'unknown')}",
             "content": f"Welcome to the platform, {event.data.get('username', 'friend')}!",
             "author": "System",
             "tags": ["welcome", "auto-generated"],
-            "created_at": datetime.utcnow().isoformat(),
+            "created_at": datetime.utcnow(),
             "likes": 0,
         }
 
-        messages = await self.get_data("messages", [])
-        messages.append(welcome_message)
-        await self.set_data("messages", messages)
+        self.messages.append(welcome_message)
+        await self.set_data("messages", self.messages)
 
     async def _handle_system_shutdown(self, event: Any) -> None:
         """Handle system shutdown event."""
         self.logger.info("System shutdown event received")
         await self._save_state()
+
+
+# Plugin factory function
+def create_plugin():
+    """Create and return the plugin instance."""
+    return HelloWorldPlugin()
