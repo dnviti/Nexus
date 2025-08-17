@@ -370,6 +370,7 @@ max-line-length = 100
 exclude_dirs = ["tests", "examples"]
 skips = ["B101", "B601"]             # assert_used, shell_with_subprocess
 
+
 [tool.ruff]
 select = [
     "E",  # pycodestyle errors
