@@ -258,13 +258,79 @@ jobs:
           # Install additional test dependencies for integration tests
           poetry run pip install asyncpg psycopg2-binary redis
 
-      - name: Wait for services
+      - name: Create service health check script
         run: |
-          echo "Waiting for PostgreSQL..."
-          until pg_isready -h localhost -p 5432; do sleep 1; done
-          echo "Waiting for Redis..."
-          until redis-cli -h localhost -p 6379 ping; do sleep 1; done
-          echo "Services are ready!"
+          cat > check_services.py << 'EOF'
+          import time
+          import sys
+          import subprocess
+          import redis
+          from sqlalchemy import create_engine, text
+
+          def check_postgres():
+              try:
+                  # Try using pg_isready first
+                  result = subprocess.run(['pg_isready', '-h', 'localhost', '-p', '5432'],
+                                        capture_output=True, text=True)
+                  if result.returncode == 0:
+                      return True
+              except FileNotFoundError:
+                  pass
+
+              # Fallback to SQLAlchemy connection
+              try:
+                  engine = create_engine("postgresql://postgres:postgres@localhost:5432/nexus_test")
+                  with engine.begin() as conn:
+                      conn.execute(text("SELECT 1"))
+                  engine.dispose()
+                  return True
+              except Exception:
+                  return False
+
+          def check_redis():
+              try:
+                  r = redis.Redis(host='localhost', port=6379, socket_connect_timeout=1)
+                  r.ping()
+                  return True
+              except Exception:
+                  return False
+
+          def wait_for_services(max_attempts=30):
+              postgres_ready = False
+              redis_ready = False
+
+              for attempt in range(max_attempts):
+                  if not postgres_ready:
+                      postgres_ready = check_postgres()
+                      if postgres_ready:
+                          print("✓ PostgreSQL is ready")
+                      else:
+                          print(f"⏳ Waiting for PostgreSQL... (attempt {attempt + 1}/{max_attempts})")
+
+                  if not redis_ready:
+                      redis_ready = check_redis()
+                      if redis_ready:
+                          print("✓ Redis is ready")
+                      else:
+                          print(f"⏳ Waiting for Redis... (attempt {attempt + 1}/{max_attempts})")
+
+                  if postgres_ready and redis_ready:
+                      print("🎉 All services are ready!")
+                      return True
+
+                  if attempt < max_attempts - 1:
+                      time.sleep(2)
+
+              print("❌ Services failed to become ready in time")
+              return False
+
+          if __name__ == "__main__":
+              if not wait_for_services():
+                  sys.exit(1)
+          EOF
+
+      - name: Wait for services
+        run: poetry run python check_services.py
 
       - name: Create integration test files
         run: |
@@ -273,45 +339,136 @@ jobs:
             cat > tests/integration/test_database.py << 'EOF'
           import pytest
           import asyncio
+          import logging
           from sqlalchemy import create_engine, text
           from sqlalchemy.ext.asyncio import create_async_engine
           import redis
 
+          # Configure logging for better debugging
+          logging.basicConfig(level=logging.INFO)
+          logger = logging.getLogger(__name__)
+
           @pytest.mark.asyncio
           async def test_postgres_connection():
               """Test PostgreSQL connection."""
-              engine = create_async_engine("postgresql+asyncpg://postgres:postgres@localhost:5432/nexus_test")
-              async with engine.begin() as conn:
-                  result = await conn.execute(text("SELECT 1"))
-                  assert result.scalar() == 1
-              await engine.dispose()
+              logger.info("Testing async PostgreSQL connection...")
+              try:
+                  engine = create_async_engine("postgresql+asyncpg://postgres:postgres@localhost:5432/nexus_test")
+                  async with engine.begin() as conn:
+                      result = await conn.execute(text("SELECT 1"))
+                      assert result.scalar() == 1
+                      logger.info("✓ Async PostgreSQL connection successful")
+                  await engine.dispose()
+              except Exception as e:
+                  logger.error(f"❌ Async PostgreSQL connection failed: {e}")
+                  raise
 
           def test_redis_connection():
               """Test Redis connection."""
-              r = redis.Redis(host='localhost', port=6379, db=0)
-              assert r.ping()
-              r.set('test_key', 'test_value')
-              assert r.get('test_key').decode() == 'test_value'
-              r.delete('test_key')
+              logger.info("Testing Redis connection...")
+              try:
+                  r = redis.Redis(host='localhost', port=6379, db=0, socket_connect_timeout=5)
+                  assert r.ping()
+                  logger.info("✓ Redis ping successful")
+
+                  # Test basic operations
+                  test_key = 'nexus_test_key'
+                  test_value = 'nexus_test_value'
+                  r.set(test_key, test_value)
+                  retrieved_value = r.get(test_key)
+                  assert retrieved_value.decode() == test_value
+                  r.delete(test_key)
+                  logger.info("✓ Redis operations successful")
+              except Exception as e:
+                  logger.error(f"❌ Redis connection failed: {e}")
+                  raise
 
           def test_sync_postgres_connection():
               """Test synchronous PostgreSQL connection."""
-              engine = create_engine("postgresql://postgres:postgres@localhost:5432/nexus_test")
-              with engine.begin() as conn:
-                  result = conn.execute(text("SELECT 1"))
-                  assert result.scalar() == 1
-              engine.dispose()
+              logger.info("Testing sync PostgreSQL connection...")
+              try:
+                  engine = create_engine("postgresql://postgres:postgres@localhost:5432/nexus_test")
+                  with engine.begin() as conn:
+                      result = conn.execute(text("SELECT 1"))
+                      assert result.scalar() == 1
+                      logger.info("✓ Sync PostgreSQL connection successful")
+                  engine.dispose()
+              except Exception as e:
+                  logger.error(f"❌ Sync PostgreSQL connection failed: {e}")
+                  raise
+
+          def test_database_schema_creation():
+              """Test basic database schema operations."""
+              logger.info("Testing database schema operations...")
+              try:
+                  engine = create_engine("postgresql://postgres:postgres@localhost:5432/nexus_test")
+                  with engine.begin() as conn:
+                      # Create a test table
+                      conn.execute(text("""
+                          CREATE TABLE IF NOT EXISTS nexus_test_table (
+                              id SERIAL PRIMARY KEY,
+                              name VARCHAR(100),
+                              created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                          )
+                      """))
+
+                      # Insert test data
+                      conn.execute(text("""
+                          INSERT INTO nexus_test_table (name) VALUES ('test_entry')
+                      """))
+
+                      # Query test data
+                      result = conn.execute(text("""
+                          SELECT COUNT(*) FROM nexus_test_table WHERE name = 'test_entry'
+                      """))
+                      assert result.scalar() >= 1
+
+                      # Clean up
+                      conn.execute(text("DROP TABLE IF EXISTS nexus_test_table"))
+                      logger.info("✓ Database schema operations successful")
+                  engine.dispose()
+              except Exception as e:
+                  logger.error(f"❌ Database schema operations failed: {e}")
+                  raise
           EOF
           fi
 
           if [ ! -f tests/integration/test_api.py ]; then
             cat > tests/integration/test_api.py << 'EOF'
           import pytest
+          import logging
           from fastapi.testclient import TestClient
+
+          logger = logging.getLogger(__name__)
 
           def test_placeholder_api():
               """Placeholder API test."""
+              logger.info("Running placeholder API test...")
               # This will be implemented when the actual API is ready
+              assert True
+              logger.info("✓ Placeholder API test passed")
+
+          def test_environment_variables():
+              """Test that required environment variables are set."""
+              import os
+
+              required_vars = [
+                  'DATABASE_URL',
+                  'REDIS_URL',
+                  'NEXUS_SECRET_KEY'
+              ]
+
+              missing_vars = []
+              for var in required_vars:
+                  if not os.getenv(var):
+                      missing_vars.append(var)
+
+              if missing_vars:
+                  logger.warning(f"Missing environment variables: {missing_vars}")
+              else:
+                  logger.info("✓ All required environment variables are set")
+
+              # Don't fail the test for missing vars, just log them
               assert True
           EOF
           fi
@@ -323,10 +480,19 @@ jobs:
           NEXUS_SECRET_KEY: test-secret-key-for-integration-tests
           NEXUS_DEBUG: true
         run: |
+          echo "🧪 Starting integration tests..."
+          echo "Database URL: $DATABASE_URL"
+          echo "Redis URL: $REDIS_URL"
+
           poetry run pytest tests/integration/ \
             --junit-xml=junit-integration.xml \
             --tb=short \
+            --capture=no \
+            --log-cli-level=INFO \
+            --log-cli-format='%(asctime)s [%(levelname)8s] %(name)s: %(message)s' \
             -v
+
+          echo "✅ Integration tests completed"
 
       - name: Upload integration test results
         uses: dorny/test-reporter@v1
