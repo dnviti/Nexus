@@ -507,17 +507,18 @@ server:
         with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
             f.write(yaml_content)
             f.flush()
+            temp_file_name = f.name
 
-            try:
-                loader = ConfigLoader()
-                config = loader.load_file(f.name)
+        try:
+            loader = ConfigLoader()
+            config = loader.load_file(temp_file_name)
 
-                assert config["app"]["name"] == "Test App"
-                assert config["app"]["version"] == "1.0.0"
-                assert config["server"]["port"] == 9000
-                assert config["server"]["debug"] == True
-            finally:
-                os.unlink(f.name)
+            assert config["app"]["name"] == "Test App"
+            assert config["app"]["version"] == "1.0.0"
+            assert config["server"]["port"] == 9000
+            assert config["server"]["debug"] == True
+        finally:
+            os.unlink(temp_file_name)
 
     def test_load_json_file(self):
         """Test loading JSON configuration file."""
@@ -534,29 +535,31 @@ server:
         with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             f.write(json_content)
             f.flush()
+            temp_file_name = f.name
 
-            try:
-                loader = ConfigLoader()
-                config = loader.load_file(f.name)
+        try:
+            loader = ConfigLoader()
+            config = loader.load_file(temp_file_name)
 
-                assert config["app"]["name"] == "Test App"
-                assert config["app"]["version"] == "1.0.0"
-                assert config["server"]["port"] == 9000
-                assert config["server"]["debug"] == True
-            finally:
-                os.unlink(f.name)
+            assert config["app"]["name"] == "Test App"
+            assert config["app"]["version"] == "1.0.0"
+            assert config["server"]["port"] == 9000
+            assert config["server"]["debug"] == True
+        finally:
+            os.unlink(temp_file_name)
 
     def test_load_unsupported_file_format(self):
         """Test loading unsupported file format raises error."""
         with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
             f.write("some content")
             f.flush()
+            temp_file_name = f.name
 
-            try:
-                with pytest.raises(ValueError, match="Unsupported.*file.*type"):
-                    load_config(f.name)
-            finally:
-                os.unlink(f.name)
+        try:
+            with pytest.raises(ValueError, match="Unsupported.*file.*type"):
+                load_config(temp_file_name)
+        finally:
+            os.unlink(temp_file_name)
 
     def test_load_nonexistent_file(self):
         """Test loading non-existent file raises error."""
@@ -628,16 +631,17 @@ auth:
         with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
             f.write(yaml_content)
             f.flush()
+            temp_file_name = f.name
 
-            try:
-                # Create logs directory if it doesn't exist
-                os.makedirs("logs", exist_ok=True)
-                config = load_config(f.name)
-                assert isinstance(config, AppConfig)
-                assert config.app.name == "File App"
-                assert config.app.version == "2.0.0"
-            finally:
-                os.unlink(f.name)
+        try:
+            # Create logs directory if it doesn't exist
+            os.makedirs("logs", exist_ok=True)
+            config = load_config(temp_file_name)
+            assert isinstance(config, AppConfig)
+            assert config.app.name == "File App"
+            assert config.app.version == "2.0.0"
+        finally:
+            os.unlink(temp_file_name)
 
     def test_load_config_from_dict(self):
         """Test loading config from dictionary."""

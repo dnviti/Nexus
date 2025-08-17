@@ -500,12 +500,13 @@ server:
         with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
             f.write(config_content)
             f.flush()
+            temp_file_name = f.name
 
-            try:
-                self.runner.invoke(cli, ["--config", f.name, "run"])
-                mock_create_app.assert_called_once()
-            finally:
-                os.unlink(f.name)
+        try:
+            self.runner.invoke(cli, ["--config", temp_file_name, "run"])
+            mock_create_app.assert_called_once()
+        finally:
+            os.unlink(temp_file_name)
 
     def test_plugin_workflow(self):
         """Test plugin management workflow."""

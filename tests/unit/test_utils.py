@@ -149,14 +149,15 @@ server:
         with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
             f.write(yaml_content)
             f.flush()
+            temp_file_name = f.name
 
-            try:
-                config = load_config_file(f.name)
-                assert config["app"]["name"] == "Test App"
-                assert config["app"]["version"] == "1.0.0"
-                assert config["server"]["port"] == 8080
-            finally:
-                os.unlink(f.name)
+        try:
+            config = load_config_file(temp_file_name)
+            assert config["app"]["name"] == "Test App"
+            assert config["app"]["version"] == "1.0.0"
+            assert config["server"]["port"] == 8080
+        finally:
+            os.unlink(temp_file_name)
 
     def test_load_config_file_json(self):
         """Test loading JSON configuration file."""
@@ -165,14 +166,15 @@ server:
         with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump(json_content, f)
             f.flush()
+            temp_file_name = f.name
 
-            try:
-                config = load_config_file(f.name)
-                assert config["app"]["name"] == "Test App"
-                assert config["app"]["version"] == "1.0.0"
-                assert config["server"]["port"] == 8080
-            finally:
-                os.unlink(f.name)
+        try:
+            config = load_config_file(temp_file_name)
+            assert config["app"]["name"] == "Test App"
+            assert config["app"]["version"] == "1.0.0"
+            assert config["server"]["port"] == 8080
+        finally:
+            os.unlink(temp_file_name)
 
     def test_load_config_file_nonexistent(self):
         """Test loading non-existent file raises error."""
@@ -184,51 +186,58 @@ server:
         with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
             f.write("some content")
             f.flush()
+            temp_file_name = f.name
 
-            try:
-                with pytest.raises(ValueError, match="Unsupported configuration file format"):
-                    load_config_file(f.name)
-            finally:
-                os.unlink(f.name)
+        try:
+            with pytest.raises(ValueError, match="Unsupported configuration file format"):
+                load_config_file(temp_file_name)
+        finally:
+            os.unlink(temp_file_name)
 
     def test_save_config_file_yaml(self):
         """Test saving configuration to YAML file."""
         config = {"app": {"name": "Test App"}, "server": {"port": 8080}}
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
-            try:
-                save_config_file(config, f.name)
+            temp_file_name = f.name
 
-                # Verify file was saved correctly
-                loaded = load_config_file(f.name)
-                assert loaded == config
-            finally:
-                os.unlink(f.name)
+        try:
+            save_config_file(config, temp_file_name)
+
+            # Verify file was saved correctly
+            loaded = load_config_file(temp_file_name)
+            assert loaded == config
+        finally:
+            os.unlink(temp_file_name)
 
     def test_save_config_file_json(self):
         """Test saving configuration to JSON file."""
         config = {"app": {"name": "Test App"}, "server": {"port": 8080}}
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
-            try:
-                save_config_file(config, f.name)
+            temp_file_name = f.name
 
-                # Verify file was saved correctly
-                loaded = load_config_file(f.name)
-                assert loaded == config
-            finally:
-                os.unlink(f.name)
+        try:
+            save_config_file(config, temp_file_name)
+
+            # Verify file was saved correctly
+            loaded = load_config_file(temp_file_name)
+            assert loaded == config
+        finally:
+            os.unlink(temp_file_name)
 
     def test_save_config_file_unsupported_format(self):
         """Test saving to unsupported format raises error."""
         config = {"test": "data"}
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
-            try:
-                with pytest.raises(ValueError, match="Unsupported configuration file format"):
-                    save_config_file(config, f.name)
-            finally:
-                os.unlink(f.name)
+            temp_file_name = f.name
+
+        try:
+            with pytest.raises(ValueError, match="Unsupported configuration file format"):
+                save_config_file(config, temp_file_name)
+        finally:
+            os.unlink(temp_file_name)
 
 
 class TestEnvironmentVariables:
@@ -598,16 +607,17 @@ class TestFileUtilities:
 
     def test_get_file_modification_time_existing(self):
         """Test getting modification time of existing file."""
-        with tempfile.NamedTemporaryFile(delete=False) as f:
-            f.write(b"test content")
+        with tempfile.NamedTemporaryFile(mode="w", delete=False) as f:
+            f.write("test content")
             f.flush()
+            temp_file_name = f.name
 
-            try:
-                mod_time = get_file_modification_time(f.name)
-                assert isinstance(mod_time, float)
-                assert mod_time > 0
-            finally:
-                os.unlink(f.name)
+        try:
+            mod_time = get_file_modification_time(temp_file_name)
+            assert isinstance(mod_time, float)
+            assert mod_time > 0
+        finally:
+            os.unlink(temp_file_name)
 
     def test_get_file_modification_time_nonexistent(self):
         """Test getting modification time of non-existent file."""
