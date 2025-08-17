@@ -34,6 +34,7 @@ theme:
 nav:
   - Home: index.md
   - Getting Started:
+      - Overview: getting-started/README.md
       - Installation: getting-started/installation.md
       - Quick Start: getting-started/quickstart.md
       - First Plugin: getting-started/first-plugin.md
@@ -44,25 +45,35 @@ nav:
       - Event System: architecture/events.md
       - Security: architecture/security.md
   - Plugin Development:
+      - Overview: plugins/README.md
       - Basics: plugins/basics.md
       - API Routes: plugins/api-routes.md
       - Database: plugins/database.md
       - Testing: plugins/testing.md
+      - Advanced: plugins/advanced.md
+      - Events: plugins/events.md
+      - Services: plugins/services.md
   - API Reference:
+      - Overview: api/README.md
       - Core Classes: api/core.md
-      - CLI Commands: api/cli.md
-      - REST API: api/rest.md
+      - Authentication: api/auth.md
       - Events: api/events.md
+      - Plugins: api/plugins.md
+      - Admin: api/admin.md
+      - Users: api/users.md
   - Deployment:
+      - Overview: deployment/README.md
       - Docker: deployment/docker.md
       - Kubernetes: deployment/kubernetes.md
       - Monitoring: deployment/monitoring.md
-      - Production: deployment/production.md
+      - Development: deployment/development.md
+      - Bare Metal: deployment/bare-metal.md
+      - Cloud: deployment/cloud.md
   - Guides:
-      - Examples: guides/examples.md
-      - Best Practices: guides/best-practices.md
-      - Troubleshooting: guides/troubleshooting.md
-      - Migration: guides/migration.md
+      - Overview: guides/README.md
+      - Configuration: guides/configuration.md
+      - Development: guides/development.md
+      - Plugins: guides/plugins.md
 
 markdown_extensions:
   - admonition
