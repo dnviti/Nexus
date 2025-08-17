@@ -1,0 +1,30 @@
+site_name: Nexus Platform Documentation
+site_description: The Ultimate Plugin-Based Application Platform
+site_author: Nexus Team
+site_url: https://docs.nexus.dev
+
+repo_name: nexus-team/nexus
+repo_url: https://github.com/nexus-team/nexus
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: blue
+      accent: blue
+
+nav:
+  - Home: index.md
+  - Getting Started:
+      - Overview: getting-started/overview.md
+      - Installation: getting-started/installation.md
+
+markdown_extensions:
+  - admonition
+  - codehilite
+
+plugins:
+  - search
+
+copyright: Copyright &copy; 2024 Nexus Team

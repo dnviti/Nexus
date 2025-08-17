@@ -98,3 +98,6 @@ yarn-error.log*
 REORGANIZATION_COMPLETE.md
 test_project/
 bandit*.json
+
+# JUnit XML test reports
+junit*.xml

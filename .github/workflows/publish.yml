@@ -1,0 +1,330 @@
+name: Publish
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 1.2.3)'
+        required: true
+        type: string
+      prerelease:
+        description: 'Is this a pre-release?'
+        required: false
+        type: boolean
+        default: false
+      test_pypi:
+        description: 'Publish to Test PyPI instead of PyPI'
+        required: false
+        type: boolean
+        default: false
+
+env:
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  validate:
+    name: Validate Release
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      is_prerelease: ${{ steps.version.outputs.is_prerelease }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+
+      - name: Determine version
+        id: version
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            VERSION="${{ github.event.inputs.version }}"
+            IS_PRERELEASE="${{ github.event.inputs.prerelease }}"
+          else
+            VERSION="${GITHUB_REF#refs/tags/v}"
+            IS_PRERELEASE="false"
+            if [[ "$VERSION" =~ (alpha|beta|rc) ]]; then
+              IS_PRERELEASE="true"
+            fi
+          fi
+
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "is_prerelease=$IS_PRERELEASE" >> $GITHUB_OUTPUT
+          echo "Release version: $VERSION"
+          echo "Is prerelease: $IS_PRERELEASE"
+
+      - name: Validate version format
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-(alpha|beta|rc)\.[0-9]+)?$ ]]; then
+            echo "❌ Invalid version format: $VERSION"
+            echo "Expected format: X.Y.Z or X.Y.Z-TYPE.N (e.g., 1.2.3 or 1.2.3-beta.1)"
+            exit 1
+          fi
+          echo "✅ Version format is valid: $VERSION"
+
+      - name: Check if version exists
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          if git tag | grep -q "^v$VERSION$"; then
+            echo "❌ Version v$VERSION already exists"
+            exit 1
+          fi
+          echo "✅ Version v$VERSION is new"
+
+  build:
+    name: Build Package
+    runs-on: ubuntu-latest
+    needs: validate
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+
+      - name: Install dependencies
+        run: poetry install --no-interaction
+
+      - name: Update version
+        run: |
+          VERSION="${{ needs.validate.outputs.version }}"
+          poetry version "$VERSION"
+
+          # Update __init__.py
+          sed -i "s/__version__ = .*/__version__ = \"$VERSION\"/" nexus/__init__.py
+
+          echo "Updated version to: $VERSION"
+
+      - name: Build package
+        run: poetry build
+
+      - name: Verify package
+        run: |
+          poetry run pip install twine
+          poetry run twine check dist/*
+
+          # Test installation
+          python -m venv test_env
+          source test_env/bin/activate
+          pip install dist/*.whl
+          python -c "import nexus; print(f'✓ Nexus v{nexus.__version__} installed successfully')"
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-package
+          path: dist/
+          retention-days: 7
+
+  test-package:
+    name: Test Package
+    runs-on: ${{ matrix.os }}
+    needs: build
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ["3.11", "3.12", "3.13"]
+    steps:
+      - name: Setup Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Download package
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-package
+          path: dist/
+
+      - name: Test package installation
+        run: |
+          python -m pip install --upgrade pip
+          pip install dist/*.whl
+          python -c "
+          import nexus
+          print(f'✓ Nexus v{nexus.__version__} works on Python {'.'.join(map(str, __import__('sys').version_info[:3]))}')
+
+          # Basic functionality test
+          from nexus import create_nexus_app
+          app = create_nexus_app('Test App', '1.0.0')
+          print('✓ App creation works')
+          "
+
+  publish-test:
+    name: Publish to Test PyPI
+    runs-on: ubuntu-latest
+    needs: [validate, build, test-package]
+    if: github.event.inputs.test_pypi == 'true' || contains(github.ref, 'alpha') || contains(github.ref, 'beta') || contains(github.ref, 'rc')
+    environment:
+      name: test-pypi
+      url: https://test.pypi.org/p/nexus-platform
+    steps:
+      - name: Download package
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-package
+          path: dist/
+
+      - name: Publish to Test PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          password: ${{ secrets.TEST_PYPI_API_TOKEN }}
+          skip-existing: true
+
+      - name: Verify Test PyPI upload
+        run: |
+          VERSION="${{ needs.validate.outputs.version }}"
+          sleep 60  # Wait for package to be available
+
+          python -m pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ nexus-platform==$VERSION
+          python -c "import nexus; print(f'✓ Successfully installed nexus-platform v{nexus.__version__} from Test PyPI')"
+
+  publish-pypi:
+    name: Publish to PyPI
+    runs-on: ubuntu-latest
+    needs: [validate, build, test-package]
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && !contains(github.ref, 'alpha') && !contains(github.ref, 'beta') && !contains(github.ref, 'rc') && github.event.inputs.test_pypi != 'true'
+    environment:
+      name: pypi
+      url: https://pypi.org/p/nexus-platform
+    steps:
+      - name: Download package
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-package
+          path: dist/
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
+
+      - name: Verify PyPI upload
+        run: |
+          VERSION="${{ needs.validate.outputs.version }}"
+          sleep 120  # Wait for package to be available
+
+          python -m pip install nexus-platform==$VERSION
+          python -c "import nexus; print(f'✓ Successfully installed nexus-platform v{nexus.__version__} from PyPI')"
+
+  create-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: [validate, build, test-package, publish-pypi]
+    if: always() && (needs.publish-pypi.result == 'success' || needs.publish-pypi.result == 'skipped')
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download package
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-package
+          path: dist/
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          VERSION="${{ needs.validate.outputs.version }}"
+
+          # Generate changelog from git commits since last tag
+          LAST_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+
+          if [[ -n "$LAST_TAG" ]]; then
+            CHANGELOG=$(git log --pretty=format:"- %s (%h)" $LAST_TAG..HEAD)
+          else
+            CHANGELOG=$(git log --pretty=format:"- %s (%h)" --max-count=20)
+          fi
+
+          cat > release_notes.md << EOF
+          ## What's Changed
+
+          $CHANGELOG
+
+          ## Installation
+
+          \`\`\`bash
+          pip install nexus-platform==$VERSION
+          \`\`\`
+
+          ## Docker
+
+          \`\`\`bash
+          docker pull ghcr.io/${{ github.repository }}:$VERSION
+          \`\`\`
+
+          **Full Changelog**: https://github.com/${{ github.repository }}/compare/$LAST_TAG...v$VERSION
+          EOF
+
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          cat release_notes.md >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ needs.validate.outputs.version }}
+          name: Nexus v${{ needs.validate.outputs.version }}
+          body: ${{ steps.changelog.outputs.changelog }}
+          files: dist/*
+          prerelease: ${{ needs.validate.outputs.is_prerelease }}
+          draft: false
+
+  summary:
+    name: Summary
+    runs-on: ubuntu-latest
+    needs: [validate, build, test-package, publish-test, publish-pypi, create-release]
+    if: always()
+    steps:
+      - name: Generate summary
+        run: |
+          echo "## 🚀 Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ needs.validate.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Prerelease:** ${{ needs.validate.outputs.is_prerelease }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Trigger:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Results:" >> $GITHUB_STEP_SUMMARY
+          echo "- **Validation:** ${{ needs.validate.result == 'success' && '✅' || '❌' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Build:** ${{ needs.build.result == 'success' && '✅' || '❌' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Package Test:** ${{ needs.test-package.result == 'success' && '✅' || '❌' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Test PyPI:** ${{ needs.publish-test.result == 'success' && '✅' || needs.publish-test.result == 'skipped' && '⏭️' || '❌' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **PyPI:** ${{ needs.publish-pypi.result == 'success' && '✅' || needs.publish-pypi.result == 'skipped' && '⏭️' || '❌' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **GitHub Release:** ${{ needs.create-release.result == 'success' && '✅' || needs.create-release.result == 'skipped' && '⏭️' || '❌' }}" >> $GITHUB_STEP_SUMMARY
+
+          if [[ "${{ needs.publish-pypi.result }}" == "success" ]]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### 🎉 Release Published Successfully!" >> $GITHUB_STEP_SUMMARY
+            echo "- **PyPI:** https://pypi.org/project/nexus-platform/${{ needs.validate.outputs.version }}/" >> $GITHUB_STEP_SUMMARY
+            echo "- **GitHub:** https://github.com/${{ github.repository }}/releases/tag/v${{ needs.validate.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Check status
+        run: |
+          if [[ "${{ needs.validate.result }}" == "failure" || "${{ needs.build.result }}" == "failure" || "${{ needs.test-package.result }}" == "failure" ]]; then
+            echo "❌ Release failed"
+            exit 1
+          else
+            echo "✅ Release completed"
+          fi
