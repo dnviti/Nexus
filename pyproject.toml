@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "nexus-platform"
-version = "2.0.2"
+version = "2.0.0"
 description = "The Ultimate Plugin-Based Application Platform - Build modular, scalable applications with ease"
 authors = ["Nexus Team <team@nexus.dev>"]
 maintainers = ["Nexus Team <team@nexus.dev>"]
