@@ -124,7 +124,6 @@ jobs:
             --junit-xml=junit-${{ matrix.os }}-${{ matrix.python-version }}.xml \
             --tb=short \
             --asyncio-mode=auto \
-            --asyncio-default-fixture-loop-scope=function \
             --log-cli-level=WARNING \
             --disable-warnings \
             --maxfail=5 \
