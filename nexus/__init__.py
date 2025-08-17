@@ -371,7 +371,10 @@ class NexusApp:
         return func
 
     async def emit_event(
-        self, event_type: str, data: Optional[Dict[str, Any]] = None, priority: int = 0
+        self,
+        event_type: str,
+        data: Optional[Dict[str, Any]] = None,
+        priority: EventPriority = EventPriority.NORMAL,
     ) -> None:
         """Emit an event to the event bus."""
         await self.event_bus.publish(event_name=event_type, data=data or {}, priority=priority)

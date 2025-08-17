@@ -125,8 +125,8 @@ class DatabaseConfig(BaseModel):
     """Complete database configuration."""
 
     type: DatabaseType = DatabaseType.POSTGRESQL
-    connection: DatabaseConnectionConfig = Field(default_factory=lambda: DatabaseConnectionConfig())
-    pool: Optional[DatabasePoolConfig] = Field(default_factory=lambda: DatabasePoolConfig())
+    connection: DatabaseConnectionConfig = Field(default_factory=lambda: DatabaseConnectionConfig())  # type: ignore[call-arg]
+    pool: DatabasePoolConfig = Field(default_factory=lambda: DatabasePoolConfig())  # type: ignore[call-arg]
     echo: bool = False
     echo_pool: bool = False
 
@@ -141,6 +141,7 @@ class DatabaseConfig(BaseModel):
                 DatabaseType.POSTGRESQL: 5432,
                 DatabaseType.MYSQL: 3306,
                 DatabaseType.MONGODB: 27017,
+                DatabaseType.SQLITE: 0,  # SQLite doesn't use ports
                 DatabaseType.REDIS: 6379,
             }
             if db_type in default_ports:
@@ -328,10 +329,10 @@ class AppConfig(BaseModel):
     """Complete application configuration."""
 
     app: AppSettings = Field(default_factory=AppSettings)
-    server: ServerConfig = Field(default_factory=lambda: ServerConfig())
+    server: ServerConfig = Field(default_factory=lambda: ServerConfig())  # type: ignore[call-arg]
     database: Optional[DatabaseConfig] = Field(default_factory=DatabaseConfig)
     cache: Optional[CacheConfig] = Field(default_factory=CacheConfig)
-    auth: AuthConfig = Field(default_factory=lambda: AuthConfig())
+    auth: AuthConfig = Field(default_factory=lambda: AuthConfig())  # type: ignore[call-arg]
     security: SecurityConfig = Field(default_factory=SecurityConfig)
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
     plugins: PluginConfig = Field(default_factory=PluginConfig)
