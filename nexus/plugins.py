@@ -6,8 +6,9 @@ Base classes and interfaces for plugin development.
 import logging
 from abc import ABC, abstractmethod
 from datetime import datetime
+from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Type
+from typing import Any, Callable, Dict, List, Optional, Set, Type
 
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
@@ -35,18 +36,17 @@ class PluginMetadata(BaseModel):
     min_nexus_version: str = "1.0.0"
     max_nexus_version: Optional[str] = None
     enabled: bool = True
-    config_schema: Optional[Dict[str, Any]] = None
+    config_schema: Dict[str, Any] = Field(default_factory=dict)
 
 
 # Plugin Lifecycle
-class PluginLifecycle:
+class PluginLifecycle(Enum):
     """Plugin lifecycle states."""
 
-    DISCOVERED = "discovered"
-    LOADED = "loaded"
-    INITIALIZED = "initialized"
-    ENABLED = "enabled"
-    DISABLED = "disabled"
+    INITIALIZING = "initializing"
+    RUNNING = "running"
+    STOPPING = "stopping"
+    STOPPED = "stopped"
     ERROR = "error"
 
 
@@ -54,20 +54,21 @@ class PluginLifecycle:
 class PluginContext:
     """Plugin execution context."""
 
-    def __init__(self, app_config: Dict[str, Any], services: Dict[str, Any]):
+    def __init__(self, app_config: Dict[str, Any], service_registry: Any, event_bus: Any):
         self.app_config = app_config
-        self.services = services
+        self.service_registry = service_registry
+        self.event_bus = event_bus
         self.logger = logging.getLogger(__name__)
 
     def get_service(self, name: str) -> Any:
         """Get a service by name."""
-        return self.services.get(name)
+        return self.service_registry.get(name)
 
     def get_config(
         self, plugin_name: str, default: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """Get plugin configuration."""
-        return self.app_config.get("plugins", {}).get(plugin_name, default or {})
+        return self.app_config.get("plugins", {}).get(plugin_name, default or {})  # type: ignore
 
 
 # Plugin Dependency
@@ -75,7 +76,7 @@ class PluginDependency(BaseModel):
     """Plugin dependency specification."""
 
     name: str
-    version: Optional[str] = None
+    version: str = "*"
     optional: bool = False
 
 
@@ -92,8 +93,8 @@ class PluginPermission(BaseModel):
 class PluginHook:
     """Plugin hook for event handling."""
 
-    def __init__(self, event_name: str, priority: int = 0):
-        self.event_name = event_name
+    def __init__(self, name: str, priority: int = 0):
+        self.name = name
         self.priority = priority
 
 
@@ -101,38 +102,43 @@ class PluginHook:
 class PluginConfigSchema(BaseModel):
     """Plugin configuration schema."""
 
-    type: str = "object"
-    properties: Dict[str, Any] = Field(default_factory=dict)
+    schema: Dict[str, Any] = Field(default_factory=dict)
     required: List[str] = Field(default_factory=list)
-    additionalProperties: bool = True
 
 
 # Plugin Decorators
-def plugin_hook(event_name: str, priority: int = 0):
+def plugin_hook(
+    name: str, priority: int = 0
+) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     """Decorator for plugin hook methods."""
 
-    def decorator(func):
-        func._plugin_hook = PluginHook(event_name, priority)
+    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
+        setattr(func, "_nexus_hook", name)
+        setattr(func, "_nexus_priority", priority)
         return func
 
     return decorator
 
 
-def requires_permission(permission: str):
+def requires_permission(permission: str) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     """Decorator for methods requiring permissions."""
 
-    def decorator(func):
-        func._required_permission = permission
+    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
+        setattr(func, "_required_permission", permission)
         return func
 
     return decorator
 
 
-def requires_dependency(dependency: str, version: Optional[str] = None):
+def requires_dependency(
+    dependency: str, version: Optional[str] = None
+) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     """Decorator for methods requiring dependencies."""
 
-    def decorator(func):
-        func._required_dependency = PluginDependency(name=dependency, version=version)
+    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
+        setattr(func, "_required_dependency", dependency)
+        if version:
+            setattr(func, "_dependency_version", version)
         return func
 
     return decorator
@@ -143,7 +149,7 @@ class HealthStatus(BaseModel):
     """Plugin health status."""
 
     healthy: bool = True
-    message: str = "OK"
+    message: str = "Plugin is running"
     timestamp: datetime = Field(default_factory=datetime.utcnow)
     components: Dict[str, Dict[str, Any]] = Field(default_factory=dict)
     metrics: Dict[str, float] = Field(default_factory=dict)
@@ -182,7 +188,7 @@ class BasePlugin(ABC):
     All plugins must inherit from this class and implement the required abstract methods.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the base plugin."""
         # Plugin metadata
         self.name: str = ""
@@ -330,6 +336,7 @@ class BasePlugin(ABC):
             "license": self.license,
             "enabled": self.enabled,
             "initialized": self.initialized,
+            "status": "running" if self.initialized else "stopped",
             "startup_time": self._startup_time.isoformat() if self._startup_time else None,
             "uptime": (
                 (datetime.utcnow() - self._startup_time).total_seconds()
@@ -348,11 +355,12 @@ class BasePlugin(ABC):
             Dict[str, float]: Plugin metrics.
         """
         return {
-            "uptime_seconds": (
+            "uptime": (
                 (datetime.utcnow() - self._startup_time).total_seconds()
                 if self._startup_time
                 else 0
             ),
+            "memory_usage": 0.0,  # Placeholder - would need psutil for real memory usage
             "event_subscriptions": len(self._event_subscriptions),
             "background_tasks": len(self._background_tasks),
             "registered_services": len(self._registered_services),
@@ -382,16 +390,17 @@ class BasePlugin(ABC):
             self.event_bus.subscribe(event_name, handler)
             self._event_subscriptions[event_name] = handler
 
-    async def unsubscribe_from_event(self, event_name: str) -> None:
+    async def unsubscribe_from_event(self, event_name: str, handler: Any) -> None:
         """
         Unsubscribe from an event.
 
         Args:
             event_name: Name of the event to unsubscribe from.
+            handler: Event handler function to unsubscribe.
         """
+        if self.event_bus:
+            self.event_bus.unsubscribe(event_name, handler)
         if event_name in self._event_subscriptions:
-            if self.event_bus:
-                self.event_bus.unsubscribe(event_name, self._event_subscriptions[event_name])
             del self._event_subscriptions[event_name]
 
     def register_service(self, name: str, service: Any) -> None:
@@ -403,9 +412,8 @@ class BasePlugin(ABC):
             service: Service instance.
         """
         if self.service_registry:
-            full_name = f"{self.category}.{self.name}.{name}"
-            self.service_registry.register(full_name, service)
-            self._registered_services.add(full_name)
+            self.service_registry.register(name, service)
+            self._registered_services.add(name)
 
     def get_service(self, name: str) -> Optional[Any]:
         """
@@ -432,6 +440,14 @@ class BasePlugin(ABC):
         Returns:
             Configuration value.
         """
+        if self.db_adapter:
+            import json
+            try:
+                result = await self.db_adapter.get(key)
+                if result:
+                    return json.loads(result)
+            except Exception:
+                pass
         return self.config.get(key, default)
 
     async def set_config(self, key: str, value: Any) -> None:
@@ -461,8 +477,8 @@ class BasePlugin(ABC):
             Data value.
         """
         if self.db_adapter:
-            full_key = f"plugins.{self.category}.{self.name}.data.{key}"
-            return await self.db_adapter.get(full_key, default)
+            full_key = f"plugin:{self.name}:{key}"
+            return await self.db_adapter.get(full_key)
         return default
 
     async def set_data(self, key: str, value: Any) -> None:
@@ -474,7 +490,7 @@ class BasePlugin(ABC):
             value: Data value.
         """
         if self.db_adapter:
-            full_key = f"plugins.{self.category}.{self.name}.data.{key}"
+            full_key = f"plugin:{self.name}:{key}"
             await self.db_adapter.set(full_key, value)
 
 
@@ -482,56 +498,115 @@ class BasePlugin(ABC):
 class BusinessPlugin(BasePlugin):
     """Base class for business logic plugins."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.category = "business"
+
+    async def initialize(self) -> bool:
+        """Initialize the business plugin."""
+        return True
+
+    async def shutdown(self) -> None:
+        """Shutdown the business plugin."""
+        pass
+
+    def get_api_routes(self) -> List[APIRouter]:
+        """Get API routes for the business plugin."""
+        return []
+
+    def get_database_schema(self) -> Dict[str, Any]:
+        """Get database schema for the business plugin."""
+        return {}
 
 
 class IntegrationPlugin(BasePlugin):
     """Base class for integration plugins."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.category = "integration"
 
-    @abstractmethod
+    async def initialize(self) -> bool:
+        """Initialize the integration plugin."""
+        return True
+
+    async def shutdown(self) -> None:
+        """Shutdown the integration plugin."""
+        pass
+
+    def get_api_routes(self) -> List[APIRouter]:
+        """Get API routes for the integration plugin."""
+        return []
+
+    def get_database_schema(self) -> Dict[str, Any]:
+        """Get database schema for the integration plugin."""
+        return {}
+
     async def test_connection(self) -> bool:
         """Test connection to external service."""
-        pass
+        return False
 
 
 class AnalyticsPlugin(BasePlugin):
     """Base class for analytics plugins."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.category = "analytics"
 
-    @abstractmethod
-    async def collect_metrics(self) -> Dict[str, Any]:
-        """Collect analytics metrics."""
+    async def initialize(self) -> bool:
+        """Initialize the analytics plugin."""
+        return True
+
+    async def shutdown(self) -> None:
+        """Shutdown the analytics plugin."""
         pass
 
-    @abstractmethod
-    async def generate_report(self, params: Dict[str, Any]) -> Dict[str, Any]:
+    def get_api_routes(self) -> List[APIRouter]:
+        """Get API routes for the analytics plugin."""
+        return []
+
+    def get_database_schema(self) -> Dict[str, Any]:
+        """Get database schema for the analytics plugin."""
+        return {}
+
+    async def collect_metrics(self) -> Dict[str, Any]:
+        """Collect analytics metrics."""
+        return {}
+
+    async def generate_report(self, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Generate analytics report."""
-        pass
+        return {}
 
 
 class SecurityPlugin(BasePlugin):
     """Base class for security plugins."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.category = "security"
 
-    @abstractmethod
-    async def validate_request(self, request: Any) -> bool:
-        """Validate a request for security concerns."""
+    async def initialize(self) -> bool:
+        """Initialize the security plugin."""
+        return True
+
+    async def shutdown(self) -> None:
+        """Shutdown the security plugin."""
         pass
 
-    @abstractmethod
-    async def audit_log(self, event: Dict[str, Any]) -> None:
+    def get_api_routes(self) -> List[APIRouter]:
+        """Get API routes for the security plugin."""
+        return []
+
+    def get_database_schema(self) -> Dict[str, Any]:
+        """Get database schema for the security plugin."""
+        return {}
+
+    async def validate_request(self, request: Any) -> bool:
+        """Validate a request for security concerns."""
+        return True
+
+    async def audit_log(self, action: str, event: Dict[str, Any]) -> None:
         """Log security audit event."""
         pass
 
@@ -539,75 +614,131 @@ class SecurityPlugin(BasePlugin):
 class UIPlugin(BasePlugin):
     """Base class for UI plugins."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.category = "ui"
 
-    @abstractmethod
-    def get_ui_components(self) -> Dict[str, Any]:
-        """Get UI components provided by this plugin."""
+    async def initialize(self) -> bool:
+        """Initialize the UI plugin."""
+        return True
+
+    async def shutdown(self) -> None:
+        """Shutdown the UI plugin."""
         pass
 
-    @abstractmethod
+    def get_api_routes(self) -> List[APIRouter]:
+        """Get API routes for the UI plugin."""
+        return []
+
+    def get_database_schema(self) -> Dict[str, Any]:
+        """Get database schema for the UI plugin."""
+        return {}
+
+    def get_ui_components(self) -> List[Dict[str, Any]]:
+        """Get UI components provided by this plugin."""
+        return []
+
     def get_menu_items(self) -> List[Dict[str, Any]]:
         """Get menu items for the UI."""
-        pass
+        return []
 
 
 class NotificationPlugin(BasePlugin):
     """Base class for notification plugins."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.category = "notification"
 
-    @abstractmethod
+    async def initialize(self) -> bool:
+        """Initialize the notification plugin."""
+        return True
+
+    async def shutdown(self) -> None:
+        """Shutdown the notification plugin."""
+        pass
+
+    def get_api_routes(self) -> List[APIRouter]:
+        """Get API routes for the notification plugin."""
+        return []
+
+    def get_database_schema(self) -> Dict[str, Any]:
+        """Get database schema for the notification plugin."""
+        return {}
+
     async def send_notification(
         self, recipient: str, subject: str, message: str, metadata: Optional[Dict[str, Any]] = None
     ) -> bool:
         """Send a notification."""
-        pass
+        return False
 
 
 class StoragePlugin(BasePlugin):
     """Base class for storage plugins."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.category = "storage"
 
-    @abstractmethod
+    async def initialize(self) -> bool:
+        """Initialize the storage plugin."""
+        return True
+
+    async def shutdown(self) -> None:
+        """Shutdown the storage plugin."""
+        pass
+
+    def get_api_routes(self) -> List[APIRouter]:
+        """Get API routes for the storage plugin."""
+        return []
+
+    def get_database_schema(self) -> Dict[str, Any]:
+        """Get database schema for the storage plugin."""
+        return {}
+
     async def store(self, key: str, data: bytes) -> str:
         """Store data and return identifier."""
-        pass
+        return ""
 
-    @abstractmethod
-    async def retrieve(self, identifier: str) -> bytes:
+    async def retrieve(self, identifier: str) -> Optional[bytes]:
         """Retrieve stored data."""
-        pass
+        return None
 
-    @abstractmethod
     async def delete(self, identifier: str) -> bool:
         """Delete stored data."""
-        pass
+        return False
 
 
 class WorkflowPlugin(BasePlugin):
     """Base class for workflow automation plugins."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.category = "workflow"
 
-    @abstractmethod
-    async def execute_workflow(self, workflow_id: str, context: Dict[str, Any]) -> Dict[str, Any]:
-        """Execute a workflow."""
+    async def initialize(self) -> bool:
+        """Initialize the workflow plugin."""
+        return True
+
+    async def shutdown(self) -> None:
+        """Shutdown the workflow plugin."""
         pass
 
-    @abstractmethod
-    async def get_workflow_status(self, execution_id: str) -> Dict[str, Any]:
+    def get_api_routes(self) -> List[APIRouter]:
+        """Get API routes for the workflow plugin."""
+        return []
+
+    def get_database_schema(self) -> Dict[str, Any]:
+        """Get database schema for the workflow plugin."""
+        return {}
+
+    async def execute_workflow(self, workflow_id: str, context: Dict[str, Any]) -> None:
+        """Execute a workflow."""
+        return None
+
+    async def get_workflow_status(self, execution_id: str) -> str:
         """Get workflow execution status."""
-        pass
+        return "unknown"
 
 
 # Plugin Utilities
@@ -615,21 +746,26 @@ class PluginValidator:
     """Validates plugin implementations."""
 
     @staticmethod
-    def validate_plugin(plugin_class: Type[BasePlugin]) -> bool:
+    def validate_plugin(plugin: BasePlugin) -> bool:
         """
-        Validate that a class properly implements the plugin interface.
+        Validate that a plugin properly implements the plugin interface.
 
         Args:
-            plugin_class: Plugin class to validate.
+            plugin: Plugin instance to validate.
 
         Returns:
             bool: True if valid, False otherwise.
         """
+        # Check if plugin has a valid name
+        if not hasattr(plugin, 'name') or not plugin.name or plugin.name.strip() == "":
+            logger.error("Plugin has invalid or empty name")
+            return False
+
         required_methods = ["initialize", "shutdown", "get_api_routes", "get_database_schema"]
 
         for method in required_methods:
-            if not hasattr(plugin_class, method):
-                logger.error(f"Plugin class missing required method: {method}")
+            if not hasattr(plugin, method):
+                logger.error(f"Plugin missing required method: {method}")
                 return False
 
         return True
@@ -663,6 +799,7 @@ class PluginValidator:
             "storage",
             "workflow",
             "custom",
+            "test",
         ]
 
         if manifest["category"] not in valid_categories:

@@ -18,10 +18,10 @@ logger = logging.getLogger(__name__)
 class ErrorHandlerMiddleware:
     """Middleware for handling errors and exceptions."""
 
-    def __init__(self, app):
+    def __init__(self, app: Any) -> None:
         self.app = app
 
-    async def __call__(self, scope, receive, send):
+    async def __call__(self, scope: Any, receive: Any, send: Any) -> None:
         if scope["type"] != "http":
             await self.app(scope, receive, send)
             return
@@ -46,10 +46,10 @@ class ErrorHandlerMiddleware:
 class LoggingMiddleware:
     """Middleware for request/response logging."""
 
-    def __init__(self, app):
+    def __init__(self, app: Any) -> None:
         self.app = app
 
-    async def __call__(self, scope, receive, send):
+    async def __call__(self, scope: Any, receive: Any, send: Any) -> None:
         if scope["type"] != "http":
             await self.app(scope, receive, send)
             return
@@ -81,7 +81,7 @@ class RateLimitMiddleware:
         self.requests_per_minute = requests_per_minute
         self.request_counts: Dict[str, list] = {}
 
-    async def __call__(self, scope, receive, send):
+    async def __call__(self, scope: Any, receive: Any, send: Any) -> None:
         if scope["type"] != "http":
             await self.app(scope, receive, send)
             return
@@ -134,7 +134,7 @@ class CORSMiddleware:
         self.allow_methods = allow_methods or ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
         self.allow_headers = allow_headers or ["*"]
 
-    async def __call__(self, scope, receive, send):
+    async def __call__(self, scope: Any, receive: Any, send: Any) -> None:
         if scope["type"] != "http":
             await self.app(scope, receive, send)
             return
@@ -163,10 +163,10 @@ class CORSMiddleware:
 class SecurityMiddleware:
     """Basic security headers middleware."""
 
-    def __init__(self, app):
+    def __init__(self, app: Any) -> None:
         self.app = app
 
-    async def __call__(self, scope, receive, send):
+    async def __call__(self, scope: Any, receive: Any, send: Any) -> None:
         if scope["type"] != "http":
             await self.app(scope, receive, send)
             return
@@ -190,10 +190,10 @@ class SecurityMiddleware:
 class TimingMiddleware:
     """Middleware for adding response timing headers."""
 
-    def __init__(self, app):
+    def __init__(self, app: Any) -> None:
         self.app = app
 
-    async def __call__(self, scope, receive, send):
+    async def __call__(self, scope: Any, receive: Any, send: Any) -> None:
         if scope["type"] != "http":
             await self.app(scope, receive, send)
             return
@@ -214,11 +214,11 @@ class TimingMiddleware:
 class RequestIDMiddleware:
     """Middleware for adding unique request IDs."""
 
-    def __init__(self, app):
+    def __init__(self, app: Any) -> None:
         self.app = app
         self.request_counter = 0
 
-    async def __call__(self, scope, receive, send):
+    async def __call__(self, scope: Any, receive: Any, send: Any) -> None:
         if scope["type"] != "http":
             await self.app(scope, receive, send)
             return

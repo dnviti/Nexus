@@ -24,6 +24,7 @@ from nexus.cli import (
     status,
     validate,
 )
+from nexus.core import AppConfig
 
 
 class TestCLIBasic:
@@ -72,31 +73,31 @@ class TestRunCommand:
 
     def test_run_command_exists(self):
         """Test that run command exists."""
-        result = self.runner.invoke(run, ["--help"])
+        result = self.runner.invoke(cli, ["run", "--help"])
         assert result.exit_code == 0
         assert "Run the Nexus application server" in result.output
 
-    @patch("nexus.cli.create_nexus_app")
+    @patch("nexus.create_nexus_app")
     @patch("uvicorn.run")
     def test_run_command_basic(self, mock_uvicorn, mock_create_app):
         """Test basic run command."""
         mock_app = MagicMock()
         mock_create_app.return_value = mock_app
 
-        result = self.runner.invoke(run)
+        result = self.runner.invoke(cli, ["run"])
 
         # Command should attempt to start the app
         mock_create_app.assert_called_once()
         mock_uvicorn.assert_called_once()
 
-    @patch("nexus.cli.create_nexus_app")
+    @patch("nexus.create_nexus_app")
     @patch("uvicorn.run")
     def test_run_command_with_host_port(self, mock_uvicorn, mock_create_app):
         """Test run command with custom host and port."""
         mock_app = MagicMock()
         mock_create_app.return_value = mock_app
 
-        result = self.runner.invoke(run, ["--host", "0.0.0.0", "--port", "9000"])
+        result = self.runner.invoke(cli, ["run", "--host", "0.0.0.0", "--port", "9000"])
 
         mock_uvicorn.assert_called_once()
         # Check that uvicorn was called with correct parameters
@@ -104,27 +105,27 @@ class TestRunCommand:
         assert call_args[1]["host"] == "0.0.0.0"
         assert call_args[1]["port"] == 9000
 
-    @patch("nexus.cli.create_nexus_app")
+    @patch("nexus.create_nexus_app")
     @patch("uvicorn.run")
     def test_run_command_with_reload(self, mock_uvicorn, mock_create_app):
         """Test run command with reload option."""
         mock_app = MagicMock()
         mock_create_app.return_value = mock_app
 
-        result = self.runner.invoke(run, ["--reload"])
+        result = self.runner.invoke(cli, ["run", "--reload"])
 
         mock_uvicorn.assert_called_once()
         call_args = mock_uvicorn.call_args
         assert call_args[1]["reload"] == True
 
-    @patch("nexus.cli.create_nexus_app")
+    @patch("nexus.create_nexus_app")
     @patch("uvicorn.run")
     def test_run_command_with_workers(self, mock_uvicorn, mock_create_app):
         """Test run command with workers option."""
         mock_app = MagicMock()
         mock_create_app.return_value = mock_app
 
-        result = self.runner.invoke(run, ["--workers", "4"])
+        result = self.runner.invoke(cli, ["run", "--workers", "4"])
 
         mock_uvicorn.assert_called_once()
         call_args = mock_uvicorn.call_args
@@ -140,18 +141,18 @@ class TestInitCommand:
 
     def test_init_command_exists(self):
         """Test that init command exists."""
-        result = self.runner.invoke(init, ["--help"])
+        result = self.runner.invoke(cli, ["init", "--help"])
         assert result.exit_code == 0
         assert "Initialize a new Nexus project" in result.output
 
     @patch("nexus.cli.create_default_config")
     def test_init_command_basic(self, mock_create_config):
         """Test basic init command."""
-        mock_config = MagicMock()
+        mock_config = AppConfig()
         mock_create_config.return_value = mock_config
 
         with self.runner.isolated_filesystem():
-            result = self.runner.invoke(init)
+            result = self.runner.invoke(cli, ["init"])
 
             # Should complete successfully
             assert result.exit_code == 0
@@ -160,11 +161,11 @@ class TestInitCommand:
     @patch("nexus.cli.create_default_config")
     def test_init_command_with_output(self, mock_create_config):
         """Test init command with output option."""
-        mock_config = MagicMock()
+        mock_config = AppConfig()
         mock_create_config.return_value = mock_config
 
         with self.runner.isolated_filesystem():
-            result = self.runner.invoke(init, ["--output", "custom_config.yaml"])
+            result = self.runner.invoke(cli, ["init", "--output", "custom_config.yaml"])
 
             # Should handle output option
             assert result.exit_code == 0
@@ -185,12 +186,12 @@ class TestPluginCommands:
 
     def test_plugin_list_command_exists(self):
         """Test that plugin list command exists."""
-        result = self.runner.invoke(plugin_list, ["--help"])
+        result = self.runner.invoke(cli, ["plugin", "list", "--help"])
         assert result.exit_code == 0
 
     def test_plugin_list_basic(self):
         """Test basic plugin listing."""
-        result = self.runner.invoke(plugin_list)
+        result = self.runner.invoke(cli, ["plugin", "list"])
 
         # Should list plugins
         assert result.exit_code == 0
@@ -198,13 +199,13 @@ class TestPluginCommands:
 
     def test_plugin_create_command_exists(self):
         """Test that plugin create command exists."""
-        result = self.runner.invoke(plugin_create, ["--help"])
+        result = self.runner.invoke(cli, ["plugin", "create", "--help"])
         assert result.exit_code == 0
 
     def test_plugin_create_basic(self):
         """Test basic plugin creation."""
         with self.runner.isolated_filesystem():
-            result = self.runner.invoke(plugin_create, ["test_plugin"])
+            result = self.runner.invoke(cli, ["plugin", "create", "test_plugin"])
 
             # Should attempt to create plugin
             assert result.exit_code == 0
@@ -212,19 +213,19 @@ class TestPluginCommands:
     def test_plugin_create_with_template(self):
         """Test plugin creation with template."""
         with self.runner.isolated_filesystem():
-            result = self.runner.invoke(plugin_create, ["--template", "basic", "test_plugin"])
+            result = self.runner.invoke(cli, ["plugin", "create", "--template", "basic", "test_plugin"])
 
             # Should handle template option
             assert result.exit_code == 0
 
     def test_plugin_info_command_exists(self):
         """Test that plugin info command exists."""
-        result = self.runner.invoke(plugin_info, ["--help"])
+        result = self.runner.invoke(cli, ["plugin", "info", "--help"])
         assert result.exit_code == 0
 
     def test_plugin_info_basic(self):
         """Test basic plugin info."""
-        result = self.runner.invoke(plugin_info, ["test_plugin"])
+        result = self.runner.invoke(cli, ["plugin", "info", "test_plugin"])
 
         # Should show plugin information
         assert result.exit_code == 0
@@ -240,12 +241,12 @@ class TestStatusCommand:
 
     def test_status_command_exists(self):
         """Test that status command exists."""
-        result = self.runner.invoke(status, ["--help"])
+        result = self.runner.invoke(cli, ["status", "--help"])
         assert result.exit_code == 0
 
     def test_status_command_basic(self):
         """Test basic status command."""
-        result = self.runner.invoke(status)
+        result = self.runner.invoke(cli, ["status"])
 
         # Should display status information
         assert result.exit_code == 0
@@ -253,7 +254,7 @@ class TestStatusCommand:
 
     def test_status_shows_version(self):
         """Test that status shows version."""
-        result = self.runner.invoke(status)
+        result = self.runner.invoke(cli, ["status"])
 
         assert result.exit_code == 0
         assert "Version:" in result.output
@@ -268,12 +269,12 @@ class TestHealthCommand:
 
     def test_health_command_exists(self):
         """Test that health command exists."""
-        result = self.runner.invoke(health, ["--help"])
+        result = self.runner.invoke(cli, ["health", "--help"])
         assert result.exit_code == 0
 
     def test_health_command_basic(self):
         """Test basic health command."""
-        result = self.runner.invoke(health)
+        result = self.runner.invoke(cli, ["health"])
 
         # Should display health information
         assert result.exit_code == 0
@@ -281,7 +282,7 @@ class TestHealthCommand:
 
     def test_health_command_json_format(self):
         """Test health command with JSON format."""
-        result = self.runner.invoke(health, ["--format", "json"])
+        result = self.runner.invoke(cli, ["health", "--format", "json"])
 
         # Should output JSON format
         assert result.exit_code == 0
@@ -296,16 +297,21 @@ class TestValidateCommand:
 
     def test_validate_command_exists(self):
         """Test that validate command exists."""
-        result = self.runner.invoke(validate, ["--help"])
+        result = self.runner.invoke(cli, ["validate", "--help"])
         assert result.exit_code == 0
 
     def test_validate_command_basic(self):
         """Test basic validate command."""
-        result = self.runner.invoke(validate)
+        with self.runner.isolated_filesystem():
+            # Create a basic config file
+            with open("nexus_config.yaml", "w") as f:
+                f.write("app:\n  name: TestApp\n")
 
-        # Should validate configuration
-        assert result.exit_code == 0
-        assert "Validating Configuration" in result.output
+            result = self.runner.invoke(cli, ["validate"])
+
+            # Should validate configuration
+            assert result.exit_code == 0
+            assert "Validating Configuration" in result.output
 
     def test_validate_with_config_file(self):
         """Test validate command with specific config file."""
@@ -314,7 +320,7 @@ class TestValidateCommand:
             f.flush()
 
             try:
-                result = self.runner.invoke(validate, ["--config-file", f.name])
+                result = self.runner.invoke(cli, ["validate", "--config-file", f.name])
                 # Should validate the specified file
                 assert result.exit_code == 0
             finally:
@@ -466,19 +472,19 @@ class TestCLIIntegration:
     @patch("nexus.cli.create_default_config")
     def test_init_and_status_workflow(self, mock_create_config):
         """Test init followed by status check."""
-        mock_config = MagicMock()
+        mock_config = AppConfig()
         mock_create_config.return_value = mock_config
 
         with self.runner.isolated_filesystem():
             # Initialize project
-            result = self.runner.invoke(init)
+            result = self.runner.invoke(cli, ["init"])
             assert result.exit_code == 0
 
             # Check status
-            result = self.runner.invoke(status)
+            result = self.runner.invoke(cli, ["status"])
             assert result.exit_code == 0
 
-    @patch("nexus.cli.create_nexus_app")
+    @patch("nexus.create_nexus_app")
     @patch("uvicorn.run")
     def test_run_with_config(self, mock_uvicorn, mock_create_app):
         """Test running app with configuration file."""
@@ -506,15 +512,15 @@ server:
         """Test plugin management workflow."""
         with self.runner.isolated_filesystem():
             # List plugins
-            result = self.runner.invoke(plugin_list)
+            result = self.runner.invoke(cli, ["plugin", "list"])
             assert result.exit_code == 0
 
             # Create plugin
-            result = self.runner.invoke(plugin_create, ["test_plugin"])
+            result = self.runner.invoke(cli, ["plugin", "create", "test_plugin"])
             assert result.exit_code == 0
 
             # Get plugin info
-            result = self.runner.invoke(plugin_info, ["test_plugin"])
+            result = self.runner.invoke(cli, ["plugin", "info", "test_plugin"])
             assert result.exit_code == 0
 
 

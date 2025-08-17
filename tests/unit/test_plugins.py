@@ -394,6 +394,7 @@ class TestBasePlugin:
     async def test_base_plugin_health_check(self):
         """Test plugin health check."""
         plugin = self.create_test_plugin()
+        await plugin.initialize()
 
         health = await plugin.health_check()
         assert isinstance(health, HealthStatus)
@@ -430,7 +431,7 @@ class TestBasePlugin:
     async def test_base_plugin_publish_event(self):
         """Test publishing events from plugin."""
         plugin = self.create_test_plugin()
-        mock_event_bus = MagicMock()
+        mock_event_bus = AsyncMock()
         plugin.event_bus = mock_event_bus
 
         await plugin.publish_event("test.event", {"data": "test"})

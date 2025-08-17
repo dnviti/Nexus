@@ -135,16 +135,16 @@ class EventPriority(Enum):
 class EventBus:
     """Central event bus for inter-component communication."""
 
-    def __init__(self):
-        self._subscribers: Dict[str, List[Callable]] = {}
-        self._queue: asyncio.Queue = asyncio.Queue()
+    def __init__(self) -> None:
+        self._subscribers: Dict[str, List[Callable[..., Any]]] = {}
+        self._queue: asyncio.Queue[tuple[int, Event]] = asyncio.Queue()
         self._running = False
-        self._processor_task: Optional[asyncio.Task] = None
+        self._processor_task: Optional[asyncio.Task[None]] = None
 
     async def publish(
         self,
         event_name: str,
-        data: Dict[str, Any] = None,
+        data: Optional[Dict[str, Any]] = None,
         priority: EventPriority = EventPriority.NORMAL,
         source: Optional[str] = None,
     ) -> None:
@@ -154,7 +154,7 @@ class EventBus:
         await self._queue.put((priority.value, event))
         logger.debug(f"Published event: {event_name} from {source}")
 
-    def subscribe(self, event_name: str, handler: Callable) -> None:
+    def subscribe(self, event_name: str, handler: Callable[..., Any]) -> None:
         """Subscribe to an event."""
         if event_name not in self._subscribers:
             self._subscribers[event_name] = []
@@ -162,7 +162,7 @@ class EventBus:
         self._subscribers[event_name].append(handler)
         logger.debug(f"Subscribed to event: {event_name}")
 
-    def unsubscribe(self, event_name: str, handler: Callable) -> None:
+    def unsubscribe(self, event_name: str, handler: Callable[..., Any]) -> None:
         """Unsubscribe from an event."""
         if event_name in self._subscribers:
             self._subscribers[event_name].remove(handler)
@@ -207,11 +207,11 @@ class EventBus:
 class ServiceRegistry:
     """Central registry for services."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._services: Dict[str, Any] = {}
-        self._interfaces: Dict[Type, List[str]] = {}
+        self._interfaces: Dict[Type[Any], List[str]] = {}
 
-    def register(self, name: str, service: Any, interface: Optional[Type] = None) -> None:
+    def register(self, name: str, service: Any, interface: Optional[Type[Any]] = None) -> None:
         """Register a service."""
         self._services[name] = service
 
@@ -237,7 +237,7 @@ class ServiceRegistry:
         """Get a service by name."""
         return self._services.get(name)
 
-    def get_by_interface(self, interface: Type) -> List[Any]:
+    def get_by_interface(self, interface: Type[Any]) -> List[Any]:
         """Get all services implementing an interface."""
         service_names = self._interfaces.get(interface, [])
         return [self._services[name] for name in service_names if name in self._services]
@@ -308,10 +308,10 @@ class TransactionContext:
         self.adapter = adapter
         self._operations: List[Dict[str, Any]] = []
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> "TransactionContext":
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         if exc_type is None:
             await self.commit()
         else:
@@ -400,7 +400,7 @@ class PluginManager:
 
     async def discover_plugins(self, path: Path) -> List[PluginInfo]:
         """Discover available plugins in a directory."""
-        discovered = []
+        discovered: List[PluginInfo] = []
 
         if not path.exists():
             return discovered

@@ -97,7 +97,7 @@ class DatabaseConnectionConfig(BaseModel):
     auth_source: Optional[str] = "admin"
 
     @validator("port")
-    def validate_port_for_type(cls, v, values):
+    def validate_port_for_type(cls, v: int, values: Dict[str, Any]) -> int:
         """Set default ports based on database type."""
         return v
 
@@ -113,7 +113,7 @@ class DatabasePoolConfig(BaseModel):
     pool_pre_ping: bool = True
 
     @validator("max_size")
-    def validate_max_size(cls, v, values):
+    def validate_max_size(cls, v: int, values: Dict[str, Any]) -> int:
         """Ensure max_size is greater than min_size."""
         min_size = values.get("min_size", 10)
         if v < min_size:
@@ -125,13 +125,15 @@ class DatabaseConfig(BaseModel):
     """Complete database configuration."""
 
     type: DatabaseType = DatabaseType.POSTGRESQL
-    connection: DatabaseConnectionConfig = Field(default_factory=DatabaseConnectionConfig)
-    pool: Optional[DatabasePoolConfig] = Field(default_factory=DatabasePoolConfig)
+    connection: DatabaseConnectionConfig = Field(default_factory=lambda: DatabaseConnectionConfig())
+    pool: Optional[DatabasePoolConfig] = Field(default_factory=lambda: DatabasePoolConfig())
     echo: bool = False
     echo_pool: bool = False
 
     @validator("connection")
-    def set_default_port(cls, v, values):
+    def set_default_port(
+        cls, v: DatabaseConnectionConfig, values: Dict[str, Any]
+    ) -> DatabaseConnectionConfig:
         """Set default port based on database type."""
         db_type = values.get("type")
         if db_type and v.port == 5432:  # Default PostgreSQL port
@@ -209,7 +211,7 @@ class AuthConfig(BaseModel):
     lockout_duration: int = 900  # 15 minutes
 
     @validator("jwt_secret")
-    def validate_jwt_secret(cls, v):
+    def validate_jwt_secret(cls, v: str) -> str:
         """Ensure JWT secret is secure in production."""
         if v == "change-me-in-production":
             logger.warning("Using default JWT secret. Please change in production!")
@@ -244,7 +246,7 @@ class LoggingConfig(BaseModel):
     console_enabled: bool = True
     console_colorize: bool = True
 
-    def configure_logging(self):
+    def configure_logging(self) -> None:
         """Configure Python logging based on settings."""
         import logging.config
 
@@ -265,16 +267,16 @@ class LoggingConfig(BaseModel):
         }
 
         if self.console_enabled:
-            config["handlers"]["console"] = {
+            config["handlers"]["console"] = {  # type: ignore
                 "class": "logging.StreamHandler",
                 "level": self.level.value,
                 "formatter": "default",
                 "stream": "ext://sys.stdout",
             }
-            config["root"]["handlers"].append("console")
+            config["root"]["handlers"].append("console")  # type: ignore
 
         if self.file_enabled:
-            config["handlers"]["file"] = {
+            config["handlers"]["file"] = {  # type: ignore
                 "class": "logging.handlers.RotatingFileHandler",
                 "level": self.level.value,
                 "formatter": "default",
@@ -282,7 +284,7 @@ class LoggingConfig(BaseModel):
                 "maxBytes": self.file_max_size,
                 "backupCount": self.file_backup_count,
             }
-            config["root"]["handlers"].append("file")
+            config["root"]["handlers"].append("file")  # type: ignore
 
         logging.config.dictConfig(config)
 
@@ -314,7 +316,7 @@ class AppSettings(BaseModel):
     locale: str = "en_US"
 
     @validator("debug")
-    def validate_debug(cls, v, values):
+    def validate_debug(cls, v: bool, values: Dict[str, Any]) -> bool:
         """Ensure debug is off in production."""
         env = values.get("environment")
         if env == Environment.PRODUCTION and v:
@@ -326,10 +328,10 @@ class AppConfig(BaseModel):
     """Complete application configuration."""
 
     app: AppSettings = Field(default_factory=AppSettings)
-    server: ServerConfig = Field(default_factory=ServerConfig)
+    server: ServerConfig = Field(default_factory=lambda: ServerConfig())
     database: Optional[DatabaseConfig] = Field(default_factory=DatabaseConfig)
     cache: Optional[CacheConfig] = Field(default_factory=CacheConfig)
-    auth: AuthConfig = Field(default_factory=AuthConfig)
+    auth: AuthConfig = Field(default_factory=lambda: AuthConfig())
     security: SecurityConfig = Field(default_factory=SecurityConfig)
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
     plugins: PluginConfig = Field(default_factory=PluginConfig)
@@ -349,7 +351,7 @@ class AppConfig(BaseModel):
         merged_dict = self.dict()
         other_dict = other.dict()
 
-        def deep_merge(d1: dict, d2: dict) -> dict:
+        def deep_merge(d1: Dict[str, Any], d2: Dict[str, Any]) -> Dict[str, Any]:
             """Recursively merge two dictionaries."""
             result = d1.copy()
             for key, value in d2.items():
@@ -390,7 +392,7 @@ class ConfigLoader:
             raise ValueError(f"Unsupported configuration file type: {path.suffix}")
 
         # Substitute environment variables
-        return cls._substitute_env_vars(data)
+        return cls._substitute_env_vars(data)  # type: ignore
 
     @classmethod
     def _substitute_env_vars(cls, data: Any) -> Any:
@@ -401,13 +403,13 @@ class ConfigLoader:
             return [cls._substitute_env_vars(item) for item in data]
         elif isinstance(data, str):
 
-            def replacer(match):
+            def replacer(match: Any) -> str:
                 var_name = match.group(1)
                 default_value = match.group(2)
                 value = os.environ.get(var_name)
                 if value is None:
                     if default_value is not None:
-                        return default_value
+                        return str(default_value)
                     raise ValueError(
                         f"Environment variable {var_name} not set and no default provided"
                     )
@@ -420,7 +422,7 @@ class ConfigLoader:
     @classmethod
     def load_from_env(cls, prefix: str = "NEXUS") -> Dict[str, Any]:
         """Load configuration from environment variables."""
-        config = {}
+        config: Dict[str, Any] = {}
         prefix = f"{prefix}_"
 
         for key, value in os.environ.items():
@@ -490,7 +492,7 @@ def load_config(
     return config
 
 
-def deep_merge(base: dict, override: dict) -> dict:
+def deep_merge(base: Dict[str, Any], override: Dict[str, Any]) -> Dict[str, Any]:
     """Deep merge two dictionaries."""
     result = base.copy()
 

@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 from typing import Any, Callable, Dict, List, Optional
 
 import psutil
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
 
@@ -31,10 +31,14 @@ class SystemMetrics(BaseModel):
 
     cpu_percent: float = 0.0
     memory_percent: float = 0.0
+    memory_used_mb: float = 0.0
+    memory_total_mb: float = 0.0
     disk_percent: float = 0.0
+    disk_usage_percent: float = 0.0
     load_average: List[float] = []
     network_stats: Dict[str, Any] = {}
-    timestamp: datetime = datetime.utcnow()
+    uptime_seconds: float = 0.0
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
 
 
 class PerformanceMetrics(BaseModel):
@@ -66,15 +70,15 @@ class PerformanceMetrics(BaseModel):
 class HealthChecker:
     """Health checker class for managing health checks."""
 
-    def __init__(self):
-        self.checks = {}
-        self.check_configs = {}
-        self.alert_handlers = []
+    def __init__(self) -> None:
+        self.checks: Dict[str, Any] = {}
+        self.check_configs: Dict[str, Dict[str, Any]] = {}
+        self.alert_handlers: List[Callable[[str, Dict[str, Any]], None]] = []
 
     def add_check(
         self,
         name: str,
-        check_function: Callable,
+        check_function: Callable[[], bool],
         interval: int = 30,
         timeout: int = 5,
         enabled: bool = True,
@@ -133,7 +137,7 @@ class HealthChecker:
             self.checks[check_id]["enabled"] = True
             self.check_configs[check_id]["enabled"] = True
 
-    def add_alert_handler(self, handler: Callable) -> None:
+    def add_alert_handler(self, handler: Callable[[str, Dict[str, Any]], None]) -> None:
         """Add an alert handler."""
         self.alert_handlers.append(handler)
 
@@ -141,12 +145,16 @@ class HealthChecker:
 class MetricsCollector:
     """Metrics collector for recording and retrieving metrics."""
 
-    def __init__(self):
-        self.metrics = {}
-        self.counters = {}
-        self.gauges = {}
-        self.histograms = {}
-        self.time_series = {}
+    def __init__(self) -> None:
+        self.metrics: Dict[str, Any] = {}
+        self.counters: Dict[str, int] = {}
+        self.gauges: Dict[str, float] = {}
+        self.histograms: Dict[str, Dict[str, Any]] = {}
+        self.time_series: Dict[str, List[Dict[str, Any]]] = {}
+        self.start_time = time.time()
+        self.request_count = 0
+        self.error_count = 0
+        self.response_times: List[float] = []
 
     def record_metric(self, name: str, value: Any, labels: Optional[Dict[str, str]] = None) -> None:
         """Record a metric value."""
@@ -196,6 +204,18 @@ class MetricsCollector:
         """Get time series data for a metric."""
         return self.time_series.get(name, [])
 
+    def record_request(self, response_time_ms: float, status_code: int) -> None:
+        """Record a request metric."""
+        self.request_count += 1
+        self.response_times.append(response_time_ms)
+
+        # Keep only last 1000 response times for average calculation
+        if len(self.response_times) > 1000:
+            self.response_times = self.response_times[-1000:]
+
+        if status_code >= 400:
+            self.error_count += 1
+
     def _build_metric_key(self, name: str, labels: Optional[Dict[str, str]]) -> str:
         """Build a metric key with labels."""
         if labels:
@@ -217,10 +237,10 @@ class SystemMonitor:
         self.enable_network_monitoring = enable_network_monitoring
         self.enable_process_monitoring = enable_process_monitoring
         self.monitoring = False
-        self.history = []
+        self.history: List[SystemMetrics] = []
         self.max_history_entries = 1000
-        self.thresholds = {}
-        self.custom_collectors = {}
+        self.thresholds: Dict[str, Dict[str, float]] = {}
+        self.custom_collectors: Dict[str, Callable[[], Dict[str, Any]]] = {}
 
     def start_monitoring(self) -> None:
         """Start system monitoring."""
@@ -304,7 +324,7 @@ class SystemMonitor:
         """Get metrics history."""
         return self.history[-limit:]
 
-    def add_custom_collector(self, name: str, collector_func: Callable) -> None:
+    def add_custom_collector(self, name: str, collector_func: Callable[[], Dict[str, Any]]) -> None:
         """Add custom metrics collector."""
         self.custom_collectors[name] = collector_func
 
@@ -326,7 +346,7 @@ class HealthCheck:
     """Health check configuration and execution."""
 
     name: str
-    check_function: Callable
+    check_function: Callable[[], bool]
     timeout_seconds: float = 5.0
     interval_seconds: float = 30.0
     last_check: Optional[datetime] = None
@@ -341,7 +361,9 @@ class HealthCheck:
         try:
             # Execute the check function
             if hasattr(self.check_function, "__call__"):
-                if hasattr(self.check_function, "__await__"):
+                import asyncio
+
+                if asyncio.iscoroutinefunction(self.check_function):
                     result = await self.check_function()
                 else:
                     result = self.check_function()
@@ -384,115 +406,6 @@ class HealthCheck:
         return status
 
 
-class MetricsCollector:
-    """Collects and stores application metrics."""
-
-    def __init__(self):
-        """Initialize metrics collector."""
-        self.start_time = time.time()
-        self.request_count = 0
-        self.error_count = 0
-        self.response_times = []
-        self.health_checks: Dict[str, HealthCheck] = {}
-
-    def record_request(self, response_time_ms: float, status_code: int):
-        """Record a request metric."""
-        self.request_count += 1
-        self.response_times.append(response_time_ms)
-
-        # Keep only last 1000 response times for average calculation
-        if len(self.response_times) > 1000:
-            self.response_times = self.response_times[-1000:]
-
-        if status_code >= 400:
-            self.error_count += 1
-
-    def get_system_metrics(self) -> SystemMetrics:
-        """Get current system metrics."""
-        try:
-            memory = psutil.virtual_memory()
-            disk = psutil.disk_usage("/")
-            load_avg = psutil.getloadavg() if hasattr(psutil, "getloadavg") else [0.0, 0.0, 0.0]
-
-            return SystemMetrics(
-                cpu_percent=psutil.cpu_percent(interval=1),
-                memory_percent=memory.percent,
-                memory_used_mb=memory.used / 1024 / 1024,
-                memory_total_mb=memory.total / 1024 / 1024,
-                disk_usage_percent=disk.percent,
-                load_average=list(load_avg),
-                uptime_seconds=time.time() - self.start_time,
-            )
-        except Exception as e:
-            logger.error(f"Failed to collect system metrics: {e}")
-            return SystemMetrics(
-                cpu_percent=0.0,
-                memory_percent=0.0,
-                memory_used_mb=0.0,
-                memory_total_mb=0.0,
-                disk_usage_percent=0.0,
-                load_average=[0.0, 0.0, 0.0],
-                uptime_seconds=time.time() - self.start_time,
-            )
-
-    def get_application_metrics(self) -> ApplicationMetrics:
-        """Get current application metrics."""
-        avg_response_time = (
-            sum(self.response_times) / len(self.response_times) if self.response_times else 0.0
-        )
-
-        return ApplicationMetrics(
-            total_requests=self.request_count,
-            failed_requests=self.error_count,
-            average_response_time_ms=avg_response_time,
-            plugins_loaded=0,  # Would be populated by plugin manager
-            plugins_active=0,  # Would be populated by plugin manager
-        )
-
-    def add_health_check(self, health_check: HealthCheck):
-        """Add a health check."""
-        self.health_checks[health_check.name] = health_check
-        logger.info(f"Added health check: {health_check.name}")
-
-    async def run_health_checks(self) -> Dict[str, HealthStatus]:
-        """Run all health checks."""
-        results = {}
-        for name, check in self.health_checks.items():
-            try:
-                status = await check.execute()
-                results[name] = status
-            except Exception as e:
-                logger.error(f"Failed to run health check '{name}': {e}")
-                results[name] = HealthStatus(
-                    name=name, status="unhealthy", message=f"Execution failed: {str(e)}"
-                )
-        return results
-
-    def get_overall_health(self) -> str:
-        """Get overall application health status."""
-        if not self.health_checks:
-            return "unknown"
-
-        unhealthy_checks = [
-            check
-            for check in self.health_checks.values()
-            if check.last_status and check.last_status.status == "unhealthy"
-        ]
-
-        degraded_checks = [
-            check
-            for check in self.health_checks.values()
-            if check.last_status and check.last_status.status == "degraded"
-        ]
-
-        if unhealthy_checks:
-            return "unhealthy"
-        elif degraded_checks:
-            return "degraded"
-        else:
-            return "healthy"
-
-
 # Default health checks
 def database_health_check() -> bool:
     """Basic database health check."""
@@ -504,7 +417,7 @@ def memory_health_check() -> bool:
     """Memory usage health check."""
     try:
         memory = psutil.virtual_memory()
-        return memory.percent < 90  # Consider unhealthy if > 90% memory usage
+        return bool(memory.percent < 90.0)  # Consider unhealthy if > 90% memory usage
     except Exception:
         return False
 
@@ -513,7 +426,7 @@ def disk_health_check() -> bool:
     """Disk usage health check."""
     try:
         disk = psutil.disk_usage("/")
-        return disk.percent < 95  # Consider unhealthy if > 95% disk usage
+        return bool(disk.percent < 95.0)  # Consider unhealthy if > 95% disk usage
     except Exception:
         return False
 

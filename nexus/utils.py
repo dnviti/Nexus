@@ -18,7 +18,7 @@ def setup_logging(
     format_string: Optional[str] = None,
     log_file: Optional[str] = None,
     enable_json: bool = False,
-):
+) -> None:
     """Setup application logging configuration."""
 
     # Default format
@@ -33,7 +33,7 @@ def setup_logging(
 
     # Create formatters
     if enable_json:
-        formatter = JsonFormatter()
+        formatter: logging.Formatter = JsonFormatter()
     else:
         formatter = logging.Formatter(format_string)
 
@@ -57,7 +57,7 @@ def setup_logging(
 class JsonFormatter(logging.Formatter):
     """JSON log formatter for structured logging."""
 
-    def format(self, record):
+    def format(self, record: logging.LogRecord) -> str:
         log_entry = {
             "timestamp": self.formatTime(record),
             "level": record.levelname,
@@ -103,32 +103,32 @@ class JsonFormatter(logging.Formatter):
 
 def load_config_file(file_path: str) -> Dict[str, Any]:
     """Load configuration from YAML or JSON file."""
-    file_path = Path(file_path)
+    path_obj = Path(file_path)
 
-    if not file_path.exists():
-        raise FileNotFoundError(f"Configuration file not found: {file_path}")
+    if not path_obj.exists():
+        raise FileNotFoundError(f"Configuration file not found: {path_obj}")
 
-    with open(file_path, "r") as f:
-        if file_path.suffix.lower() in [".yaml", ".yml"]:
+    with open(path_obj, "r") as f:
+        if path_obj.suffix.lower() in [".yaml", ".yml"]:
             return yaml.safe_load(f) or {}
-        elif file_path.suffix.lower() == ".json":
-            return json.load(f)
+        elif path_obj.suffix.lower() == ".json":
+            return json.load(f)  # type: ignore
         else:
-            raise ValueError(f"Unsupported configuration file format: {file_path.suffix}")
+            raise ValueError(f"Unsupported configuration file format: {path_obj.suffix}")
 
 
-def save_config_file(config: Dict[str, Any], file_path: str):
+def save_config_file(config: Dict[str, Any], file_path: str) -> None:
     """Save configuration to YAML or JSON file."""
-    file_path = Path(file_path)
-    file_path.parent.mkdir(parents=True, exist_ok=True)
+    path_obj = Path(file_path)
+    path_obj.parent.mkdir(parents=True, exist_ok=True)
 
-    with open(file_path, "w") as f:
-        if file_path.suffix.lower() in [".yaml", ".yml"]:
-            yaml.safe_dump(config, f, default_flow_style=False, indent=2)
-        elif file_path.suffix.lower() == ".json":
+    with open(path_obj, "w") as f:
+        if path_obj.suffix.lower() in [".yaml", ".yml"]:
+            yaml.dump(config, f, default_flow_style=False)
+        elif path_obj.suffix.lower() == ".json":
             json.dump(config, f, indent=2)
         else:
-            raise ValueError(f"Unsupported configuration file format: {file_path.suffix}")
+            raise ValueError(f"Unsupported configuration file format: {path_obj.suffix}")
 
 
 def get_env_var(name: str, default: Any = None, required: bool = False) -> Any:
@@ -176,11 +176,12 @@ def get_app_root() -> Path:
 
 def format_bytes(bytes_value: int) -> str:
     """Format bytes into human readable format."""
+    value = float(bytes_value)
     for unit in ["B", "KB", "MB", "GB", "TB"]:
-        if bytes_value < 1024.0:
-            return f"{bytes_value:.1f} {unit}"
-        bytes_value /= 1024.0
-    return f"{bytes_value:.1f} PB"
+        if value < 1024.0:
+            return f"{value:.1f} {unit}"
+        value /= 1024.0
+    return f"{value:.1f} PB"
 
 
 def format_duration(seconds: float) -> str:
@@ -200,11 +201,24 @@ def format_duration(seconds: float) -> str:
 
 def sanitize_string(value: str, max_length: int = 100) -> str:
     """Sanitize string for safe usage."""
+    import re
+
+    if value is None:
+        return ""
     if not isinstance(value, str):
         return str(value)
 
+    # Remove HTML tags but keep content
+    sanitized = re.sub(r'<[^>]+>', '', value)
+
+    # Normalize whitespace (replace tabs/newlines with spaces, collapse multiple spaces)
+    sanitized = re.sub(r'\s+', ' ', sanitized)
+
+    # Trim whitespace from beginning and end
+    sanitized = sanitized.strip()
+
     # Remove control characters
-    sanitized = "".join(char for char in value if ord(char) >= 32)
+    sanitized = "".join(char for char in sanitized if ord(char) >= 32)
 
     # Truncate if too long
     if len(sanitized) > max_length:
@@ -261,7 +275,7 @@ def format_file_size(size_bytes: int) -> str:
     return format_bytes(size_bytes)
 
 
-def validate_config(config) -> bool:
+def validate_config(config: Dict[str, Any]) -> bool:
     """Validate configuration object."""
     if config is None:
         return False
@@ -277,7 +291,7 @@ def merge_dicts(dict1: Dict[str, Any], dict2: Dict[str, Any]) -> Dict[str, Any]:
     return deep_merge_dicts(dict1, dict2)
 
 
-def safe_import(module_name: str, fallback=None):
+def safe_import(module_name: str, fallback: Any = None) -> Any:
     """Safely import a module, return fallback if import fails."""
     try:
         return __import__(module_name)
@@ -285,7 +299,7 @@ def safe_import(module_name: str, fallback=None):
         return fallback
 
 
-def get_environment_var(name: str, default=None):
+def get_environment_var(name: str, default: Optional[str] = None) -> Optional[str]:
     """Get environment variable with default."""
     return os.getenv(name, default)
 
@@ -293,29 +307,6 @@ def get_environment_var(name: str, default=None):
 def is_valid_email(email: str) -> bool:
     """Validate email address."""
     return validate_email(email)
-
-
-def sanitize_string(value, max_length: int = 100) -> str:
-    """Sanitize string for safe usage."""
-    if value is None:
-        return ""
-    if not isinstance(value, str):
-        return str(value)
-
-    # Strip whitespace and replace multiple whitespace with single space
-    sanitized = " ".join(value.split())
-
-    # Remove HTML tags and script content
-    import re
-
-    sanitized = re.sub(r"<[^>]*>", "", sanitized)
-    sanitized = re.sub(r"script.*?/script", "", sanitized, flags=re.IGNORECASE | re.DOTALL)
-
-    # Truncate if too long
-    if len(sanitized) > max_length:
-        sanitized = sanitized[: max_length - 3] + "..."
-
-    return sanitized
 
 
 def create_directory_if_not_exists(path: str) -> None:

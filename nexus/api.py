@@ -48,7 +48,7 @@ def create_api_router() -> APIRouter:
     router = APIRouter(prefix="/api", tags=["core"])
 
     @router.get("/health", response_model=HealthResponse)
-    async def health_check():
+    async def health_check() -> HealthResponse:
         """Health check endpoint."""
         return HealthResponse(
             status="healthy",
@@ -57,7 +57,7 @@ def create_api_router() -> APIRouter:
         )
 
     @router.get("/info", response_model=APIResponse)
-    async def get_info():
+    async def get_info() -> APIResponse:
         """Get application information."""
         return APIResponse(
             data={
@@ -70,7 +70,7 @@ def create_api_router() -> APIRouter:
         )
 
     @router.get("/status", response_model=APIResponse)
-    async def get_status():
+    async def get_status() -> APIResponse:
         """Get application status."""
         return APIResponse(
             data={
@@ -84,7 +84,7 @@ def create_api_router() -> APIRouter:
         )
 
     @router.get("/version", response_model=APIResponse)
-    async def get_version():
+    async def get_version() -> APIResponse:
         """Get version information."""
         return APIResponse(
             data={
@@ -120,7 +120,7 @@ def validate_api_key(api_key: Optional[str] = None) -> bool:
     return api_key == "demo-api-key"
 
 
-async def require_api_key(api_key: Optional[str] = None):
+async def require_api_key(api_key: Optional[str] = None) -> None:
     """Dependency to require valid API key."""
     if not validate_api_key(api_key):
         raise HTTPException(

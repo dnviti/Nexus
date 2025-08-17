@@ -31,7 +31,7 @@ class User(BaseModel):
 class AuthenticationManager:
     """Basic authentication manager."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize authentication manager."""
         self.users: Dict[str, User] = {}
         self.sessions: Dict[str, str] = {}  # token -> user_id
