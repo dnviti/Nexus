@@ -6,13 +6,13 @@ This script runs the same checks that the CI pipeline runs,
 allowing you to verify your changes locally before pushing.
 """
 
+import argparse
 import os
-import sys
 import subprocess
+import sys
 import time
 from pathlib import Path
-from typing import List, Dict, Tuple
-import argparse
+from typing import Dict, List, Tuple
 
 
 class Colors:
