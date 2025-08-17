@@ -1,24 +1,23 @@
 #!/usr/bin/env python3
 """
-Nexus Admin CLI
-Administrative command-line interface for Nexus
+Nexus Admin CLI.
+
+Administrative command-line interface for Nexus.
 """
 
 import asyncio
 import json
 import logging
-import os
 import sys
 from datetime import datetime
-from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 import click
 
 from . import __version__
 from .auth import AuthenticationManager
-from .core import AppConfig, EventBus, PluginManager, ServiceRegistry, create_default_config
-from .monitoring import MetricsCollector, create_default_health_checks
+from .core import EventBus, PluginManager, ServiceRegistry, create_default_config
+from .monitoring import create_default_health_checks
 from .utils import setup_logging
 
 # Setup logging
@@ -28,10 +27,15 @@ logger = logging.getLogger("nexus.admin")
 @click.group()
 @click.version_option(version=__version__, prog_name="Nexus Admin")
 @click.option("--verbose", "-v", is_flag=True, help="Enable verbose output")
-@click.option("--config", "-c", type=click.Path(exists=True), help="Configuration file path")
+@click.option(
+    "--config",
+    "-c",
+    type=click.Path(exists=True),
+    help="Configuration file path",
+)
 @click.pass_context
 def admin(ctx: Any, verbose: bool, config: Optional[str]) -> None:
-    """Nexus Admin - Administrative tools and utilities"""
+    """Nexus Admin - Administrative tools and utilities."""
     ctx.ensure_object(dict)
     ctx.obj["verbose"] = verbose
     ctx.obj["config_path"] = config
@@ -43,7 +47,7 @@ def admin(ctx: Any, verbose: bool, config: Optional[str]) -> None:
 
 @admin.group()
 def user() -> None:
-    """User management commands"""
+    """User management commands."""
     pass
 
 
@@ -54,7 +58,7 @@ def user() -> None:
 @click.option("--admin", is_flag=True, help="Create admin user")
 @click.pass_context
 def user_create(ctx: Any, username: str, password: str, email: str, admin: bool) -> None:
-    """Create a new user"""
+    """Create a new user."""
     click.echo(f"👤 Creating user: {username}")
 
     try:
@@ -92,7 +96,7 @@ def user_create(ctx: Any, username: str, password: str, email: str, admin: bool)
 )
 @click.pass_context
 def user_list(ctx: Any, output_format: str) -> None:
-    """List all users"""
+    """List all users."""
     click.echo("📋 User List")
 
     try:
@@ -111,7 +115,9 @@ def user_list(ctx: Any, output_format: str) -> None:
                 click.echo("Username | Email                | Created")
                 click.echo("-" * 50)
                 for user in users:
-                    click.echo(f"{user['username']:<8} | {user['email']:<20} | {user['created']}")
+                    click.echo(
+                        f"{user['username']:<8} | {user['email']:<20} | " f"{user['created']}"
+                    )
 
         asyncio.run(list_users_async())
 
@@ -124,7 +130,7 @@ def user_list(ctx: Any, output_format: str) -> None:
 @click.option("--confirm", is_flag=True, help="Skip confirmation prompt")
 @click.pass_context
 def user_delete(ctx: Any, username: str, confirm: bool) -> None:
-    """Delete a user"""
+    """Delete a user."""
     if not confirm:
         if not click.confirm(f"Are you sure you want to delete user '{username}'?"):
             click.echo("Operation cancelled")
@@ -143,7 +149,7 @@ def user_delete(ctx: Any, username: str, confirm: bool) -> None:
 
 @admin.group()
 def plugin() -> None:
-    """Plugin administration commands"""
+    """Plugin administration commands."""
     pass
 
 
@@ -151,7 +157,7 @@ def plugin() -> None:
 @click.option("--detailed", is_flag=True, help="Show detailed plugin information")
 @click.pass_context
 def plugin_status(ctx: Any, detailed: bool) -> None:
-    """Show plugin status"""
+    """Show plugin status."""
     click.echo("🔌 Plugin Status")
 
     try:
@@ -192,7 +198,7 @@ def plugin_status(ctx: Any, detailed: bool) -> None:
 @click.argument("plugin_name")
 @click.pass_context
 def plugin_enable(ctx: Any, plugin_name: str) -> None:
-    """Enable a plugin"""
+    """Enable a plugin."""
     click.echo(f"🔌 Enabling plugin: {plugin_name}")
 
     try:
@@ -208,7 +214,7 @@ def plugin_enable(ctx: Any, plugin_name: str) -> None:
 @click.argument("plugin_name")
 @click.pass_context
 def plugin_disable(ctx: Any, plugin_name: str) -> None:
-    """Disable a plugin"""
+    """Disable a plugin."""
     click.echo(f"🔌 Disabling plugin: {plugin_name}")
 
     try:
@@ -222,7 +228,7 @@ def plugin_disable(ctx: Any, plugin_name: str) -> None:
 
 @admin.group()
 def system() -> None:
-    """System administration commands"""
+    """System administration commands."""
     pass
 
 
@@ -236,7 +242,7 @@ def system() -> None:
 )
 @click.pass_context
 def system_info(ctx: Any, output_format: str) -> None:
-    """Show system information"""
+    """Show system information."""
     click.echo("💻 System Information")
 
     try:
@@ -259,7 +265,10 @@ def system_info(ctx: Any, output_format: str) -> None:
 
             info: Dict[str, Any] = {
                 "nexus_version": __version__,
-                "python_version": f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
+                "python_version": (
+                    f"{sys.version_info.major}.{sys.version_info.minor}."
+                    f"{sys.version_info.micro}"
+                ),
                 "system": system_info,
                 "application": app_info,
             }
@@ -291,7 +300,7 @@ def system_info(ctx: Any, output_format: str) -> None:
 )
 @click.pass_context
 def system_health(ctx: Any, output_format: str) -> None:
-    """Perform comprehensive health check"""
+    """Perform comprehensive health check."""
     click.echo("🏥 System Health Check")
 
     try:
@@ -302,12 +311,20 @@ def system_health(ctx: Any, output_format: str) -> None:
                 "database": type(
                     "HealthStatus",
                     (),
-                    {"status": "healthy", "message": "OK", "response_time_ms": 10.5},
+                    {
+                        "status": "healthy",
+                        "message": "OK",
+                        "response_time_ms": 10.5,
+                    },
                 )(),
                 "cache": type(
                     "HealthStatus",
                     (),
-                    {"status": "healthy", "message": "OK", "response_time_ms": 5.2},
+                    {
+                        "status": "healthy",
+                        "message": "OK",
+                        "response_time_ms": 5.2,
+                    },
                 )(),
             }
             overall_status = "healthy"

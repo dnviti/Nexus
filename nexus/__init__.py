@@ -1,8 +1,8 @@
 """
-Nexus - The Ultimate Plugin-Based Application Platform
+Nexus - The Ultimate Plugin-Based Application Platform.
 
-A cutting-edge, plugin-based application platform that enables developers to create
-highly modular, maintainable, and scalable applications.
+A cutting-edge, plugin-based application platform that enables developers to
+create highly modular, maintainable, and scalable applications.
 """
 
 __version__ = "2.0.0"
@@ -11,13 +11,12 @@ __license__ = "MIT"
 
 import asyncio
 import logging
+import sys
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any, AsyncGenerator, Callable, Dict, List, Optional, Type, Union
 
 import uvicorn
-
-# FastAPI and async support
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -190,7 +189,8 @@ class NexusApp:
 
         # Publish startup event
         await self.event_bus.publish(
-            event_name="app.started", data={"app": self.title, "version": self.version}
+            event_name="app.started",
+            data={"app": self.title, "version": self.version},
         )
 
         logger.info(f"{self.title} started successfully")
@@ -225,7 +225,7 @@ class NexusApp:
         logger.info(f"{self.title} shut down successfully")
 
     def _setup_middleware(self) -> None:
-        """Setup application middleware."""
+        """Set up application middleware."""
         # CORS middleware
         # CORS middleware configuration
         if self.config.cors.enabled:
@@ -267,7 +267,7 @@ class NexusApp:
             )
 
     def _setup_core_routes(self) -> None:
-        """Setup core application routes."""
+        """Set up core application routes."""
 
         @self.app.get("/health")
         async def health_check() -> Dict[str, Any]:
@@ -334,7 +334,10 @@ class NexusApp:
             success = await self.plugin_manager.enable_plugin(plugin_name)
             if success:
                 return {"message": f"Plugin {plugin_name} enabled successfully"}
-            raise HTTPException(status_code=400, detail=f"Failed to enable plugin {plugin_name}")
+            raise HTTPException(
+                status_code=400,
+                detail=f"Failed to enable plugin {plugin_name}",
+            )
 
         @self.app.post("/api/plugins/{plugin_name}/disable")
         async def disable_plugin(plugin_name: str) -> Dict[str, Any]:
@@ -342,7 +345,10 @@ class NexusApp:
             success = await self.plugin_manager.disable_plugin(plugin_name)
             if success:
                 return {"message": f"Plugin {plugin_name} disabled successfully"}
-            raise HTTPException(status_code=400, detail=f"Failed to disable plugin {plugin_name}")
+            raise HTTPException(
+                status_code=400,
+                detail=f"Failed to disable plugin {plugin_name}",
+            )
 
     def _register_plugin_routes(self) -> None:
         """Register routes from loaded plugins."""
@@ -414,7 +420,7 @@ def create_nexus_app(
     **kwargs: Any,
 ) -> NexusApp:
     """
-    Factory function to create a Nexus application.
+    Create a Nexus application.
 
     Args:
         title: Application title
@@ -446,14 +452,24 @@ def create_nexus_app(
         # Create from dictionary
         config = AppConfig(**config)
 
-    return NexusApp(title=title, version=version, description=description, config=config, **kwargs)
+    return NexusApp(
+        title=title,
+        version=version,
+        description=description,
+        config=config,
+        **kwargs,
+    )
 
 
 def create_plugin(
-    name: str, version: str = "1.0.0", description: str = "", author: str = "", **kwargs: Any
+    name: str,
+    version: str = "1.0.0",
+    description: str = "",
+    author: str = "",
+    **kwargs: Any,
 ) -> Type[BasePlugin]:
     """
-    Factory function to create a plugin class.
+    Create a plugin class.
 
     Args:
         name: Plugin name
@@ -478,7 +494,11 @@ def create_plugin(
         def __init__(self) -> None:
             super().__init__()
             self.metadata = PluginMetadata(
-                name=name, version=version, description=description, author=author, **kwargs
+                name=name,
+                version=version,
+                description=description,
+                author=author,
+                **kwargs,
             )
 
     DynamicPlugin.__name__ = f"{name.title().replace('_', '')}Plugin"
@@ -486,23 +506,11 @@ def create_plugin(
 
 
 # Version check
-import sys
-
-# Convenience imports for common use cases
-from typing import Union
-
-# Re-export commonly used FastAPI components
-# Import all FastAPI components for convenience
-from fastapi import APIRouter, Depends, WebSocket
-from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
-
-# Re-export Pydantic for model creation
-from pydantic import BaseModel, Field
-
 if sys.version_info < (3, 11):
     import warnings
 
     warnings.warn(
         "Nexus Framework requires Python 3.11 or higher. " "Some features may not work correctly.",
         RuntimeWarning,
+        stacklevel=2,
     )
