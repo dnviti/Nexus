@@ -225,9 +225,9 @@ Choose your path:
 
 ### Documentation Issues
 
-- Missing information? [Open an issue](https://github.com/dnviti/Nexus/issues)
-- Found an error? [Submit a fix](https://github.com/dnviti/Nexus/pulls)
-- Have a suggestion? [Start a discussion](https://github.com/dnviti/Nexus/discussions)
+- Missing information? [Open an issue](https://github.com/dnviti/nexus-platform/issues)
+- Found an error? [Submit a fix](https://github.com/dnviti/nexus-platform/pulls)
+- Have a suggestion? [Start a discussion](https://github.com/dnviti/nexus-platform/discussions)
 
 ### Community Support
 
@@ -237,14 +237,14 @@ Choose your path:
 
 ## Community & Support
 
-- **GitHub**: [dnviti/Nexus](https://github.com/dnviti/Nexus)
+- **GitHub**: [dnviti/nexus-platform](https://github.com/dnviti/nexus-platform)
 - **Discord**: [Join our community](https://discord.gg/nexus)
 - **Twitter**: [@nexus_dev](https://twitter.com/nexus_dev)
-- **Issues**: [Report bugs and request features](https://github.com/dnviti/Nexus/issues)
+- **Issues**: [Report bugs and request features](https://github.com/dnviti/nexus-platform/issues)
 
 ## License
 
-Nexus is open source software licensed under the [MIT License](https://github.com/dnviti/Nexus/blob/main/LICENSE).
+Nexus is open source software licensed under the [MIT License](https://github.com/dnviti/nexus-platform/blob/main/LICENSE).
 
 ---
 

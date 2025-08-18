@@ -16,7 +16,7 @@
   "replacementPatterns": [
     {
       "pattern": "^/",
-      "replacement": "https://github.com/dnviti/Nexus/blob/main/"
+      "replacement": "https://github.com/dnviti/nexus-platform/blob/main/"
     }
   ],
   "httpHeaders": [

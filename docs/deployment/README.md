@@ -24,7 +24,7 @@ The fastest way to get Nexus running:
 
 ```bash
 # Clone the repository
-git clone https://github.com/dnviti/Nexus.git
+git clone https://github.com/dnviti/nexus-platform.git
 cd nexus
 
 # Build and run with Docker Compose

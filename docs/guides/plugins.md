@@ -62,7 +62,7 @@ Before you start developing plugins, ensure you have:
 
 ```bash
 # Clone the Nexus repository
-git clone https://github.com/dnviti/Nexus.git
+git clone https://github.com/dnviti/nexus-platform.git
 cd nexus
 
 # Create virtual environment

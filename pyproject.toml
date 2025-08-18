@@ -7,7 +7,7 @@ maintainers = ["Nexus Team <team@nexus.dev>"]
 license = "MIT"
 readme = "README.md"
 homepage = "https://nexus.dev"
-repository = "https://github.com/dnviti/Nexus"
+repository = "https://github.com/dnviti/nexus-platform"
 documentation = "https://docs.nexus.dev"
 keywords = [
     "framework",
@@ -231,9 +231,9 @@ nexus-admin = "nexus.admin:main"
 hello_world = "nexus.plugins.example.hello_world"
 
 [tool.poetry.urls]
-"Bug Tracker" = "https://github.com/dnviti/Nexus/issues"
-"Discussions" = "https://github.com/dnviti/Nexus/discussions"
-"Changelog" = "https://github.com/dnviti/Nexus/blob/main/CHANGELOG.md"
+"Bug Tracker" = "https://github.com/dnviti/nexus-platform/issues"
+"Discussions" = "https://github.com/dnviti/nexus-platform/discussions"
+"Changelog" = "https://github.com/dnviti/nexus-platform/blob/main/CHANGELOG.md"
 "Funding" = "https://github.com/sponsors/dnviti"
 "Discord" = "https://discord.gg/nexus"
 "Twitter" = "https://twitter.com/nexus_dev"
