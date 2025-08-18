@@ -8,8 +8,8 @@ This directory contains the versioned documentation for the Nexus Platform. The 
 docs/
 ├── README.md                 # This file
 ├── versions.json            # Version metadata
-├── overrides/              # Custom theme overrides
-├── v0.1.0/                 # Stable version documentation
+├── overrides/               # Custom theme overrides
+├── v0/                      # Stable version documentation
 │   ├── index.md
 │   ├── getting-started/
 │   ├── architecture/
@@ -32,7 +32,7 @@ docs/
 
 ### Available Versions
 
-- **v0.1.0** - Latest stable release
+- **v0** - Latest stable release
 - **dev** - Development version (from `develop` branch)
 
 ### Creating a New Version
@@ -41,16 +41,16 @@ Use the documentation management script to create new versions:
 
 ```bash
 # Create a new version from the latest
-python scripts/docs/manage_versions.py create v0.2.0
+python scripts/docs/manage_versions.py create v1
 
 # Create a new version from a specific source
-python scripts/docs/manage_versions.py create v0.2.0 --from v0.1.0
+python scripts/docs/manage_versions.py create v1 --from v0
 
 # List all versions
 python scripts/docs/manage_versions.py list
 
 # Set a version as latest
-python scripts/docs/manage_versions.py set-latest v0.2.0
+python scripts/docs/manage_versions.py set-latest v1
 ```
 
 ### Manual Version Creation
@@ -60,14 +60,14 @@ If you prefer to create versions manually:
 1. **Create version directory:**
 
    ```bash
-   mkdir docs/v0.2.0
-   cp -r docs/v0.1.0/* docs/v0.2.0/
+   mkdir docs/v1
+   cp -r docs/v0/* docs/v1/
    ```
 
 2. **Create MkDocs config:**
 
    ```bash
-   cp mkdocs-v0.1.0.yml mkdocs-v0.2.0.yml
+   cp mkdocs-v0.yml mkdocs-v1.yml
    # Edit the new config file to update paths and version info
    ```
 
@@ -85,21 +85,21 @@ python scripts/docs/manage_versions.py build
 ### Build Specific Version
 
 ```bash
-# Build v0.1.0
-mkdocs build -f mkdocs-v0.1.0.yml
+# Build v0
+mkdocs build -f mkdocs-v0.yml
 
 # Build dev version
 mkdocs build -f mkdocs-dev.yml
 
 # Build specific version using script
-python scripts/docs/manage_versions.py build v0.1.0
+python scripts/docs/manage_versions.py build v0
 ```
 
 ### Local Development
 
 ```bash
-# Serve v0.1.0 documentation
-mkdocs serve -f mkdocs-v0.1.0.yml
+# Serve v0 documentation
+mkdocs serve -f mkdocs-v0.yml
 
 # Serve dev documentation
 mkdocs serve -f mkdocs-dev.yml
@@ -135,7 +135,7 @@ The development version includes an automatic warning banner:
 
 ```markdown
 !!! warning "Development Documentation"
-This is the **development version** of the Nexus Platform documentation. The content here may be incomplete, experimental, or subject to change. For stable documentation, please visit the [latest release version](../v0.1.0/).
+This is the **development version** of the Nexus Platform documentation. The content here may be incomplete, experimental, or subject to change. For stable documentation, please visit the [latest release version](../v0/).
 ```
 
 ## 🔄 GitHub Actions
@@ -155,7 +155,7 @@ The documentation is automatically built and deployed using GitHub Actions:
 Documentation is deployed to GitHub Pages at:
 
 - Main site: https://dnviti.github.io/nexus-platform/
-- v0.1.0: https://dnviti.github.io/nexus-platform/v0.1.0/
+- v0: https://dnviti.github.io/nexus-platform/v0/
 - Development: https://dnviti.github.io/nexus-platform/dev/
 
 ## 📝 Writing Documentation

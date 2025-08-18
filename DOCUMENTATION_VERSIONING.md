@@ -6,7 +6,7 @@ This document provides a comprehensive overview of the versioned documentation s
 
 The Nexus Platform now supports versioned documentation with the following key features:
 
-- **Version-specific documentation** (e.g., v0.1.0, v0.2.0)
+- **Version-specific documentation** (e.g., v0, v1)
 - **Development documentation** with warning banners
 - **Automated GitHub Pages deployment**
 - **Version management scripts**
@@ -21,7 +21,7 @@ nexus-platform/
 │   ├── index.html                 # Version selector landing page
 │   ├── README.md                  # Documentation guide
 │   ├── overrides/                 # Custom theme overrides
-├── v0.1.0/                    # Latest stable version
+├── v0/                            # Latest stable version
 │   │   ├── index.md
 │   │   ├── getting-started/
 │   │   ├── architecture/
@@ -43,18 +43,18 @@ nexus-platform/
 │   ├── release.sh                 # Release automation
 │   └── serve.sh                   # Local development server
 ├── mkdocs.yml                     # Main config (backward compatibility)
-├── mkdocs-v0.1.0.yml             # v0.1.0 specific config
+├── mkdocs-v0.yml                  # v0 specific config
 ├── mkdocs-dev.yml                # Development config
 └── .github/workflows/docs.yml    # Updated CI/CD pipeline
 ```
 
 ## 🌐 Live Documentation URLs
 
-| Version             | URL                                             | Branch  | Status                   |
-| ------------------- | ----------------------------------------------- | ------- | ------------------------ |
-| **Landing Page**    | https://dnviti.github.io/nexus-platform/        | main    | Auto-redirects to latest |
-| **v0.1.0 (Latest)** | https://dnviti.github.io/nexus-platform/v0.1.0/ | main    | Stable                   |
-| **Development**     | https://dnviti.github.io/nexus-platform/dev/    | develop | Development              |
+| Version          | URL                                          | Branch  | Status                   |
+| ---------------- | -------------------------------------------- | ------- | ------------------------ |
+| **Landing Page** | https://dnviti.github.io/nexus-platform/     | main    | Auto-redirects to latest |
+| **v0 (Latest)**  | https://dnviti.github.io/nexus-platform/v0/  | main    | Stable                   |
+| **Development**  | https://dnviti.github.io/nexus-platform/dev/ | develop | Development              |
 
 ## 🛠️ Key Features
 

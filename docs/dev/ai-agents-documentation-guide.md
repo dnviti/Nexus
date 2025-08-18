@@ -17,7 +17,7 @@ nexus-platform/
 │   │   ├── index.md                  # Landing page with version info
 │   │   ├── changelog.md              # Complete v0.x release history
 │   │   ├── migrations/               # Migration guides between versions
-│   │   │   └── v0.1.0-to-v0.1.1.md  # Specific migration guide
+│   │   │   └── v0.1.0-to-v0.1.1.md  # Example migration guide
 │   │   ├── getting-started/          # User onboarding guides
 │   │   ├── architecture/             # System design docs
 │   │   ├── plugins/                  # Plugin development guides
@@ -36,11 +36,11 @@ nexus-platform/
 
 ### Version Mapping Strategy
 
-| Git Tag | Documentation Version | URL Path | Purpose |
-|---------|----------------------|----------|---------|
-| `v0.1.0`, `v0.1.1`, `v0.1.2`, etc. | `v0` | `/v0/` | Stable major version |
-| `v1.0.0`, `v1.1.0`, etc. | `v1` | `/v1/` | Next major version |
-| `develop` branch | `dev` | `/dev/` | Latest development |
+| Git Tag                            | Documentation Version | URL Path | Purpose              |
+| ---------------------------------- | --------------------- | -------- | -------------------- |
+| `v0.1.0`, `v0.1.1`, `v0.1.2`, etc. | `v0`                  | `/v0/`   | Stable major version |
+| `v1.0.0`, `v1.1.0`, etc.           | `v1`                  | `/v1/`   | Next major version   |
+| `develop` branch                   | `dev`                 | `/dev/`  | Latest development   |
 
 ## 🔄 AI Agent Workflow
 
@@ -53,19 +53,24 @@ When a new version is released (e.g., v0.1.2), AI agents should:
 **File**: `docs/v0/changelog.md`
 
 1. **Add new version entry** at the top:
+
 ```markdown
 ## v0.1.2 (YYYY-MM-DD)
 
 ### 🚀 Enhancements
+
 - Description of improvements
 
 ### 🐛 Bug Fixes
+
 - Description of fixes
 
 ### 📚 Documentation
+
 - Documentation updates
 
 ### 🔧 Infrastructure
+
 - Build/CI improvements
 ```
 
@@ -87,15 +92,19 @@ Create only for versions with breaking changes or significant updates:
 # Migration Guide: vX.X.X → vY.Y.Y
 
 ## Overview
+
 Brief description of changes and migration difficulty.
 
 ## Quick Migration
+
 Step-by-step instructions for common cases.
 
 ## Breaking Changes
+
 List any breaking changes with solutions.
 
 ## Compatibility
+
 What remains compatible vs. what changes.
 
 **Migration Difficulty**: 🟢 Easy / 🟡 Moderate / 🔴 Complex
@@ -186,25 +195,29 @@ Update `.github/workflows/docs.yml` to handle new major version.
 
 ### Markdown Best Practices
 
-```markdown
+````markdown
 # Use proper heading hierarchy (H1 → H2 → H3)
 
 ## Code Blocks with Language
+
 ```python
 # Always specify language for syntax highlighting
 from nexus import create_nexus_app
 ```
+````
 
 ## Admonitions for Important Info
+
 !!! info "Version Requirement"
-    This feature requires Nexus Platform v0.1.1 or later.
+This feature requires Nexus Platform v0.1.1 or later.
 
 !!! warning "Breaking Change"
-    This is a breaking change from previous versions.
+This is a breaking change from previous versions.
 
 !!! tip "Best Practice"
-    We recommend using this approach for better performance.
-```
+We recommend using this approach for better performance.
+
+````
 
 ### Documentation Types
 
@@ -235,7 +248,7 @@ nav:
       - Version History: changelog.md
       - Migration Guides:
           - v0.1.0 → v0.1.1: migrations/v0.1.0-to-v0.1.1.md
-```
+````
 
 ### Build Process
 
@@ -258,15 +271,15 @@ The workflow automatically:
 
 ### When to Update Documentation
 
-| Scenario | Action Required | Files to Update |
-|----------|----------------|-----------------|
-| New patch release (v0.1.x) | Update changelog | `docs/v0/changelog.md` |
+| Scenario                   | Action Required                    | Files to Update                               |
+| -------------------------- | ---------------------------------- | --------------------------------------------- |
+| New patch release (v0.1.x) | Update changelog                   | `docs/v0/changelog.md`                        |
 | New minor release (v0.x.0) | Update changelog + migration guide | `docs/v0/changelog.md`, `docs/v0/migrations/` |
-| New major release (v1.0.0) | Create new version docs | `docs/v1/`, `mkdocs-v1.yml`, `versions.json` |
-| Feature added to develop | Update dev docs | `docs/dev/` |
-| API changes | Update API reference | `docs/*/api/` |
-| New plugin capability | Update plugin guides | `docs/*/plugins/` |
-| Deployment changes | Update deployment docs | `docs/*/deployment/` |
+| New major release (v1.0.0) | Create new version docs            | `docs/v1/`, `mkdocs-v1.yml`, `versions.json`  |
+| Feature added to develop   | Update dev docs                    | `docs/dev/`                                   |
+| API changes                | Update API reference               | `docs/*/api/`                                 |
+| New plugin capability      | Update plugin guides               | `docs/*/plugins/`                             |
+| Deployment changes         | Update deployment docs             | `docs/*/deployment/`                          |
 
 ### Quality Checklist
 
@@ -285,7 +298,7 @@ Before completing documentation updates, verify:
 
 ### What NOT to Do
 
-1. **Don't edit patch version docs directly** (v0.1.0 folder)
+1. **Don't edit patch version docs directly** (like old v0.1.0 folder)
    - Always edit major version docs (v0 folder)
 
 2. **Don't skip migration guides** for breaking changes
@@ -317,46 +330,56 @@ If documentation is broken:
 ## v0.1.X (YYYY-MM-DD)
 
 ### 🎉 Major Features
+
 - New feature description with brief explanation
 
 ### 🚀 Enhancements
+
 - Improvement description
 - Performance enhancement details
 
 ### 🐛 Bug Fixes
+
 - Fix description with issue reference if available
 - Security fix details
 
 ### 📚 Documentation
+
 - Documentation improvements
 - New guides or tutorials added
 
 ### 🔧 Infrastructure
+
 - Build system improvements
 - CI/CD pipeline updates
 - Development tool enhancements
 
 ### ⚠️ Breaking Changes
+
 - Breaking change description
 - Migration instructions or reference to migration guide
 ```
 
 ### Migration Guide Template
 
-```markdown
+````markdown
 # Migration Guide: vX.X.X → vY.Y.Y
 
 ## Overview
+
 Brief description of the changes and what this migration involves.
 
 ## Quick Migration
 
 ### 1. Update Package
+
 ```bash
 pip install --upgrade nexus-platform==Y.Y.Y
 ```
+````
 
 ### 2. Update Code (if needed)
+
 ```python
 # Old way (vX.X.X)
 old_code_example()
@@ -366,23 +389,28 @@ new_code_example()
 ```
 
 ### 3. Test Your Application
+
 ```bash
 nexus run
 ```
 
 ## Breaking Changes
+
 List of breaking changes with solutions.
 
 ## Compatibility
+
 What remains compatible vs. what changes.
 
 ## Troubleshooting
+
 Common issues and solutions.
 
 **Migration Difficulty**: 🟢 Easy
 **Estimated Time**: < 5 minutes
 **Risk Level**: 🟢 Low
-```
+
+````
 
 ## 🔍 Verification Commands
 
@@ -400,7 +428,7 @@ grep -r "nav:" mkdocs-*.yml
 
 # Check version consistency
 grep -r "v0\." docs/v0/ | grep -v changelog | grep -v migration
-```
+````
 
 ## 📚 Resources
 
