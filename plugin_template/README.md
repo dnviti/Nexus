@@ -141,64 +141,59 @@ class MyPlugin(BasePlugin):
 
 ```json
 {
-  "name": "my_plugin",
-  "display_name": "My Plugin",
-  "version": "1.0.0",
-  "description": "A brief description of what your plugin does",
-  "author": "Your Name",
-  "license": "MIT",
-  "category": "utility",
-  "tags": ["tag1", "tag2", "tag3"],
-  "repository": "https://github.com/yourusername/my-plugin",
-  "homepage": "https://your-plugin-website.com",
-  "dependencies": {
-    "nexus_framework": ">=0.1.0",
-    "plugins": [],
-    "python": ">=3.11",
-    "packages": ["package1>=1.0.0", "package2>=2.0.0"]
-  },
-  "permissions": [
-    "database.read",
-    "database.write",
-    "events.publish",
-    "api.register_routes"
-  ],
-  "api": {
-    "prefix": "/api/my_plugin",
-    "version": "v1",
-    "endpoints": [
-      {
-        "path": "/",
-        "methods": ["GET"],
-        "description": "Get plugin information"
-      }
-    ]
-  },
-  "events": {
-    "publishes": ["my_plugin.event1", "my_plugin.event2"],
-    "subscribes": ["system.startup", "user.created"]
-  },
-  "configuration": {
-    "schema": {
-      "setting1": {
-        "type": "string",
-        "default": "default_value",
-        "description": "Description of setting1"
-      },
-      "setting2": {
-        "type": "integer",
-        "default": 100,
-        "min": 1,
-        "max": 1000,
-        "description": "Description of setting2"
-      }
+    "name": "my_plugin",
+    "display_name": "My Plugin",
+    "version": "1.0.0",
+    "description": "A brief description of what your plugin does",
+    "author": "Your Name",
+    "license": "MIT",
+    "category": "utility",
+    "tags": ["tag1", "tag2", "tag3"],
+    "repository": "https://github.com/yourusername/my-plugin",
+    "homepage": "https://your-plugin-website.com",
+    "dependencies": {
+        "nexus_framework": ">=0.1.0",
+        "plugins": [],
+        "python": ">=3.11",
+        "packages": ["package1>=1.0.0", "package2>=2.0.0"]
+    },
+    "permissions": ["database.read", "database.write", "events.publish", "api.register_routes"],
+    "api": {
+        "prefix": "/api/my_plugin",
+        "version": "v1",
+        "endpoints": [
+            {
+                "path": "/",
+                "methods": ["GET"],
+                "description": "Get plugin information"
+            }
+        ]
+    },
+    "events": {
+        "publishes": ["my_plugin.event1", "my_plugin.event2"],
+        "subscribes": ["system.startup", "user.created"]
+    },
+    "configuration": {
+        "schema": {
+            "setting1": {
+                "type": "string",
+                "default": "default_value",
+                "description": "Description of setting1"
+            },
+            "setting2": {
+                "type": "integer",
+                "default": 100,
+                "min": 1,
+                "max": 1000,
+                "description": "Description of setting2"
+            }
+        }
+    },
+    "compatibility": {
+        "min_framework_version": "0.1.0",
+        "max_framework_version": null,
+        "tested_versions": ["0.1.0", "0.1.5"]
     }
-  },
-  "compatibility": {
-    "min_framework_version": "0.1.0",
-    "max_framework_version": null,
-    "tested_versions": ["0.1.0"]
-  }
 }
 ```
 

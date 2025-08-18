@@ -5,158 +5,158 @@ labels: ["bug", "needs-triage"]
 assignees: []
 
 body:
-  - type: markdown
-    attributes:
-      value: |
-        Thanks for taking the time to fill out this bug report! 🐛
+    - type: markdown
+      attributes:
+          value: |
+              Thanks for taking the time to fill out this bug report! 🐛
 
-        Please search existing issues first to avoid duplicates.
+              Please search existing issues first to avoid duplicates.
 
-  - type: input
-    id: version
-    attributes:
-      label: Nexus Version
-      description: What version of Nexus are you running?
-      placeholder: "0.1.0"
-    validations:
-      required: true
-
-  - type: dropdown
-    id: environment
-    attributes:
-      label: Environment
-      description: What environment are you running Nexus in?
-      options:
-        - Development
-        - Production
-        - Testing
-        - Docker
-        - Other
-    validations:
-      required: true
-
-  - type: input
-    id: python-version
-    attributes:
-      label: Python Version
-      description: What version of Python are you using?
-      placeholder: "3.11.0"
-    validations:
-      required: true
-
-  - type: input
-    id: os
-    attributes:
-      label: Operating System
-      description: What operating system are you using?
-      placeholder: "Ubuntu 22.04, Windows 11, macOS 13.0"
-    validations:
-      required: true
-
-  - type: textarea
-    id: description
-    attributes:
-      label: Bug Description
-      description: A clear and concise description of what the bug is.
-      placeholder: "Describe the bug..."
-    validations:
-      required: true
-
-  - type: textarea
-    id: steps
-    attributes:
-      label: Steps to Reproduce
-      description: Steps to reproduce the behavior
-      placeholder: |
-        1. Install Nexus with `pip install nexus-platform`
-        2. Create a new app with `nexus init`
-        3. Run `python main.py`
-        4. Navigate to `http://localhost:8000`
-        5. See error
-    validations:
-      required: true
-
-  - type: textarea
-    id: expected
-    attributes:
-      label: Expected Behavior
-      description: A clear and concise description of what you expected to happen.
-      placeholder: "What should have happened?"
-    validations:
-      required: true
-
-  - type: textarea
-    id: actual
-    attributes:
-      label: Actual Behavior
-      description: A clear and concise description of what actually happened.
-      placeholder: "What actually happened?"
-    validations:
-      required: true
-
-  - type: textarea
-    id: logs
-    attributes:
-      label: Error Logs
-      description: If applicable, add error logs or stack traces
-      placeholder: |
-        Paste error logs here...
-      render: shell
-    validations:
-      required: false
-
-  - type: textarea
-    id: config
-    attributes:
-      label: Configuration
-      description: Your Nexus configuration (remove any sensitive data)
-      placeholder: |
-        ```yaml
-        app:
-          name: "My App"
-          host: "0.0.0.0"
-          port: 8000
-        ```
-      render: yaml
-    validations:
-      required: false
-
-  - type: textarea
-    id: plugins
-    attributes:
-      label: Installed Plugins
-      description: List any plugins you have installed
-      placeholder: |
-        - user_manager v1.0.0
-        - email_service v2.1.0
-    validations:
-      required: false
-
-  - type: checkboxes
-    id: isolation
-    attributes:
-      label: Bug Isolation
-      description: Have you tried to isolate the bug?
-      options:
-        - label: I can reproduce this bug consistently
-        - label: This bug occurs in a fresh installation
-        - label: This bug occurs without any custom plugins
-        - label: I have checked the logs for additional information
-
-  - type: textarea
-    id: additional
-    attributes:
-      label: Additional Context
-      description: Add any other context about the problem here.
-      placeholder: "Screenshots, related issues, workarounds, etc."
-    validations:
-      required: false
-
-  - type: checkboxes
-    id: terms
-    attributes:
-      label: Code of Conduct
-      description: By submitting this issue, you agree to follow our Code of Conduct
-      options:
-        - label: I agree to follow this project's Code of Conduct
+    - type: input
+      id: version
+      attributes:
+          label: Nexus Version
+          description: What version of Nexus are you running?
+          placeholder: "0.1.5"
+      validations:
           required: true
+
+    - type: dropdown
+      id: environment
+      attributes:
+          label: Environment
+          description: What environment are you running Nexus in?
+          options:
+              - Development
+              - Production
+              - Testing
+              - Docker
+              - Other
+      validations:
+          required: true
+
+    - type: input
+      id: python-version
+      attributes:
+          label: Python Version
+          description: What version of Python are you using?
+          placeholder: "3.11.0"
+      validations:
+          required: true
+
+    - type: input
+      id: os
+      attributes:
+          label: Operating System
+          description: What operating system are you using?
+          placeholder: "Ubuntu 22.04, Windows 11, macOS 13.0"
+      validations:
+          required: true
+
+    - type: textarea
+      id: description
+      attributes:
+          label: Bug Description
+          description: A clear and concise description of what the bug is.
+          placeholder: "Describe the bug..."
+      validations:
+          required: true
+
+    - type: textarea
+      id: steps
+      attributes:
+          label: Steps to Reproduce
+          description: Steps to reproduce the behavior
+          placeholder: |
+              1. Install Nexus with `pip install nexus-platform`
+              2. Create a new app with `nexus init`
+              3. Run `python main.py`
+              4. Navigate to `http://localhost:8000`
+              5. See error
+      validations:
+          required: true
+
+    - type: textarea
+      id: expected
+      attributes:
+          label: Expected Behavior
+          description: A clear and concise description of what you expected to happen.
+          placeholder: "What should have happened?"
+      validations:
+          required: true
+
+    - type: textarea
+      id: actual
+      attributes:
+          label: Actual Behavior
+          description: A clear and concise description of what actually happened.
+          placeholder: "What actually happened?"
+      validations:
+          required: true
+
+    - type: textarea
+      id: logs
+      attributes:
+          label: Error Logs
+          description: If applicable, add error logs or stack traces
+          placeholder: |
+              Paste error logs here...
+          render: shell
+      validations:
+          required: false
+
+    - type: textarea
+      id: config
+      attributes:
+          label: Configuration
+          description: Your Nexus configuration (remove any sensitive data)
+          placeholder: |
+              ```yaml
+              app:
+                name: "My App"
+                host: "0.0.0.0"
+                port: 8000
+              ```
+          render: yaml
+      validations:
+          required: false
+
+    - type: textarea
+      id: plugins
+      attributes:
+          label: Installed Plugins
+          description: List any plugins you have installed
+          placeholder: |
+              - user_manager v1.0.0
+              - email_service v2.1.0
+      validations:
+          required: false
+
+    - type: checkboxes
+      id: isolation
+      attributes:
+          label: Bug Isolation
+          description: Have you tried to isolate the bug?
+          options:
+              - label: I can reproduce this bug consistently
+              - label: This bug occurs in a fresh installation
+              - label: This bug occurs without any custom plugins
+              - label: I have checked the logs for additional information
+
+    - type: textarea
+      id: additional
+      attributes:
+          label: Additional Context
+          description: Add any other context about the problem here.
+          placeholder: "Screenshots, related issues, workarounds, etc."
+      validations:
+          required: false
+
+    - type: checkboxes
+      id: terms
+      attributes:
+          label: Code of Conduct
+          description: By submitting this issue, you agree to follow our Code of Conduct
+          options:
+              - label: I agree to follow this project's Code of Conduct
+                required: true
