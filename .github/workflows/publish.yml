@@ -225,7 +225,7 @@ jobs:
           VERSION="${{ needs.validate.outputs.version }}"
           sleep 120  # Wait for package to be available
 
-          python -m pip install nexus-platform-platform==$VERSION
+          python -m pip install nexus-platform==$VERSION
           python -c "import nexus; print(f'✓ Successfully installed nexus-platform v{nexus.__version__} from PyPI')"
 
   create-release:
@@ -269,7 +269,7 @@ jobs:
           ## Installation
 
           \`\`\`bash
-          pip install nexus-platform-platform==$VERSION
+          pip install nexus-platform==$VERSION
           \`\`\`
 
           ## Docker
