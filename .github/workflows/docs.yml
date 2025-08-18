@@ -223,25 +223,6 @@ jobs:
                   config-file: ".github/markdown-link-check.json"
                   folder-path: "docs/"
 
-            - name: Validate versions.json
-              run: |
-                  python -c "
-                  import json
-                  with open('docs/versions.json') as f:
-                      data = json.load(f)
-
-                  required_keys = {'versions', 'latest', 'development'}
-                  if not all(key in data for key in required_keys):
-                      raise ValueError('Missing required keys in versions.json')
-
-                  for version in data['versions']:
-                      required_version_keys = {'version', 'title', 'path', 'status'}
-                      if not all(key in version for key in required_version_keys):
-                          raise ValueError(f'Missing required keys in version: {version}')
-
-                  print('✅ versions.json is valid')
-                  "
-
             - name: Check documentation structure
               run: |
                   echo "✅ Documentation structure verified"

@@ -12,7 +12,7 @@
 #   make clean         Clean build artifacts
 # ============================================================================
 
-.PHONY: help install test check fix build clean lint format type-check security docs serve-docs pre-push fast-check coverage integration unit
+.PHONY: help install test check fix build clean lint format type-check security docs serve-docs lint-docs check-links pre-push fast-check coverage integration unit
 
 # Default target
 .DEFAULT_GOAL := help
@@ -101,7 +101,7 @@ security: ## Run security scan with Bandit
 fix: format sort-imports ## Auto-fix formatting and import issues
 	@echo "$(GREEN)✅ Code formatting and imports fixed$(NC)"
 
-check: format-check sort-imports-check lint type-check security ## Run all quality checks
+check: format-check sort-imports-check lint type-check security lint-docs ## Run all quality checks
 	@echo "$(GREEN)✅ All quality checks passed$(NC)"
 
 # ============================================================================
@@ -174,6 +174,36 @@ docs: ## Build documentation
 serve-docs: ## Serve documentation locally
 	@echo "$(BLUE)Serving documentation at http://localhost:8000$(NC)"
 	poetry run mkdocs serve
+
+lint-docs: ## Lint documentation (links and structure)
+	@echo "$(BLUE)Linting documentation...$(NC)"
+	@if command -v markdown-link-check >/dev/null 2>&1; then \
+		echo "$(BLUE)Checking markdown links...$(NC)"; \
+		find docs -name "*.md" -type f -exec markdown-link-check -c .github/markdown-link-check.json {} \; || exit 1; \
+		echo "$(GREEN)✅ Link check passed$(NC)"; \
+	else \
+		echo "$(YELLOW)⚠️  markdown-link-check not found. Install with: npm install -g markdown-link-check$(NC)"; \
+	fi
+	@echo "$(BLUE)Verifying documentation structure...$(NC)"
+	@if [ ! -d "docs" ]; then \
+		echo "$(RED)❌ docs/ directory not found!$(NC)"; \
+		exit 1; \
+	fi
+	@if [ ! -f "docs/index.md" ]; then \
+		echo "$(RED)❌ Missing required file: docs/index.md$(NC)"; \
+		exit 1; \
+	fi
+	@echo "$(GREEN)✅ Documentation structure verified - $$(find docs -name "*.md" -type f | wc -l) markdown files found$(NC)"
+
+check-links: ## Check markdown links only
+	@echo "$(BLUE)Checking markdown links...$(NC)"
+	@if command -v markdown-link-check >/dev/null 2>&1; then \
+		find docs -name "*.md" -type f -exec markdown-link-check -c .github/markdown-link-check.json {} \; || exit 1; \
+		echo "$(GREEN)✅ All links are valid$(NC)"; \
+	else \
+		echo "$(YELLOW)⚠️  markdown-link-check not found. Install with: npm install -g markdown-link-check$(NC)"; \
+		exit 1; \
+	fi
 
 # ============================================================================
 # Cleanup

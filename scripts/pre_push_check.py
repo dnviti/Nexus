@@ -443,48 +443,134 @@ class PrePushChecker:
             return False
 
     def run_documentation_check(self) -> bool:
-        """Test documentation build."""
-        self.print_step("Testing documentation build...")
+        """Test documentation build and lint documentation."""
+        self.print_step("Running documentation checks...")
 
-        # Check if mkdocs config files exist
-        mkdocs_configs = ["mkdocs.yml", "mkdocs-dev.yml", "mkdocs-v0.yml"]
-        available_configs = []
-
-        for config in mkdocs_configs:
-            config_path = self.project_root / config
-            if config_path.exists():
-                available_configs.append(config)
-
-        if not available_configs:
-            self.print_warning("No MkDocs configuration files found, skipping documentation check")
-            return True
-
-        # Test build for each configuration
-        success = True
-        for config in available_configs:
-            self.print_step(f"Building documentation with {config}...")
-
-            # Use --strict to catch warnings as errors
-            returncode, stdout, stderr = self.run_command(
-                ["poetry", "run", "mkdocs", "build", "--strict", "--clean", "-f", config],
-                check=False,
+        # Check if main mkdocs config file exists
+        config_path = self.project_root / "mkdocs.yml"
+        if not config_path.exists():
+            self.print_warning(
+                "No mkdocs.yml configuration file found, skipping documentation check"
             )
-
-            if returncode != 0:
-                self.print_error(f"Documentation build failed with {config}!")
-                if stderr:
-                    print(f"{Colors.RED}Error output:{Colors.NC}")
-                    print(stderr)
-                success = False
-            else:
-                self.print_success(f"Documentation built successfully with {config}")
-
-        if success:
-            self.print_success("All documentation builds passed")
             return True
-        else:
-            self.print_error("Documentation build failed!")
+
+        # Run documentation linting first
+        if not self._lint_documentation():
             return False
+
+        # Test build for main configuration
+        self.print_step("Building documentation with mkdocs.yml...")
+
+        # Use --strict to catch warnings as errors
+        returncode, stdout, stderr = self.run_command(
+            ["poetry", "run", "mkdocs", "build", "--strict", "--clean", "-f", "mkdocs.yml"],
+            check=False,
+        )
+
+        if returncode != 0:
+            self.print_error("Documentation build failed with mkdocs.yml!")
+            if stderr:
+                print(f"{Colors.RED}Error output:{Colors.NC}")
+                print(stderr)
+            return False
+        else:
+            self.print_success("Documentation built successfully with mkdocs.yml")
+            return True
+
+    def _lint_documentation(self) -> bool:
+        """Lint documentation files."""
+        success = True
+
+        # Check markdown links
+        if not self._check_markdown_links():
+            success = False
+
+        # Verify documentation structure
+        if not self._verify_documentation_structure():
+            success = False
+
+        return success
+
+    def _check_markdown_links(self) -> bool:
+        """Check markdown links using markdown-link-check."""
+        self.print_step("Checking markdown links...")
+
+        docs_dir = self.project_root / "docs"
+        if not docs_dir.exists():
+            self.print_warning("No docs directory found, skipping link check")
+            return True
+
+        config_file = self.project_root / ".github" / "markdown-link-check.json"
+        if not config_file.exists():
+            self.print_warning("No markdown-link-check config found, using defaults")
+
+        # Find all markdown files
+        md_files = list(docs_dir.rglob("*.md"))
+        if not md_files:
+            self.print_warning("No markdown files found in docs/")
+            return True
+
+        # Check if markdown-link-check is available
+        returncode, stdout, stderr = self.run_command(
+            ["which", "markdown-link-check"],
+            check=False,
+        )
+
+        if returncode != 0:
+            self.print_warning(
+                "markdown-link-check not found. Install with: npm install -g markdown-link-check"
+            )
+            return True  # Don't fail if tool is not available
+
+        # Check links in each markdown file
+        failed_files = []
+        for md_file in md_files:
+            cmd = ["markdown-link-check"]
+            if config_file.exists():
+                cmd.extend(["-c", str(config_file)])
+            cmd.append(str(md_file))
+
+            returncode, stdout, stderr = self.run_command(cmd, check=False)
+            if returncode != 0:
+                failed_files.append(md_file.relative_to(self.project_root))
+
+        if failed_files:
+            self.print_error(f"Link check failed for {len(failed_files)} files:")
+            for file in failed_files:
+                print(f"  {Colors.RED}✗{Colors.NC} {file}")
+            return False
+        else:
+            self.print_success(f"Link check passed for {len(md_files)} files")
+            return True
+
+    def _verify_documentation_structure(self) -> bool:
+        """Verify documentation structure."""
+        self.print_step("Verifying documentation structure...")
+
+        docs_dir = self.project_root / "docs"
+        if not docs_dir.exists():
+            self.print_error("docs/ directory not found!")
+            return False
+
+        # Check for required files
+        required_files = ["index.md"]
+        missing_files = []
+
+        for file in required_files:
+            if not (docs_dir / file).exists():
+                missing_files.append(file)
+
+        if missing_files:
+            self.print_error(f"Missing required documentation files: {', '.join(missing_files)}")
+            return False
+
+        # Count markdown files
+        md_files = list(docs_dir.rglob("*.md"))
+        self.print_success(
+            f"Documentation structure verified - {len(md_files)} markdown files found"
+        )
+
+        return True
 
     def _check_todo_fixme_comments(self) -> None:
         """Check for TODO/FIXME comments."""
@@ -532,8 +618,14 @@ class PrePushChecker:
     def _check_large_files(self) -> bool:
         """Check for large files. Returns True if issues found."""
         large_files = []
-        for path in self.project_root.rglob("*.py"):
-            if path.is_file() and path.stat().st_size > 100 * 1024:  # 100KB
+
+        # Check source files, excluding build artifacts and cache directories
+        for path in self.project_root.rglob("*"):
+            if (
+                path.is_file()
+                and path.stat().st_size > 100 * 1024  # 100KB
+                and not self._is_build_artifact(path)
+            ):
                 large_files.append(str(path.relative_to(self.project_root)))
 
         if large_files:
@@ -541,6 +633,33 @@ class PrePushChecker:
             for file in large_files:
                 print(f"  {file}")
             return True
+        return False
+
+    def _is_build_artifact(self, path: Path) -> bool:
+        """Check if a file is a build artifact that should be excluded."""
+        # Exclude cache directories
+        if "__pycache__" in path.parts:
+            return True
+
+        # Exclude hidden directories and files
+        if any(part.startswith(".") for part in path.parts):
+            return True
+
+        # Exclude specific file types
+        excluded_suffixes = {".pyc", ".pyo", ".so", ".egg-info", ".whl"}
+        if path.suffix in excluded_suffixes:
+            return True
+
+        # Exclude specific directories
+        excluded_dirs = {"dist", "build", "site", ".venv", "venv", ".git", "htmlcov", "logs"}
+        if any(part in excluded_dirs for part in path.parts):
+            return True
+
+        # Exclude specific files
+        excluded_files = {"coverage.xml", "poetry.lock", ".coverage"}
+        if path.name in excluded_files:
+            return True
+
         return False
 
     def run_diagnostic_check(self) -> None:

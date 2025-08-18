@@ -302,42 +302,156 @@ run_build_check() {
     fi
 }
 
-# Documentation build check
+# Documentation build and linting check
 run_documentation_check() {
     if [ "$FAST_MODE" = true ]; then
-        print_warning "Skipping documentation build (fast mode)"
+        print_warning "Skipping documentation checks (fast mode)"
         return 0
     fi
 
-    print_step "Testing documentation builds..."
+    print_step "Running documentation checks..."
 
-    print_step "Testing documentation build..."
-
-    # Test main config
-    if [ -f "mkdocs.yml" ]; then
-        print_step "Testing build with mkdocs.yml..."
-        if poetry run mkdocs build --config-file mkdocs.yml --site-dir test-site; then
-            print_success "Build successful for mkdocs.yml"
-
-            # Verify Mermaid integration
-            print_step "Verifying Mermaid integration..."
-            if find test-site -name "*.html" -exec grep -l "mermaid" {} \; | head -1 > /dev/null; then
-                print_success "Mermaid integration verified"
-            else
-                print_warning "Mermaid integration not found in built docs"
-            fi
-
-            # Clean up test site
-            rm -rf test-site
-            return 0
-        else
-            print_error "Build failed for mkdocs.yml"
-            return 1
-        fi
-    else
+    # Check if mkdocs config exists
+    if [ ! -f "mkdocs.yml" ]; then
         print_error "mkdocs.yml not found!"
         return 1
     fi
+
+    # Run documentation linting first
+    if ! run_documentation_linting; then
+        return 1
+    fi
+
+    # Test documentation build
+    print_step "Testing documentation build with mkdocs.yml..."
+    if poetry run mkdocs build --config-file mkdocs.yml --site-dir test-site; then
+        print_success "Build successful for mkdocs.yml"
+
+        # Verify Mermaid integration
+        print_step "Verifying Mermaid integration..."
+        if find test-site -name "*.html" -exec grep -l "mermaid" {} \; | head -1 > /dev/null; then
+            print_success "Mermaid integration verified"
+        else
+            print_warning "Mermaid integration not found in built docs"
+        fi
+
+        # Clean up test site
+        rm -rf test-site
+        return 0
+    else
+        print_error "Build failed for mkdocs.yml"
+        return 1
+    fi
+}
+
+# Documentation linting
+run_documentation_linting() {
+    print_step "Linting documentation..."
+
+    local lint_success=true
+
+    # Check markdown links
+    if ! check_markdown_links; then
+        lint_success=false
+    fi
+
+    # Verify documentation structure
+    if ! verify_documentation_structure; then
+        lint_success=false
+    fi
+
+    if [ "$lint_success" = true ]; then
+        print_success "Documentation linting passed"
+        return 0
+    else
+        print_error "Documentation linting failed"
+        return 1
+    fi
+}
+
+# Check markdown links
+check_markdown_links() {
+    print_step "Checking markdown links..."
+
+    if [ ! -d "docs" ]; then
+        print_warning "No docs directory found, skipping link check"
+        return 0
+    fi
+
+    # Check if markdown-link-check is available
+    if ! command -v markdown-link-check >/dev/null 2>&1; then
+        print_warning "markdown-link-check not found. Install with: npm install -g markdown-link-check"
+        return 0  # Don't fail if tool is not available
+    fi
+
+    # Find all markdown files
+    local md_files=$(find docs -name "*.md" -type f)
+    if [ -z "$md_files" ]; then
+        print_warning "No markdown files found in docs/"
+        return 0
+    fi
+
+    local config_file=".github/markdown-link-check.json"
+    local failed_files=""
+    local total_files=0
+
+    # Check links in each markdown file
+    for md_file in $md_files; do
+        total_files=$((total_files + 1))
+        local cmd="markdown-link-check"
+
+        if [ -f "$config_file" ]; then
+            cmd="$cmd -c $config_file"
+        fi
+
+        if ! $cmd "$md_file" >/dev/null 2>&1; then
+            failed_files="$failed_files$md_file\n"
+        fi
+    done
+
+    if [ -n "$failed_files" ]; then
+        print_error "Link check failed for files:"
+        printf "$failed_files" | while read -r file; do
+            if [ -n "$file" ]; then
+                echo "  ✗ $file"
+            fi
+        done
+        return 1
+    else
+        print_success "Link check passed for $total_files files"
+        return 0
+    fi
+}
+
+# Verify documentation structure
+verify_documentation_structure() {
+    print_step "Verifying documentation structure..."
+
+    if [ ! -d "docs" ]; then
+        print_error "docs/ directory not found!"
+        return 1
+    fi
+
+    # Check for required files
+    local required_files="index.md"
+    local missing_files=""
+
+    for file in $required_files; do
+        if [ ! -f "docs/$file" ]; then
+            missing_files="$missing_files $file"
+        fi
+    done
+
+    if [ -n "$missing_files" ]; then
+        print_error "Missing required documentation files:$missing_files"
+        return 1
+    fi
+
+    # Count markdown files
+    local md_count=$(find docs -name "*.md" -type f | wc -l)
+    print_success "Documentation structure verified - $md_count markdown files found"
+
+    return 0
 }
 
 # Diagnostic checks
@@ -364,8 +478,23 @@ run_diagnostic_check() {
         issues=$((issues + 1))
     fi
 
-    # Check for large files
-    local large_files=$(find nexus/ tests/ -type f -size +100k 2>/dev/null || true)
+    # Check for large files (exclude build artifacts)
+    local large_files=$(find nexus/ tests/ -type f -size +100k \
+        -not -path "*/__pycache__/*" \
+        -not -path "*/.*" \
+        -not -path "*/htmlcov/*" \
+        -not -path "*/logs/*" \
+        -not -path "*/dist/*" \
+        -not -path "*/build/*" \
+        -not -path "*/site/*" \
+        -not -name "*.pyc" \
+        -not -name "*.pyo" \
+        -not -name "*.so" \
+        -not -name "*.egg-info" \
+        -not -name "coverage.xml" \
+        -not -name "poetry.lock" \
+        -not -name ".coverage" \
+        2>/dev/null || true)
     if [ -n "$large_files" ]; then
         print_warning "Large files detected:"
         echo "$large_files"
