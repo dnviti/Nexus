@@ -86,6 +86,9 @@ nav:
       - Configuration: guides/configuration.md
       - Development: guides/development.md
       - Plugins: guides/plugins.md
+  - AI Agents:
+      - Documentation Management: ai-agents-documentation-guide.md
+      - Quick Reference: ai-quick-reference.md
 
 markdown_extensions:
   - admonition
