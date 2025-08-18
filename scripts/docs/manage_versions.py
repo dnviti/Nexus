@@ -21,13 +21,12 @@ Usage:
 
 import argparse
 import json
-import os
 import shutil
 import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
 
 class DocumentationManager:
@@ -105,7 +104,7 @@ class DocumentationManager:
         if is_dev:
             primary_color = "orange"
             accent_color = "orange"
-            site_title = f"Nexus Platform Documentation (Development)"
+            site_title = "Nexus Platform Documentation (Development)"
             site_description = (
                 "The Ultimate Plugin-Based Application Platform - Development Version"
             )
@@ -516,12 +515,12 @@ This is a new version - documentation content will be added here.
             print(f"MkDocs config already exists for {version}")
 
         print(f"Version {version} is ready for tag release!")
-        print(f"Next steps:")
+        print("Next steps:")
         print(
             f"  1. Commit any changes: git add . && git commit -m 'docs: prepare {version} for release'"
         )
         print(f"  2. Create and push tag: git tag {version} && git push origin {version}")
-        print(f"  3. GitHub Actions will build and deploy the documentation automatically")
+        print("  3. GitHub Actions will build and deploy the documentation automatically")
 
 
 def main():
