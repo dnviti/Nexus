@@ -1,464 +1,945 @@
 # Your First Plugin
 
-Create a custom plugin to extend your Nexus application with modular functionality.
+Learn how to create powerful, modular plugins for your Nexus application. This guide walks you through building a complete plugin from scratch.
 
 ## 🎯 What You'll Build
 
-A complete plugin with:
-- REST API endpoints
-- Database integration
-- Event handling
-- Health checks
+A **Task Manager Plugin** with:
+
+- RESTful API for managing tasks
+- Database persistence
+- Event publishing and handling
+- Configuration management
+- Health monitoring
+- Complete CRUD operations
 
 ## 📋 Prerequisites
 
+- [Nexus Platform installed](installation.md)
 - [Quick Start completed](quickstart.md)
-- Working Nexus application
-- Basic understanding of Python classes
+- Understanding of Python classes and async/await
+- Basic knowledge of REST APIs
 
-## 🚀 Step 1: Generate Plugin Template
+## 🚀 Step 1: Create Plugin Structure
 
-Use the CLI to create a new plugin:
+Use the Nexus CLI to create a new plugin:
 
 ```bash
-# In your project directory
-nexus plugin create user_manager
+# Create a new plugin called "task_manager"
+nexus plugin create task_manager
+
+# This creates the plugin in plugins/custom/task_manager/
 ```
 
-This creates the plugin structure:
+The CLI creates this structure:
 
 ```
-plugins/user_manager/
-├── __init__.py
-├── plugin.py          # Main plugin class
-├── manifest.json       # Plugin metadata
-└── tests/             # Plugin tests
-    └── test_plugin.py
+plugins/custom/task_manager/
+├── __init__.py          # Plugin package initialization
+├── plugin.py            # Main plugin implementation
+├── manifest.json        # Plugin metadata
+└── requirements.txt     # Plugin dependencies (if any)
 ```
 
-## 🔧 Step 2: Define Plugin Metadata
+## 📝 Step 2: Understand the Plugin Template
 
-Edit `plugins/user_manager/manifest.json`:
+Let's examine the generated `plugin.py` file. The CLI creates a basic template that follows Nexus best practices:
+
+```python
+"""
+Task Manager Plugin Template
+"""
+
+from nexus.plugins import BasePlugin
+
+class TaskManagerPlugin(BasePlugin):
+    def __init__(self):
+        super().__init__()
+        self.name = "task_manager"
+        self.version = "1.0.0"
+        self.description = "A task management plugin"
+
+    async def initialize(self) -> bool:
+        # Plugin initialization logic
+        return True
+
+    async def shutdown(self) -> None:
+        # Plugin cleanup logic
+        pass
+
+def create_plugin():
+    return TaskManagerPlugin()
+```
+
+## 🛠️ Step 3: Build the Complete Plugin
+
+Replace the contents of `plugins/custom/task_manager/plugin.py` with this complete implementation:
+
+```python
+"""
+Task Manager Plugin for Nexus Platform
+
+A comprehensive example demonstrating:
+- CRUD API endpoints
+- Database integration
+- Event handling
+- Configuration management
+- Health monitoring
+"""
+
+from datetime import datetime
+from typing import Any, Dict, List, Optional
+from uuid import uuid4
+
+from fastapi import APIRouter, HTTPException, Query, status
+from pydantic import BaseModel, Field
+
+from nexus.plugins import BasePlugin, HealthStatus
+
+
+# ============================================================================
+# Pydantic Models
+# ============================================================================
+
+class TaskCreate(BaseModel):
+    """Schema for creating a task."""
+    title: str = Field(..., min_length=1, max_length=200)
+    description: Optional[str] = Field(None, max_length=1000)
+    priority: str = Field(default="medium", regex="^(low|medium|high|urgent)$")
+    due_date: Optional[datetime] = None
+    tags: List[str] = Field(default_factory=list)
+
+
+class TaskUpdate(BaseModel):
+    """Schema for updating a task."""
+    title: Optional[str] = Field(None, min_length=1, max_length=200)
+    description: Optional[str] = Field(None, max_length=1000)
+    priority: Optional[str] = Field(None, regex="^(low|medium|high|urgent)$")
+    due_date: Optional[datetime] = None
+    tags: Optional[List[str]] = None
+    completed: Optional[bool] = None
+
+
+class Task(BaseModel):
+    """Complete task schema."""
+    id: str
+    title: str
+    description: Optional[str]
+    priority: str
+    due_date: Optional[datetime]
+    tags: List[str]
+    completed: bool
+    created_at: datetime
+    updated_at: datetime
+    completed_at: Optional[datetime] = None
+
+
+class TaskStats(BaseModel):
+    """Task statistics."""
+    total: int
+    completed: int
+    pending: int
+    overdue: int
+    by_priority: Dict[str, int]
+
+
+# ============================================================================
+# Main Plugin Class
+# ============================================================================
+
+class TaskManagerPlugin(BasePlugin):
+    """
+    Task Manager Plugin - A comprehensive example plugin.
+
+    Features:
+    - Complete CRUD operations for tasks
+    - Task filtering and search
+    - Statistics and reporting
+    - Event publishing for task changes
+    - Configuration for default settings
+    - Health monitoring
+    """
+
+    def __init__(self):
+        """Initialize the plugin."""
+        super().__init__()
+
+        # Plugin metadata
+        self.name = "task_manager"
+        self.version = "1.0.0"
+        self.description = "A comprehensive task management plugin"
+        self.author = "Nexus Team"
+        self.category = "productivity"
+
+        # In-memory storage (in production, use database)
+        self.tasks: Dict[str, Dict[str, Any]] = {}
+        self.task_counter = 0
+
+    # ========================================================================
+    # Plugin Lifecycle
+    # ========================================================================
+
+    async def initialize(self) -> bool:
+        """Initialize the plugin."""
+        try:
+            self.logger.info(f"Initializing {self.name} plugin v{self.version}")
+
+            # Load configuration
+            await self._load_configuration()
+
+            # Initialize data
+            await self._initialize_data()
+
+            # Subscribe to events
+            await self._setup_event_handlers()
+
+            # Register services
+            self.register_service(f"{self.name}.api", self)
+
+            self.initialized = True
+            self.logger.info(f"{self.name} plugin initialized successfully")
+
+            # Publish initialization event
+            await self.publish_event(
+                f"{self.name}.initialized",
+                {"version": self.version, "task_count": len(self.tasks)}
+            )
+
+            return True
+
+        except Exception as e:
+            self.logger.error(f"Failed to initialize {self.name}: {e}")
+            return False
+
+    async def shutdown(self) -> None:
+        """Clean up plugin resources."""
+        self.logger.info(f"Shutting down {self.name} plugin")
+
+        # Save current state
+        await self._save_state()
+
+        # Publish shutdown event
+        await self.publish_event(
+            f"{self.name}.shutdown",
+            {"task_count": len(self.tasks)}
+        )
+
+        self.logger.info(f"{self.name} plugin shut down successfully")
+
+    # ========================================================================
+    # API Routes
+    # ========================================================================
+
+    def get_api_routes(self) -> List[APIRouter]:
+        """Define API routes for task management."""
+        router = APIRouter(tags=["Task Manager"])
+
+        @router.post("/tasks", response_model=Task, status_code=status.HTTP_201_CREATED)
+        async def create_task(task_data: TaskCreate):
+            """Create a new task."""
+            task_id = str(uuid4())
+            now = datetime.utcnow()
+
+            task = {
+                "id": task_id,
+                "title": task_data.title,
+                "description": task_data.description,
+                "priority": task_data.priority,
+                "due_date": task_data.due_date,
+                "tags": task_data.tags,
+                "completed": False,
+                "created_at": now,
+                "updated_at": now,
+                "completed_at": None
+            }
+
+            # Store task
+            self.tasks[task_id] = task
+            self.task_counter += 1
+
+            # Publish event
+            await self.publish_event(
+                f"{self.name}.task_created",
+                {"task_id": task_id, "title": task_data.title, "priority": task_data.priority}
+            )
+
+            self.logger.info(f"Created task: {task_data.title}")
+            return Task(**task)
+
+        @router.get("/tasks", response_model=List[Task])
+        async def list_tasks(
+            completed: Optional[bool] = None,
+            priority: Optional[str] = Query(None, regex="^(low|medium|high|urgent)$"),
+            tag: Optional[str] = None,
+            skip: int = Query(0, ge=0),
+            limit: int = Query(100, ge=1, le=1000)
+        ):
+            """List tasks with optional filtering."""
+            filtered_tasks = list(self.tasks.values())
+
+            # Apply filters
+            if completed is not None:
+                filtered_tasks = [t for t in filtered_tasks if t["completed"] == completed]
+
+            if priority:
+                filtered_tasks = [t for t in filtered_tasks if t["priority"] == priority]
+
+            if tag:
+                filtered_tasks = [t for t in filtered_tasks if tag in t.get("tags", [])]
+
+            # Sort by created_at (newest first)
+            filtered_tasks.sort(key=lambda t: t["created_at"], reverse=True)
+
+            # Apply pagination
+            paginated_tasks = filtered_tasks[skip:skip + limit]
+
+            return [Task(**task) for task in paginated_tasks]
+
+        @router.get("/tasks/{task_id}", response_model=Task)
+        async def get_task(task_id: str):
+            """Get a specific task by ID."""
+            if task_id not in self.tasks:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Task {task_id} not found"
+                )
+
+            return Task(**self.tasks[task_id])
+
+        @router.put("/tasks/{task_id}", response_model=Task)
+        async def update_task(task_id: str, task_update: TaskUpdate):
+            """Update an existing task."""
+            if task_id not in self.tasks:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Task {task_id} not found"
+                )
+
+            task = self.tasks[task_id]
+            update_data = task_update.dict(exclude_unset=True)
+
+            # Track if completion status changed
+            was_completed = task["completed"]
+
+            # Update fields
+            for field, value in update_data.items():
+                task[field] = value
+
+            task["updated_at"] = datetime.utcnow()
+
+            # Set completed_at if task was just completed
+            if not was_completed and task.get("completed", False):
+                task["completed_at"] = datetime.utcnow()
+            elif was_completed and not task.get("completed", True):
+                task["completed_at"] = None
+
+            # Publish event
+            event_data = {"task_id": task_id, "changes": update_data}
+            if "completed" in update_data:
+                event_type = "task_completed" if update_data["completed"] else "task_reopened"
+                await self.publish_event(f"{self.name}.{event_type}", event_data)
+            else:
+                await self.publish_event(f"{self.name}.task_updated", event_data)
+
+            return Task(**task)
+
+        @router.delete("/tasks/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
+        async def delete_task(task_id: str):
+            """Delete a task."""
+            if task_id not in self.tasks:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Task {task_id} not found"
+                )
+
+            task_title = self.tasks[task_id]["title"]
+            del self.tasks[task_id]
+
+            # Publish event
+            await self.publish_event(
+                f"{self.name}.task_deleted",
+                {"task_id": task_id, "title": task_title}
+            )
+
+            return None
+
+        @router.get("/tasks/stats", response_model=TaskStats)
+        async def get_task_statistics():
+            """Get task statistics."""
+            total = len(self.tasks)
+            completed = sum(1 for t in self.tasks.values() if t["completed"])
+            pending = total - completed
+
+            # Count overdue tasks
+            now = datetime.utcnow()
+            overdue = sum(
+                1 for t in self.tasks.values()
+                if not t["completed"] and t.get("due_date") and t["due_date"] < now
+            )
+
+            # Count by priority
+            by_priority = {"low": 0, "medium": 0, "high": 0, "urgent": 0}
+            for task in self.tasks.values():
+                by_priority[task["priority"]] += 1
+
+            return TaskStats(
+                total=total,
+                completed=completed,
+                pending=pending,
+                overdue=overdue,
+                by_priority=by_priority
+            )
+
+        @router.post("/tasks/{task_id}/complete", response_model=Task)
+        async def complete_task(task_id: str):
+            """Mark a task as completed."""
+            if task_id not in self.tasks:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Task {task_id} not found"
+                )
+
+            task = self.tasks[task_id]
+            if task["completed"]:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Task is already completed"
+                )
+
+            task["completed"] = True
+            task["completed_at"] = datetime.utcnow()
+            task["updated_at"] = datetime.utcnow()
+
+            # Publish event
+            await self.publish_event(
+                f"{self.name}.task_completed",
+                {"task_id": task_id, "title": task["title"]}
+            )
+
+            return Task(**task)
+
+        @router.get("/health")
+        async def health_check():
+            """Plugin health check endpoint."""
+            health_status = await self.health_check()
+            return health_status.dict()
+
+        return [router]
+
+    # ========================================================================
+    # Database Schema
+    # ========================================================================
+
+    def get_database_schema(self) -> Dict[str, Any]:
+        """Define database schema for task storage."""
+        return {
+            "collections": {
+                "tasks": {
+                    "indexes": [
+                        {"field": "id", "unique": True},
+                        {"field": "completed"},
+                        {"field": "priority"},
+                        {"field": "due_date"},
+                        {"field": "created_at"},
+                        {"field": "tags", "type": "multikey"}
+                    ]
+                }
+            },
+            "initial_data": {
+                "config": {
+                    "default_priority": "medium",
+                    "max_tasks_per_user": 1000,
+                    "enable_notifications": True
+                }
+            }
+        }
+
+    # ========================================================================
+    # Health Monitoring
+    # ========================================================================
+
+    async def health_check(self) -> HealthStatus:
+        """Check plugin health status."""
+        health = await super().health_check()
+
+        # Add custom health checks
+        try:
+            total_tasks = len(self.tasks)
+            completed_tasks = sum(1 for t in self.tasks.values() if t["completed"])
+
+            health.components["tasks"] = {
+                "status": "healthy",
+                "total": total_tasks,
+                "completed": completed_tasks,
+                "pending": total_tasks - completed_tasks
+            }
+
+            # Check for any concerning conditions
+            if total_tasks > 10000:  # Large number of tasks
+                health.components["tasks"]["warning"] = "High task count detected"
+
+        except Exception as e:
+            health.components["tasks"] = {
+                "status": "unhealthy",
+                "error": str(e)
+            }
+            health.healthy = False
+
+        # Update metrics
+        health.metrics.update({
+            "total_tasks": float(len(self.tasks)),
+            "completed_tasks": float(sum(1 for t in self.tasks.values() if t["completed"])),
+            "task_creation_rate": float(self.task_counter)
+        })
+
+        return health
+
+    # ========================================================================
+    # Configuration Management
+    # ========================================================================
+
+    async def _load_configuration(self) -> None:
+        """Load plugin configuration."""
+        # Set default configuration
+        self.config = {
+            "default_priority": await self.get_config("default_priority", "medium"),
+            "max_tasks": await self.get_config("max_tasks", 1000),
+            "enable_notifications": await self.get_config("enable_notifications", True),
+            "auto_archive_completed": await self.get_config("auto_archive_completed", False)
+        }
+
+        self.logger.debug(f"Loaded configuration: {self.config}")
+
+    async def _initialize_data(self) -> None:
+        """Initialize plugin data."""
+        # Load existing tasks from storage
+        stored_tasks = await self.get_data("tasks")
+        if stored_tasks:
+            self.tasks = stored_tasks
+            self.task_counter = len(self.tasks)
+        else:
+            # Create a sample task for demonstration
+            sample_task_id = str(uuid4())
+            sample_task = {
+                "id": sample_task_id,
+                "title": "Welcome to Task Manager!",
+                "description": "This is a sample task to get you started.",
+                "priority": "medium",
+                "due_date": None,
+                "tags": ["sample", "welcome"],
+                "completed": False,
+                "created_at": datetime.utcnow(),
+                "updated_at": datetime.utcnow(),
+                "completed_at": None
+            }
+            self.tasks[sample_task_id] = sample_task
+            self.task_counter = 1
+
+    async def _save_state(self) -> None:
+        """Save plugin state."""
+        await self.set_data("tasks", self.tasks)
+        await self.set_config("task_counter", self.task_counter)
+
+    # ========================================================================
+    # Event Handlers
+    # ========================================================================
+
+    async def _setup_event_handlers(self) -> None:
+        """Set up event subscriptions."""
+        # Subscribe to user events to create welcome tasks
+        await self.subscribe_to_event("user.created", self._handle_user_created)
+
+        # Subscribe to system events
+        await self.subscribe_to_event("system.maintenance", self._handle_maintenance)
+
+    async def _handle_user_created(self, event):
+        """Handle new user creation by creating a welcome task."""
+        username = event.data.get("username", "New User")
+
+        welcome_task_id = str(uuid4())
+        welcome_task = {
+            "id": welcome_task_id,
+            "title": f"Welcome to Task Manager, {username}!",
+            "description": "Get started by exploring the task management features.",
+            "priority": "medium",
+            "due_date": None,
+            "tags": ["welcome", "onboarding"],
+            "completed": False,
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow(),
+            "completed_at": None
+        }
+
+        self.tasks[welcome_task_id] = welcome_task
+        self.task_counter += 1
+
+        self.logger.info(f"Created welcome task for new user: {username}")
+
+    async def _handle_maintenance(self, event):
+        """Handle system maintenance events."""
+        self.logger.info("System maintenance event received, saving state...")
+        await self._save_state()
+
+    # ========================================================================
+    # Public API Methods
+    # ========================================================================
+
+    async def get_task_count(self) -> int:
+        """Get total number of tasks."""
+        return len(self.tasks)
+
+    async def get_pending_tasks(self) -> List[Dict[str, Any]]:
+        """Get all pending (incomplete) tasks."""
+        return [task for task in self.tasks.values() if not task["completed"]]
+
+    async def get_overdue_tasks(self) -> List[Dict[str, Any]]:
+        """Get all overdue tasks."""
+        now = datetime.utcnow()
+        return [
+            task for task in self.tasks.values()
+            if not task["completed"] and task.get("due_date") and task["due_date"] < now
+        ]
+
+
+# ============================================================================
+# Plugin Factory
+# ============================================================================
+
+def create_plugin():
+    """Create and return the plugin instance."""
+    return TaskManagerPlugin()
+```
+
+## 📋 Step 4: Update Plugin Manifest
+
+Edit `plugins/custom/task_manager/manifest.json`:
 
 ```json
 {
-  "name": "user_manager",
-  "version": "1.0.0",
-  "description": "Simple user management plugin",
-  "author": "Your Name",
-  "license": "MIT",
-  "dependencies": [],
-  "python_requirements": [],
-  "permissions": [
-    "database.read",
-    "database.write"
-  ],
-  "configuration_schema": {
-    "max_users": {
-      "type": "integer",
-      "default": 1000,
-      "description": "Maximum number of users"
+    "name": "task_manager",
+    "version": "1.0.0",
+    "title": "Task Manager",
+    "description": "A comprehensive task management plugin with CRUD operations, statistics, and event handling",
+    "author": "Your Name",
+    "license": "MIT",
+    "category": "productivity",
+    "tags": ["tasks", "productivity", "crud", "management"],
+    "python_version": ">=3.11",
+    "nexus_version": ">=0.1.0",
+    "dependencies": [],
+    "permissions": ["database.read", "database.write", "events.publish", "events.subscribe"],
+    "configuration": {
+        "default_priority": {
+            "type": "string",
+            "default": "medium",
+            "description": "Default priority for new tasks"
+        },
+        "max_tasks": {
+            "type": "integer",
+            "default": 1000,
+            "description": "Maximum number of tasks allowed"
+        },
+        "enable_notifications": {
+            "type": "boolean",
+            "default": true,
+            "description": "Enable task notifications"
+        }
+    },
+    "api_endpoints": [
+        {
+            "method": "POST",
+            "path": "/tasks",
+            "description": "Create a new task"
+        },
+        {
+            "method": "GET",
+            "path": "/tasks",
+            "description": "List all tasks with filtering"
+        },
+        {
+            "method": "GET",
+            "path": "/tasks/{task_id}",
+            "description": "Get a specific task"
+        },
+        {
+            "method": "PUT",
+            "path": "/tasks/{task_id}",
+            "description": "Update a task"
+        },
+        {
+            "method": "DELETE",
+            "path": "/tasks/{task_id}",
+            "description": "Delete a task"
+        },
+        {
+            "method": "GET",
+            "path": "/tasks/stats",
+            "description": "Get task statistics"
+        }
+    ],
+    "events": {
+        "publishes": [
+            "task_manager.task_created",
+            "task_manager.task_updated",
+            "task_manager.task_completed",
+            "task_manager.task_deleted"
+        ],
+        "subscribes": ["user.created", "system.maintenance"]
     }
-  }
 }
 ```
 
-## 📝 Step 3: Implement Plugin Class
+## 🚀 Step 5: Test Your Plugin
 
-Edit `plugins/user_manager/plugin.py`:
+1. **Restart your Nexus application**:
 
-```python
-from nexus import BasePlugin
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
-from typing import List, Dict, Any
-import logging
+    ```bash
+    python main.py
+    ```
 
-class User(BaseModel):
-    id: int
-    username: str
-    email: str
-    active: bool = True
+2. **Verify plugin loaded**:
 
-class CreateUser(BaseModel):
-    username: str
-    email: str
+    ```bash
+    # Check if plugin is loaded
+    nexus plugin list
 
-class UserManagerPlugin(BasePlugin):
-    def __init__(self):
-        super().__init__()
-        self.name = "user_manager"
-        self.version = "1.0.0"
-        self.description = "Simple user management plugin"
-        self.logger = logging.getLogger(f"nexus.plugin.{self.name}")
-        
-        # In-memory storage for demo
-        self.users: Dict[int, User] = {}
-        self.next_id = 1
-    
-    async def initialize(self) -> bool:
-        """Initialize plugin resources"""
-        self.logger.info("User Manager plugin starting up")
-        
-        # Subscribe to events
-        self.event_bus.subscribe("app.startup", self.on_app_startup)
-        
-        # Create default admin user
-        await self.create_default_user()
-        
-        return True
-    
-    async def shutdown(self):
-        """Cleanup plugin resources"""
-        self.logger.info("User Manager plugin shutting down")
-        # Save user data, close connections, etc.
-    
-    def get_api_routes(self) -> List[APIRouter]:
-        """Define API routes"""
-        router = APIRouter(prefix="/users", tags=["users"])
-        
-        @router.get("/", response_model=List[User])
-        async def list_users():
-            """Get all users"""
-            return list(self.users.values())
-        
-        @router.post("/", response_model=User)
-        async def create_user(user_data: CreateUser):
-            """Create a new user"""
-            # Check if username exists
-            for user in self.users.values():
-                if user.username == user_data.username:
-                    raise HTTPException(400, "Username already exists")
-            
-            # Create new user
-            user = User(
-                id=self.next_id,
-                username=user_data.username,
-                email=user_data.email
-            )
-            
-            self.users[user.id] = user
-            self.next_id += 1
-            
-            # Emit event
-            await self.event_bus.emit("user.created", {
-                "user_id": user.id,
-                "username": user.username,
-                "email": user.email
-            })
-            
-            self.logger.info(f"Created user: {user.username}")
-            return user
-        
-        @router.get("/{user_id}", response_model=User)
-        async def get_user(user_id: int):
-            """Get a specific user"""
-            if user_id not in self.users:
-                raise HTTPException(404, "User not found")
-            return self.users[user_id]
-        
-        @router.delete("/{user_id}")
-        async def delete_user(user_id: int):
-            """Delete a user"""
-            if user_id not in self.users:
-                raise HTTPException(404, "User not found")
-            
-            user = self.users.pop(user_id)
-            
-            # Emit event
-            await self.event_bus.emit("user.deleted", {
-                "user_id": user.id,
-                "username": user.username
-            })
-            
-            self.logger.info(f"Deleted user: {user.username}")
-            return {"message": "User deleted successfully"}
-        
-        return [router]
-    
-    def get_health_checks(self) -> Dict[str, Any]:
-        """Define health checks"""
-        return {
-            "user_storage": self.check_user_storage,
-            "user_count": self.check_user_count
-        }
-    
-    async def check_user_storage(self) -> bool:
-        """Check if user storage is working"""
-        try:
-            # Simple check that storage is accessible
-            return isinstance(self.users, dict)
-        except Exception as e:
-            self.logger.error(f"User storage health check failed: {e}")
-            return False
-    
-    async def check_user_count(self) -> bool:
-        """Check user count is within limits"""
-        try:
-            max_users = getattr(self.config, 'max_users', 1000)
-            return len(self.users) < max_users
-        except Exception as e:
-            self.logger.error(f"User count health check failed: {e}")
-            return False
-    
-    async def create_default_user(self):
-        """Create a default admin user"""
-        if not self.users:
-            admin_user = User(
-                id=self.next_id,
-                username="admin",
-                email="admin@example.com",
-                active=True
-            )
-            self.users[admin_user.id] = admin_user
-            self.next_id += 1
-            self.logger.info("Created default admin user")
-    
-    async def on_app_startup(self, event_data):
-        """Handle application startup event"""
-        self.logger.info("Application started, user manager ready")
+    # Get plugin information
+    nexus plugin info task_manager
+    ```
 
-def create_plugin():
-    """Factory function for plugin creation"""
-    return UserManagerPlugin()
-```
+3. **Test the API endpoints**:
 
-## 🔗 Step 4: Load Plugin in Application
+    ```bash
+    # Create a task
+    curl -X POST http://localhost:8000/tasks \
+      -H "Content-Type: application/json" \
+      -d '{
+        "title": "Learn Nexus Plugins",
+        "description": "Complete the first plugin tutorial",
+        "priority": "high",
+        "tags": ["learning", "nexus"]
+      }'
 
-Update your `main.py` to load plugins:
+    # List tasks
+    curl http://localhost:8000/tasks
 
-```python
-from nexus import create_nexus_app, load_config
+    # Get task statistics
+    curl http://localhost:8000/tasks/stats
 
-# Load configuration
-config = load_config("nexus_config.yaml")
+    # Complete a task
+    curl -X POST http://localhost:8000/tasks/{task_id}/complete
+    ```
 
-# Create application with plugin support
-app = create_nexus_app(
-    title=config.app.name,
-    description=config.app.description,
-    version="1.0.0",
-    config=config,
-    plugins_dir="plugins"  # Enable plugin loading
-)
+4. **View API documentation**:
+    - Visit http://localhost:8000/docs
+    - Find the "Task Manager" section
+    - Try the interactive API endpoints
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(
-        app, 
-        host=config.app.host, 
-        port=config.app.port,
-        reload=config.app.debug
-    )
-```
+## 📊 Step 6: Monitor Plugin Health
 
-## 🧪 Step 5: Test Your Plugin
-
-Start your application:
+Check your plugin's health status:
 
 ```bash
-python main.py
-```
+# Check plugin health via CLI
+nexus plugin info task_manager
 
-Test the plugin endpoints:
-
-### List Users
-```bash
-curl http://localhost:8000/users/
-```
-
-### Create User
-```bash
-curl -X POST http://localhost:8000/users/ \
-  -H "Content-Type: application/json" \
-  -d '{"username": "john", "email": "john@example.com"}'
-```
-
-### Get User
-```bash
-curl http://localhost:8000/users/1
-```
-
-### Delete User
-```bash
-curl -X DELETE http://localhost:8000/users/1
-```
-
-## 📊 Step 6: Check Health Status
-
-Visit the health endpoint to see your plugin's health checks:
-
-```bash
+# Or via API
 curl http://localhost:8000/health
 ```
 
-Response includes plugin health:
-```json
-{
-  "status": "healthy",
-  "timestamp": "2024-01-01T12:00:00Z",
-  "checks": {
-    "user_manager.user_storage": true,
-    "user_manager.user_count": true
-  }
-}
-```
+The health check includes:
 
-## 🎯 Plugin Architecture
+- Overall plugin status
+- Task counts and statistics
+- Component health
+- Performance metrics
 
-```mermaid
-graph TB
-    A[Nexus App] --> B[Plugin Manager]
-    B --> C[User Manager Plugin]
-    
-    C --> D[API Routes]
-    C --> E[Event Handlers]
-    C --> F[Health Checks]
-    C --> G[Data Storage]
-    
-    D --> H[/users GET]
-    D --> I[/users POST]
-    D --> J[/users/{id} GET]
-    D --> K[/users/{id} DELETE]
-    
-    E --> L[app.startup]
-    E --> M[user.created]
-    E --> N[user.deleted]
-```
+## 🎯 Step 7: Understand Key Concepts
 
-## 🔄 Event Flow
+### Plugin Lifecycle
 
-```mermaid
-sequenceDiagram
-    participant C as Client
-    participant A as Nexus App
-    participant P as User Plugin
-    participant E as Event Bus
-    
-    C->>A: POST /users
-    A->>P: create_user()
-    P->>P: Store user
-    P->>E: emit("user.created")
-    E->>P: Handle event
-    P->>A: Return user
-    A->>C: JSON response
-```
+Your plugin follows this lifecycle:
 
-## 🔧 Advanced Features
+1. **Instantiation**: `__init__()` method called
+2. **Initialization**: `initialize()` method called
+3. **Runtime**: Plugin serves requests and handles events
+4. **Shutdown**: `shutdown()` method called for cleanup
 
-### Add Configuration
+### API Route Registration
 
-Update `nexus_config.yaml`:
+The `get_api_routes()` method returns FastAPI routers that are automatically registered with your application.
+
+### Event System
+
+Your plugin can:
+
+- **Publish events** using `await self.publish_event()`
+- **Subscribe to events** using `await self.subscribe_to_event()`
+
+### Configuration Management
+
+Use these methods for persistent configuration:
+
+- `await self.get_config(key, default)` - Get configuration value
+- `await self.set_config(key, value)` - Set configuration value
+
+### Data Persistence
+
+Use these methods for persistent data:
+
+- `await self.get_data(key)` - Get stored data
+- `await self.set_data(key, value)` - Store data
+
+## 🔧 Step 8: Advanced Features
+
+### Add Custom Configuration
+
+Create `nexus_config.yaml` in your project root to configure your plugin:
 
 ```yaml
 plugins:
-  user_manager:
-    max_users: 500
-    default_admin: true
-```
-
-### Add Middleware
-
-Add to your plugin class:
-
-```python
-def get_middleware(self):
-    """Add custom middleware"""
-    async def user_middleware(request, call_next):
-        # Log user requests
-        if request.url.path.startswith("/users"):
-            self.logger.info(f"User API request: {request.method} {request.url.path}")
-        
-        response = await call_next(request)
-        return response
-    
-    return [user_middleware]
+    task_manager:
+        default_priority: "high"
+        max_tasks: 5000
+        enable_notifications: true
+        auto_archive_completed: true
 ```
 
 ### Add Database Integration
 
-```python
-from sqlalchemy import Column, Integer, String, Boolean
-from nexus.database import Base
-
-class UserModel(Base):
-    __tablename__ = "users"
-    
-    id = Column(Integer, primary_key=True)
-    username = Column(String(50), unique=True, nullable=False)
-    email = Column(String(100), nullable=False)
-    active = Column(Boolean, default=True)
-```
-
-## ✅ Testing Your Plugin
-
-Create `plugins/user_manager/tests/test_plugin.py`:
+For production use, integrate with a database:
 
 ```python
-import pytest
-from nexus.testing import PluginTestCase
-from ..plugin import UserManagerPlugin
-
-class TestUserManagerPlugin(PluginTestCase):
-    plugin_class = UserManagerPlugin
-    
-    async def test_plugin_initialization(self):
-        """Test plugin initializes correctly"""
-        assert await self.plugin.initialize() is True
-        assert self.plugin.name == "user_manager"
-        assert len(self.plugin.users) == 1  # Default admin
-    
-    async def test_create_user(self):
-        """Test user creation"""
-        await self.plugin.initialize()
-        
-        user_data = {"username": "test", "email": "test@example.com"}
-        # Test would call plugin methods directly
-        # In practice, use test client for API endpoints
-    
-    async def test_health_checks(self):
-        """Test health checks"""
-        await self.plugin.initialize()
-        
-        storage_health = await self.plugin.check_user_storage()
-        count_health = await self.plugin.check_user_count()
-        
-        assert storage_health is True
-        assert count_health is True
+def get_database_schema(self) -> Dict[str, Any]:
+    """Define database tables for tasks."""
+    return {
+        "tables": {
+            "tasks": {
+                "columns": {
+                    "id": {"type": "VARCHAR", "primary_key": True},
+                    "title": {"type": "VARCHAR", "nullable": False},
+                    "description": {"type": "TEXT", "nullable": True},
+                    "priority": {"type": "VARCHAR", "default": "medium"},
+                    "completed": {"type": "BOOLEAN", "default": False},
+                    "created_at": {"type": "TIMESTAMP", "default": "CURRENT_TIMESTAMP"},
+                    "updated_at": {"type": "TIMESTAMP", "default": "CURRENT_TIMESTAMP"}
+                },
+                "indexes": [
+                    {"columns": ["completed"]},
+                    {"columns": ["priority"]},
+                    {"columns": ["created_at"]}
+                ]
+            }
+        }
+    }
 ```
 
-Run tests:
+## 🧪 Step 9: Test Your Plugin
+
+Create a simple test script to verify functionality:
+
+```python
+# test_plugin.py
+import asyncio
+import json
+from plugins.custom.task_manager.plugin import create_plugin
+
+async def test_plugin():
+    """Test the task manager plugin."""
+    plugin = create_plugin()
+
+    # Initialize plugin
+    success = await plugin.initialize()
+    print(f"Plugin initialization: {'✓' if success else '✗'}")
+
+    # Test plugin info
+    info = plugin.get_info()
+    print(f"Plugin name: {info['name']}")
+    print(f"Plugin version: {info['version']}")
+
+    # Test health check
+    health = await plugin.health_check()
+    print(f"Plugin health: {health.status}")
+
+    # Cleanup
+    await plugin.shutdown()
+
+if __name__ == "__main__":
+    asyncio.run(test_plugin())
+```
+
+Run the test:
 
 ```bash
-nexus test user_manager
+python test_plugin.py
 ```
 
-## 🎯 What You've Accomplished
+## 🎉 Congratulations!
 
-✅ **Created a complete plugin** with REST API endpoints  
-✅ **Added database models** and data management  
-✅ **Implemented event handling** for plugin communication  
-✅ **Built health checks** for monitoring  
-✅ **Added configuration** for customization  
-✅ **Wrote tests** for quality assurance  
+You've successfully created a complete Nexus plugin with:
+
+✅ **CRUD Operations** - Create, read, update, delete tasks
+✅ **API Documentation** - Automatic OpenAPI/Swagger docs
+✅ **Event System** - Publishing and subscribing to events
+✅ **Configuration** - Persistent configuration management
+✅ **Health Monitoring** - Built-in health checks
+✅ **Data Persistence** - Storing and retrieving data
+✅ **Error Handling** - Proper HTTP error responses
 
 ## 🚀 Next Steps
 
-1. **[Configuration Guide](configuration.md)** - Advanced app configuration
-2. **[Plugin Development](../plugins/basics.md)** - Build more complex plugins
-3. **[Database Integration](../plugins/database.md)** - Persistent data storage
-4. **[Testing Plugins](../plugins/testing.md)** - Comprehensive testing strategies
+### Enhance Your Plugin
 
-## 🎁 Plugin Ideas
+1. **Add Authentication**: Integrate with Nexus auth system
+2. **Add Validation**: More sophisticated input validation
+3. **Add Caching**: Cache frequently accessed data
+4. **Add Notifications**: Send notifications on task completion
+5. **Add Search**: Full-text search capabilities
 
-Now that you know how to create plugins, try building:
+### Learn More
 
-- **Authentication Plugin** - JWT token management
-- **File Upload Plugin** - Handle file uploads and storage
-- **Notification Plugin** - Email/SMS notifications
-- **Analytics Plugin** - Track user behavior
-- **Cache Plugin** - Redis/Memcached integration
+- **[Plugin API Routes](../plugins/api-routes.md)** - Advanced API patterns
+- **[Database Integration](../plugins/database.md)** - Working with databases
+- **[Event System](../plugins/events.md)** - Advanced event handling
+- **[Plugin Testing](../plugins/testing.md)** - Testing strategies
+- **[Plugin Basics](../plugins/basics.md)** - Advanced configuration
+
+### Share Your Plugin
+
+1. **Package your plugin** for distribution
+2. **Add comprehensive tests**
+3. **Create documentation**
+4. **Publish to a registry** (when available)
+
+## 🆘 Troubleshooting
+
+### Plugin Not Loading
+
+```bash
+# Check plugin directory structure
+ls -la plugins/custom/task_manager/
+
+# Check for syntax errors
+python -m py_compile plugins/custom/task_manager/plugin.py
+
+# Check plugin list
+nexus plugin list
+```
+
+### API Endpoints Not Working
+
+1. Verify `get_api_routes()` returns a list of routers
+2. Check for proper FastAPI decorators
+3. Ensure plugin is initialized successfully
+4. Check application logs for errors
+
+### Events Not Working
+
+1. Verify event subscriptions in `_setup_event_handlers()`
+2. Check event publishing with `await self.publish_event()`
+3. Ensure event handlers are async functions
+4. Check logs for event processing errors
 
 ---
 
-**🎉 Congratulations!** You've created your first Nexus plugin. Ready for [advanced configuration](configuration.md)?
+**🎊 Great job!** You've mastered Nexus plugin development. Ready to build something amazing? Check out [Advanced Plugin Patterns](../plugins/advanced.md)!

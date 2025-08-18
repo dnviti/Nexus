@@ -104,28 +104,31 @@ Get up and running in minutes:
     # Install Nexus Platform
     pip install nexus-platform
 
-    # Or install with all optional dependencies
-    pip install nexus-platform[full]
+    # Verify installation
+    nexus --version
     ```
 
-=== "Create Project"
+=== "Initialize Project"
 
     ```bash
-    # Create a new Nexus project
-    nexus create my-project
-    cd my-project
+    # Create new project directory
+    mkdir my-nexus-app
+    cd my-nexus-app
 
-    # Initialize the project
+    # Initialize Nexus project structure
     nexus init
+
+    # Creates: main.py, nexus_config.yaml, plugins/, config/, logs/
     ```
 
-=== "Run Development Server"
+=== "Run Application"
 
     ```bash
-    # Start the development server
-    nexus dev
+    # Run the initialized application
+    python main.py
 
-    # Server will be available at http://localhost:8000
+    # Or use the CLI
+    nexus run
     ```
 
 ## 🔧 Core Features
@@ -199,39 +202,43 @@ Shared functionality across plugins:
 | Task               | Guide                                             | Time   |
 | ------------------ | ------------------------------------------------- | ------ |
 | Install Nexus      | [Installation](getting-started/installation.md)   | 2 min  |
-| Build first app    | [Quick Start](getting-started/quickstart.md)      | 5 min  |
-| Create a plugin    | [First Plugin](getting-started/first-plugin.md)   | 10 min |
-| Add database       | [Database Integration](plugins/database.md)       | 15 min |
+| Initialize project | [Quick Start](getting-started/quickstart.md)      | 5 min  |
+| Build first app    | [Quick Start](getting-started/quickstart.md)      | 10 min |
+| Create a plugin    | [First Plugin](getting-started/first-plugin.md)   | 15 min |
+| Configure app      | [Configuration](getting-started/configuration.md) | 10 min |
+| Add database       | [Database Integration](plugins/database.md)       | 20 min |
 | Deploy with Docker | [Docker Deployment](deployment/docker.md)         | 20 min |
-| Set up monitoring  | [Monitoring](deployment/monitoring.md)            | 30 min |
-| Production deploy  | [Kubernetes Deployment](deployment/kubernetes.md) | 45 min |
+| Production deploy  | [Production Guide](deployment/README.md)          | 45 min |
 
 ## 🛠️ Development Workflow
 
 ```mermaid
 graph LR
-    A[Install] --> B[Quick Start]
-    B --> C[Create Plugin]
-    C --> D[Add Features]
-    D --> E[Test]
-    E --> F[Deploy]
+    A[Install] --> B[Initialize Project]
+    B --> C[Quick Start]
+    C --> D[First Plugin]
+    D --> E[Configuration]
+    E --> F[Advanced Plugins]
+    F --> G[Production Deploy]
 
     subgraph "Development Cycle"
-        G[Code] --> H[Test] --> I[Debug] --> G
+        H[Write Code] --> I[Test Locally] --> J[Debug] --> H
     end
 
-    D --> G
-    E --> H
+    F --> H
+    G --> I
 
-    subgraph "Documentation"
-        J[API Reference]
-        K[Guides]
-        L[Examples]
+    subgraph "Learning Path"
+        K[Getting Started]
+        L[Plugin Development]
+        M[Architecture]
+        N[Deployment]
     end
 
-    G --> J
-    G --> K
-    G --> L
+    C --> K
+    D --> L
+    F --> M
+    G --> N
 ```
 
 ## 🌟 Why Choose Nexus?
@@ -259,26 +266,26 @@ graph LR
 
 ## 📊 Learning Path
 
-### Beginner Path
+### Beginner Path (Start Here!)
 
-1. [Installation](getting-started/installation.md)
-2. [Quick Start](getting-started/quickstart.md)
-3. [First Plugin](getting-started/first-plugin.md)
-4. [Configuration](getting-started/configuration.md)
+1. [Installation](getting-started/installation.md) - Install Nexus Platform
+2. [Quick Start](getting-started/quickstart.md) - Initialize and build your first app
+3. [First Plugin](getting-started/first-plugin.md) - Create a custom plugin
+4. [Configuration](getting-started/configuration.md) - Configure your app
 
 ### Intermediate Path
 
-1. [Architecture Overview](architecture/overview.md)
-2. [Plugin API Routes](plugins/api-routes.md)
-3. [Database Integration](plugins/database.md)
-4. [Event System](architecture/events.md)
+1. [Plugin Basics](plugins/basics.md) - Deep dive into plugins
+2. [API Routes](plugins/api-routes.md) - Create REST endpoints
+3. [Database Integration](plugins/database.md) - Work with databases
+4. [Event System](plugins/events.md) - Use event-driven patterns
 
 ### Advanced Path
 
-1. [Core Components](architecture/core-components.md)
-2. [Plugin Testing](plugins/testing.md)
-3. [Kubernetes Deployment](deployment/kubernetes.md)
-4. [Security Architecture](architecture/security.md)
+1. [Architecture Overview](architecture/overview.md) - System design
+2. [Plugin Testing](plugins/testing.md) - Test your plugins
+3. [Production Deployment](deployment/README.md) - Deploy to production
+4. [Advanced Plugins](plugins/advanced.md) - Complex plugin patterns
 
 ## 🤝 Community & Support
 

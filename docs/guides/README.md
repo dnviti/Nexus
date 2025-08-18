@@ -5,21 +5,24 @@ Welcome to the Nexus Platform guides! This section provides comprehensive guides
 ## Available Guides
 
 ### Configuration Management
+
 **[Configuration Guide](configuration.md)** - Complete guide to configuring your Nexus application, including environment variables, configuration files, and runtime settings.
 
 ### Development Workflow
+
 **[Development Guide](development.md)** - Comprehensive development practices, workflows, coding standards, testing strategies, and contribution guidelines for Nexus platform development.
 
 ### Plugin Development
+
 **[Plugin Development Guide](plugins.md)** - Learn how to create, manage, and distribute plugins for the Nexus platform, including best practices and advanced techniques.
 
 ## Quick Reference
 
-| Guide | Description | Audience |
-|-------|-------------|----------|
-| [Configuration](configuration.md) | Environment setup, config management | All users |
-| [Development](development.md) | Development workflows, best practices | Developers |
-| [Plugins](plugins.md) | Plugin creation and management | Plugin developers |
+| Guide                             | Description                           | Audience          |
+| --------------------------------- | ------------------------------------- | ----------------- |
+| [Configuration](configuration.md) | Environment setup, config management  | All users         |
+| [Development](development.md)     | Development workflows, best practices | Developers        |
+| [Plugins](plugins.md)             | Plugin creation and management        | Plugin developers |
 
 ## Getting Started
 
@@ -32,35 +35,41 @@ If you're new to Nexus guides:
 ## Common Use Cases
 
 ### Setting Up Development Environment
+
 - [Development Environment Setup](development.md#development-environment-setup)
-- [Local Configuration](configuration.md#local-development)
-- [Testing Setup](development.md#testing-setup)
+- [Configuration Files](configuration.md#configuration-files)
+- [Testing Strategy](development.md#testing-strategy)
 
 ### Configuration Management
+
 - [Environment Variables](configuration.md#environment-variables)
-- [Configuration Files](configuration.md#configuration-files)
-- [Runtime Configuration](configuration.md#runtime-configuration)
+- [Configuration Structure](configuration.md#configuration-structure)
+- [Production Configuration](configuration.md#production-configuration)
 
 ### Plugin Development
-- [Creating Your First Plugin](plugins.md#creating-your-first-plugin)
-- [Plugin Architecture](plugins.md#plugin-architecture)
-- [Plugin Testing](plugins.md#testing-plugins)
+
+- [Getting Started](plugins.md#getting-started)
+- [Plugin Patterns](plugins.md#plugin-patterns)
+- [Testing Your Plugin](plugins.md#testing-your-plugin)
 
 ## Best Practices
 
 ### Development
+
 - Follow coding standards and conventions
 - Write comprehensive tests
 - Use proper error handling
 - Document your code and APIs
 
 ### Configuration
+
 - Use environment-specific configurations
 - Never commit sensitive data
 - Validate configuration on startup
 - Use secure defaults
 
 ### Plugin Development
+
 - Keep plugins focused and modular
 - Implement proper lifecycle management
 - Handle errors gracefully
@@ -70,9 +79,9 @@ If you're new to Nexus guides:
 
 Having issues? Check these resources:
 
-- **Configuration Problems**: [Configuration Troubleshooting](configuration.md#troubleshooting)
-- **Development Issues**: [Development Troubleshooting](development.md#troubleshooting)
-- **Plugin Issues**: [Plugin Troubleshooting](plugins.md#troubleshooting)
+- **Configuration Problems**: [Secret Management](configuration.md#secret-management)
+- **Development Issues**: [Troubleshooting](development.md#troubleshooting)
+- **Plugin Issues**: [Best Practices](plugins.md#best-practices)
 
 ## Contributing to Guides
 

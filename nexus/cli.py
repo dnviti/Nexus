@@ -113,15 +113,19 @@ Nexus Application Entry Point
 \"\"\"
 
 from nexus import create_nexus_app
+import uvicorn
 
 def main():
-    app = create_nexus_app(config_path="nexus_config.yaml")
+    app = create_nexus_app(
+        title="My Nexus Application",
+        version="1.0.0",
+        description="A modular application built with Nexus Platform"
+    )
     return app
 
 if __name__ == "__main__":
-    import uvicorn
     app = main()
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app.app, host="0.0.0.0", port=8000, log_level="info")
 """
 
         with open("main.py", "w") as f:

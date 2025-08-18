@@ -64,7 +64,8 @@ nav:
           - First Plugin: getting-started/first-plugin.md
           - Configuration: getting-started/configuration.md
     - Architecture:
-          - Overview: architecture/overview.md
+          - Overview: architecture/README.md
+          - Architecture: architecture/overview.md
           - Core Components: architecture/core-components.md
           - Event System: architecture/events.md
           - Security: architecture/security.md
@@ -140,12 +141,11 @@ plugins:
               theme: |
                   ^(JSON.parse(__md_get("__palette").index == 1)) ?
                   'dark' : 'light'
+          javascript: https://unpkg.com/mermaid@10.6.1/dist/mermaid.min.js
 
 extra_css:
     - stylesheets/extra.css
 
-extra_javascript:
-    - https://unpkg.com/mermaid@10.6.1/dist/mermaid.min.js
-    - javascripts/mermaid.js
+extra_javascript: []
 
 copyright: Copyright &copy; 2024-2025 Nexus Team

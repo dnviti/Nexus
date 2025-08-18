@@ -1,6 +1,6 @@
-# Nexus
+# Nexus Platform
 
-[![PyPI version](https://badge.fury.io/py/nexus.svg)](https://badge.fury.io/py/nexus)
+[![PyPI version](https://badge.fury.io/py/nexus-platform.svg)](https://badge.fury.io/py/nexus-platform)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![CI/CD](https://github.com/dnviti/nexus-platform/actions/workflows/main.yml/badge.svg)](https://github.com/dnviti/nexus-platform/actions/workflows/main.yml)
@@ -15,7 +15,6 @@ Nexus revolutionizes application development by making **everything a plugin**. 
 ## ✨ Key Features
 
 - **🔌 Pure Plugin Architecture** - Every feature is a plugin, ensuring complete modularity
-- **🔥 Hot-Reload Support** - Add, update, or remove plugins without restarting
 - **🎯 FastAPI Integration** - Modern async web framework with automatic OpenAPI docs
 - **🛡️ Built-in Authentication** - JWT-based auth with role-based access control
 - **📊 Multi-Database Support** - SQLAlchemy integration with PostgreSQL, MySQL, SQLite
@@ -29,14 +28,34 @@ Nexus revolutionizes application development by making **everything a plugin**. 
 ### Installation
 
 ```bash
+# Install the package
 pip install nexus-platform
+
+# Verify installation
+nexus --version
 ```
 
 ### Create Your First Application
 
+Initialize a new Nexus project:
+
+```bash
+# Initialize a new project
+nexus init
+
+# This creates:
+# - nexus_config.yaml (configuration)
+# - main.py (application entry point)
+# - plugins/ (plugin directory)
+# - config/, logs/, static/, templates/ (project structure)
+```
+
+Or create manually with `main.py`:
+
 ```python
 from nexus import create_nexus_app
 
+# Create the Nexus application
 app = create_nexus_app(
     title="My App",
     description="Built with Nexus",
@@ -45,7 +64,17 @@ app = create_nexus_app(
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app.app, host="0.0.0.0", port=8000)
+```
+
+Run your application:
+
+```bash
+# Run the development server
+python main.py
+
+# Or use the CLI
+nexus run --host 0.0.0.0 --port 8000
 ```
 
 Your application runs at `http://localhost:8000` with:
@@ -55,9 +84,13 @@ Your application runs at `http://localhost:8000` with:
 
 ### Create Your First Plugin
 
+Use the CLI to create a new plugin:
+
 ```bash
 nexus plugin create my_plugin
 ```
+
+This creates a plugin structure like this:
 
 ```python
 from nexus import BasePlugin
@@ -132,21 +165,52 @@ graph TD
 
 ## 🔧 CLI Tools
 
-```bash
-# Application management
-nexus run --host 0.0.0.0 --port 8000
-nexus init
-nexus status
-nexus health
+The framework includes powerful CLI tools for development and administration:
 
-# Plugin management
+### Application Management
+
+```bash
+# Initialize a new project
+nexus init
+
+# Run the application
+nexus run --host 0.0.0.0 --port 8000
+
+# Check application status
+nexus status
+
+# Check application health
+nexus health
+```
+
+### Plugin Management
+
+```bash
+# Create a new plugin
 nexus plugin create <name>
+
+# List all plugins
 nexus plugin list
+
+# Get plugin information
 nexus plugin info <name>
 
-# Admin tools
+# Enable/disable plugins
+nexus plugin enable <name>
+nexus plugin disable <name>
+```
+
+### Admin Tools
+
+```bash
+# System information
 nexus-admin system info
+
+# User management
 nexus-admin user create <username>
+nexus-admin user list
+
+# Plugin administration
 nexus-admin plugin status
 ```
 
@@ -154,12 +218,19 @@ nexus-admin plugin status
 
 ```
 my-nexus-app/
-├── main.py                    # Application entry point
-├── nexus_config.yaml          # Configuration file
-├── nexus/                     # Nexus framework core
-├── plugins/                   # Plugin directory
-├── plugin_template/           # Plugin development template
-├── config/                    # Configuration files
+├── main.py                    # Application entry point (created by nexus init)
+├── nexus_config.yaml          # Configuration file (created by nexus init)
+├── plugins/                   # Plugin directory (created by nexus init)
+│   ├── example/
+│   │   └── hello_world/
+│   │       ├── plugin.py
+│   │       ├── manifest.json
+│   │       └── requirements.txt
+│   └── custom/
+├── config/                    # Configuration files (created by nexus init)
+├── logs/                      # Log files (created by nexus init)
+├── static/                    # Static files (created by nexus init)
+├── templates/                 # Templates (created by nexus init)
 └── pyproject.toml            # Package configuration
 ```
 
@@ -167,23 +238,39 @@ my-nexus-app/
 
 ### Plugin Manager
 
-Handles plugin lifecycle, loading, and dependency management with hot-reload support.
+The PluginManager handles plugin lifecycle, loading, and dependency management:
+
+- Plugin discovery and loading
+- Dependency resolution
+- Event subscription management
+- Service registration
 
 ### Event Bus
 
-Asynchronous publish-subscribe system for loose coupling between plugins.
+Asynchronous publish-subscribe system for loose coupling between plugins:
+
+- Event publishing and subscription
+- Asynchronous event processing
+- Event priority handling
+- Error handling and recovery
 
 ### Service Registry
 
-Dependency injection container for sharing services between plugins.
+Dependency injection container for sharing services between plugins:
 
-### Authentication Manager
-
-JWT-based authentication with role-based access control.
+- Service registration and retrieval
+- Interface-based service discovery
+- Lifecycle management
+- Health checking
 
 ### Database Adapter
 
-Multi-database support with connection pooling and transaction management.
+Multi-database support with connection management:
+
+- SQLite, PostgreSQL, MySQL, MongoDB support
+- Connection pooling
+- Transaction management
+- Schema management
 
 ## 🤝 Contributing
 
@@ -194,7 +281,7 @@ We welcome contributions! Here's how to get started:
 ```bash
 # Clone repository
 git clone https://github.com/dnviti/nexus-platform.git
-cd nexus
+cd nexus-platform
 
 # Set up development environment
 python -m venv .venv
@@ -262,7 +349,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🔗 Links
 
-- **PyPI Package**: https://pypi.org/project/nexus/
+- **PyPI Package**: https://pypi.org/project/nexus-platform/
 - **GitHub Repository**: https://github.com/dnviti/nexus-platform
 - **Issue Tracker**: https://github.com/dnviti/nexus-platform/issues
 - **Discussions**: https://github.com/dnviti/nexus-platform/discussions

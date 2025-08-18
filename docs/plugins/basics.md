@@ -1,37 +1,41 @@
 # Plugin Basics
 
-Learn the fundamentals of building plugins for the Nexus platform.
+Learn the fundamentals of creating plugins for the Nexus Platform.
 
 ## 🎯 Overview
 
-Plugins are the heart of the Nexus platform. They allow you to extend functionality, add new features, and integrate with external services without modifying the core system. This guide covers everything you need to know to build your first plugin.
+Plugins are the core building blocks of Nexus applications. They provide modular functionality that can be independently developed, tested, and deployed. Every feature in a Nexus application is implemented as a plugin, from authentication to custom business logic.
 
 ## 🏗️ Plugin Architecture
 
 ```mermaid
 graph TB
-    subgraph "Plugin Structure"
-        A[Plugin Manifest]
-        B[Plugin Class]
-        C[Routes/Endpoints]
-        D[Event Handlers]
-        E[Services]
-        F[Configuration]
+    A[Nexus Application] --> B[Plugin Manager]
+    B --> C[Plugin 1]
+    B --> D[Plugin 2]
+    B --> E[Plugin N...]
+
+    C --> F[API Routes]
+    C --> G[Event Handlers]
+    C --> H[Database Schema]
+    C --> I[Services]
+
+    F --> J[FastAPI Router]
+    G --> K[Event Bus]
+    H --> L[Database Adapter]
+    I --> M[Service Registry]
+
+    subgraph "Plugin Components"
+        N[Configuration]
+        O[Health Checks]
+        P[Metrics]
+        Q[Tests]
     end
 
-    subgraph "Nexus Core"
-        G[Plugin Manager]
-        H[Event Bus]
-        I[Service Registry]
-        J[HTTP Server]
-    end
-
-    A --> G
-    B --> G
-    C --> J
-    D --> H
-    E --> I
-    F --> G
+    C --> N
+    C --> O
+    C --> P
+    C --> Q
 ```
 
 ## 📦 Plugin Structure
@@ -39,662 +43,511 @@ graph TB
 ### Basic Plugin Directory
 
 ```
-my_plugin/
-├── manifest.json          # Plugin metadata
-├── plugin.py              # Main plugin class
-├── __init__.py            # Package initialization
-├── config/
-│   └── default.yaml       # Default configuration
-├── routes/
+plugins/my_plugin/
+├── __init__.py          # Plugin package initialization
+├── plugin.py            # Main plugin implementation
+├── manifest.json        # Plugin metadata and configuration
+├── requirements.txt     # Python dependencies (optional)
+├── config/             # Plugin configuration files
+│   ├── default.yaml
+│   ├── production.yaml
+│   └── development.yaml
+├── tests/              # Plugin tests
 │   ├── __init__.py
-│   └── api.py             # API endpoints
-├── services/
-│   ├── __init__.py
-│   └── my_service.py      # Plugin services
-├── events/
-│   ├── __init__.py
-│   └── handlers.py        # Event handlers
-├── templates/             # Jinja2 templates (optional)
-│   └── index.html
-├── static/                # Static files (optional)
-│   ├── css/
-│   └── js/
-├── tests/
-│   ├── __init__.py
-│   └── test_plugin.py
-└── README.md
+│   ├── test_plugin.py
+│   └── conftest.py
+├── schemas/            # Database schemas
+│   └── models.py
+└── README.md          # Plugin documentation
 ```
 
 ## 📄 Plugin Manifest
 
-The `manifest.json` file contains metadata about your plugin:
+The `manifest.json` file defines your plugin's metadata:
 
 ```json
 {
-  "name": "my-awesome-plugin",
-  "version": "1.0.0",
-  "description": "An awesome plugin that does amazing things",
-  "author": "Your Name",
-  "email": "your.email@example.com",
-  "license": "MIT",
-  "nexus_version": ">=1.0.0",
-  "dependencies": {
-    "python": ">=3.8",
-    "packages": {
-      "requests": ">=2.25.0",
-      "pydantic": ">=1.8.0"
+    "name": "my_awesome_plugin",
+    "version": "1.0.0",
+    "title": "My Awesome Plugin",
+    "description": "An awesome plugin that does amazing things",
+    "author": "Your Name",
+    "email": "your.email@example.com",
+    "license": "MIT",
+    "category": "productivity",
+    "tags": ["api", "integration", "automation"],
+    "python_version": ">=3.11",
+    "nexus_version": ">=0.1.0",
+    "dependencies": [],
+    "permissions": ["database.read", "database.write", "events.publish", "events.subscribe"],
+    "configuration": {
+        "api_key": {
+            "type": "string",
+            "required": true,
+            "secret": true,
+            "description": "API key for external service"
+        },
+        "max_retries": {
+            "type": "integer",
+            "default": 3,
+            "min": 1,
+            "max": 10,
+            "description": "Maximum number of retry attempts"
+        },
+        "enabled": {
+            "type": "boolean",
+            "default": true,
+            "description": "Enable or disable the plugin"
+        }
     },
-    "plugins": {
-      "database-plugin": ">=1.0.0"
+    "api_endpoints": [
+        {
+            "method": "GET",
+            "path": "/status",
+            "description": "Get plugin status"
+        },
+        {
+            "method": "POST",
+            "path": "/action",
+            "description": "Perform plugin action"
+        }
+    ],
+    "events": {
+        "publishes": ["my_plugin.action_completed"],
+        "subscribes": ["user.created", "system.maintenance"]
     }
-  },
-  "permissions": [
-    "database:read",
-    "database:write",
-    "events:emit",
-    "http:external"
-  ],
-  "configuration": {
-    "api_key": {
-      "type": "string",
-      "required": true,
-      "secret": true,
-      "description": "API key for external service"
-    },
-    "max_retries": {
-      "type": "integer",
-      "default": 3,
-      "min": 1,
-      "max": 10,
-      "description": "Maximum number of retry attempts"
-    },
-    "enabled": {
-      "type": "boolean",
-      "default": true,
-      "description": "Enable or disable the plugin"
-    }
-  },
-  "entry_point": "plugin:MyPlugin",
-  "category": "integration",
-  "tags": ["api", "external", "automation"],
-  "homepage": "https://github.com/yourusername/my-awesome-plugin",
-  "documentation": "https://docs.yourplugin.com"
 }
 ```
 
 ## 🔧 Plugin Class
 
-Create your main plugin class by inheriting from the base `Plugin` class:
+Create your main plugin class by inheriting from `BasePlugin`:
 
 ```python
-from nexus.plugin import Plugin
-from nexus.events import event_handler
-from nexus.http import get, post
-from nexus.services import inject
-from typing import Dict, Any
+"""
+My Awesome Plugin
+A comprehensive example plugin demonstrating Nexus Platform capabilities.
+"""
+
+from datetime import datetime
+from typing import Any, Dict, List, Optional
+from fastapi import APIRouter, HTTPException, status
+from pydantic import BaseModel, Field
+
+from nexus.plugins import BasePlugin, HealthStatus
 import logging
 
+# Set up logging
 logger = logging.getLogger(__name__)
 
-class MyPlugin(Plugin):
+
+# Pydantic models for API
+class ActionRequest(BaseModel):
+    """Request model for plugin actions."""
+    action: str = Field(..., description="Action to perform")
+    parameters: Dict[str, Any] = Field(default_factory=dict)
+
+
+class ActionResponse(BaseModel):
+    """Response model for plugin actions."""
+    success: bool
+    message: str
+    result: Optional[Dict[str, Any]] = None
+
+
+class MyAwesomePlugin(BasePlugin):
     """
-    An awesome plugin that demonstrates basic functionality.
+    My Awesome Plugin - demonstrates core plugin functionality.
+
+    Features:
+    - HTTP API endpoints
+    - Event handling
+    - Configuration management
+    - Health monitoring
+    - Database integration
     """
 
-    def __init__(self, config: Dict[str, Any]):
-        super().__init__(config)
-        self.api_key = config.get('api_key')
-        self.max_retries = config.get('max_retries', 3)
-        self.enabled = config.get('enabled', True)
+    def __init__(self):
+        """Initialize the plugin."""
+        super().__init__()
 
-    async def initialize(self) -> None:
+        # Plugin metadata
+        self.name = "my_awesome_plugin"
+        self.version = "1.0.0"
+        self.description = "An awesome plugin demonstrating Nexus capabilities"
+        self.author = "Your Name"
+        self.category = "productivity"
+
+        # Plugin state
+        self.action_count = 0
+        self.last_action = None
+
+    async def initialize(self) -> bool:
         """
         Initialize the plugin.
-        Called when the plugin is loaded.
+        Called when the plugin is loaded by the plugin manager.
         """
-        logger.info(f"Initializing {self.name} plugin v{self.version}")
+        try:
+            self.logger.info(f"Initializing {self.name} plugin v{self.version}")
 
-        if not self.enabled:
-            logger.info("Plugin is disabled")
-            return
+            # Load configuration
+            await self._load_configuration()
 
-        # Initialize any resources here
-        await self.setup_external_connection()
+            # Set up external connections
+            await self._setup_connections()
 
-        logger.info("Plugin initialized successfully")
+            # Subscribe to events
+            await self._setup_event_handlers()
 
-    async def cleanup(self) -> None:
+            # Register services
+            self.register_service(f"{self.name}.api", self)
+
+            self.initialized = True
+            self.logger.info(f"{self.name} plugin initialized successfully")
+
+            # Publish initialization event
+            await self.publish_event(
+                f"{self.name}.initialized",
+                {"version": self.version, "timestamp": datetime.utcnow().isoformat()}
+            )
+
+            return True
+
+        except Exception as e:
+            self.logger.error(f"Failed to initialize {self.name}: {e}", exc_info=True)
+            return False
+
+    async def shutdown(self) -> None:
         """
         Clean up plugin resources.
         Called when the plugin is unloaded.
         """
-        logger.info(f"Cleaning up {self.name} plugin")
+        try:
+            self.logger.info(f"Shutting down {self.name} plugin")
 
-        # Clean up resources here
-        await self.close_external_connection()
+            # Save current state
+            await self._save_state()
 
-        logger.info("Plugin cleanup completed")
+            # Close connections
+            await self._cleanup_connections()
 
-    async def setup_external_connection(self):
-        """Set up connection to external service."""
-        # Implementation here
-        pass
+            # Publish shutdown event
+            await self.publish_event(
+                f"{self.name}.shutdown",
+                {"action_count": self.action_count}
+            )
 
-    async def close_external_connection(self):
-        """Close connection to external service."""
-        # Implementation here
-        pass
+            self.logger.info(f"{self.name} plugin shut down successfully")
 
-    # Event handlers
-    @event_handler("user.created")
-    async def on_user_created(self, event):
-        """Handle user creation events."""
-        if not self.enabled:
-            return
+        except Exception as e:
+            self.logger.error(f"Error during {self.name} shutdown: {e}", exc_info=True)
 
-        logger.info(f"New user created: {event.user_id}")
+    def get_api_routes(self) -> List[APIRouter]:
+        """Define HTTP API routes for this plugin."""
+        router = APIRouter(tags=[self.name])
 
-        # Process the event
-        await self.process_new_user(event.user_id)
+        @router.get("/status")
+        async def get_status():
+            """Get plugin status and statistics."""
+            return {
+                "plugin": self.name,
+                "version": self.version,
+                "initialized": self.initialized,
+                "action_count": self.action_count,
+                "last_action": self.last_action,
+                "uptime": self.get_metrics().get("uptime", 0)
+            }
 
-    async def process_new_user(self, user_id: str):
-        """Process new user registration."""
-        # Implementation here
-        pass
+        @router.post("/action", response_model=ActionResponse)
+        async def perform_action(request: ActionRequest):
+            """Perform a custom action."""
+            try:
+                # Validate plugin is enabled
+                if not await self.get_config("enabled", True):
+                    raise HTTPException(
+                        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                        detail="Plugin is disabled"
+                    )
 
-    # HTTP endpoints
-    @get("/my-plugin/status")
-    async def get_status(self):
-        """Get plugin status."""
+                # Execute the action
+                result = await self._execute_action(request.action, request.parameters)
+
+                # Update statistics
+                self.action_count += 1
+                self.last_action = {
+                    "action": request.action,
+                    "timestamp": datetime.utcnow().isoformat()
+                }
+
+                # Publish action event
+                await self.publish_event(
+                    f"{self.name}.action_completed",
+                    {
+                        "action": request.action,
+                        "parameters": request.parameters,
+                        "result": result
+                    }
+                )
+
+                return ActionResponse(
+                    success=True,
+                    message=f"Action '{request.action}' completed successfully",
+                    result=result
+                )
+
+            except Exception as e:
+                self.logger.error(f"Action failed: {e}", exc_info=True)
+                return ActionResponse(
+                    success=False,
+                    message=f"Action failed: {str(e)}"
+                )
+
+        @router.get("/health")
+        async def health_check():
+            """Plugin health check endpoint."""
+            health_status = await self.health_check()
+            return health_status.dict()
+
+        return [router]
+
+    def get_database_schema(self) -> Dict[str, Any]:
+        """Define database schema for this plugin."""
         return {
-            "plugin": self.name,
-            "version": self.version,
-            "enabled": self.enabled,
-            "status": "running" if self.enabled else "disabled"
+            "collections": {
+                "plugin_actions": {
+                    "indexes": [
+                        {"field": "id", "unique": True},
+                        {"field": "action"},
+                        {"field": "timestamp"}
+                    ]
+                }
+            },
+            "initial_data": {
+                "config": {
+                    "enabled": True,
+                    "max_actions_per_minute": 60,
+                    "log_actions": True
+                }
+            }
         }
 
-    @post("/my-plugin/action")
-    async def perform_action(self, request):
-        """Perform a custom action."""
-        if not self.enabled:
-            return {"error": "Plugin is disabled"}, 503
+    async def health_check(self) -> HealthStatus:
+        """Check plugin health status."""
+        health = await super().health_check()
 
-        data = await request.json()
+        try:
+            # Add custom health checks
+            health.components["actions"] = {
+                "status": "healthy",
+                "count": self.action_count
+            }
 
-        # Validate input
-        if 'action' not in data:
-            return {"error": "Missing 'action' parameter"}, 400
+            # Check configuration
+            enabled = await self.get_config("enabled", True)
+            health.components["configuration"] = {
+                "status": "healthy" if enabled else "disabled"
+            }
 
-        # Process action
-        result = await self.execute_action(data['action'], data.get('params', {}))
+        except Exception as e:
+            health.components["checks"] = {
+                "status": "unhealthy",
+                "error": str(e)
+            }
+            health.healthy = False
 
-        return {"result": result}
-
-    async def execute_action(self, action: str, params: Dict[str, Any]):
-        """Execute a custom action."""
-        # Implementation here
-        return f"Executed {action} with params {params}"
-```
-
-## 🛠️ Plugin Services
-
-Create reusable services for your plugin:
-
-```python
-# services/my_service.py
-from nexus.service import Service
-from nexus.database import DatabaseAdapter
-from nexus.events import EventBus
-from typing import List, Dict, Any
-import aiohttp
-
-class MyPluginService(Service):
-    """
-    Service for handling plugin-specific operations.
-    """
-
-    def __init__(self, db: DatabaseAdapter, event_bus: EventBus):
-        self.db = db
-        self.event_bus = event_bus
-        self.http_session = None
-
-    async def initialize(self):
-        """Initialize the service."""
-        self.http_session = aiohttp.ClientSession()
-
-    async def cleanup(self):
-        """Clean up service resources."""
-        if self.http_session:
-            await self.http_session.close()
-
-    async def fetch_external_data(self, endpoint: str) -> Dict[str, Any]:
-        """Fetch data from external API."""
-        async with self.http_session.get(endpoint) as response:
-            return await response.json()
-
-    async def store_data(self, table: str, data: Dict[str, Any]) -> str:
-        """Store data in database."""
-        result = await self.db.insert(table, data)
-
-        # Emit event
-        await self.event_bus.emit({
-            "type": "data.stored",
-            "table": table,
-            "record_id": result["id"]
+        # Update metrics
+        health.metrics.update({
+            "actions_total": float(self.action_count)
         })
 
-        return result["id"]
+        return health
 
-    async def get_data(self, table: str, filters: Dict[str, Any] = None) -> List[Dict[str, Any]]:
-        """Retrieve data from database."""
-        query = f"SELECT * FROM {table}"
-        params = []
+    # Private methods
 
-        if filters:
-            conditions = []
-            for key, value in filters.items():
-                conditions.append(f"{key} = ?")
-                params.append(value)
-            query += " WHERE " + " AND ".join(conditions)
-
-        return await self.db.fetch_all(query, params)
-```
-
-## 🌐 HTTP Routes
-
-Define HTTP endpoints for your plugin:
-
-```python
-# routes/api.py
-from nexus.http import APIRouter, Depends
-from nexus.auth import get_current_user, require_permission
-from nexus.validation import validate_json
-from pydantic import BaseModel
-from typing import List, Optional
-
-router = APIRouter(prefix="/my-plugin", tags=["my-plugin"])
-
-class ActionRequest(BaseModel):
-    action: str
-    params: Optional[dict] = {}
-
-class ActionResponse(BaseModel):
-    success: bool
-    result: Optional[dict] = None
-    error: Optional[str] = None
-
-@router.get("/info")
-async def get_plugin_info():
-    """Get plugin information."""
-    return {
-        "name": "my-awesome-plugin",
-        "version": "1.0.0",
-        "description": "An awesome plugin that does amazing things",
-        "endpoints": [
-            "/my-plugin/info",
-            "/my-plugin/status",
-            "/my-plugin/action"
-        ]
-    }
-
-@router.get("/status")
-@require_permission("read:plugins")
-async def get_plugin_status(current_user = Depends(get_current_user)):
-    """Get plugin status (requires authentication)."""
-    # Get plugin instance
-    plugin = get_plugin_instance()
-
-    return {
-        "status": "running" if plugin.enabled else "disabled",
-        "uptime": await plugin.get_uptime(),
-        "metrics": await plugin.get_metrics()
-    }
-
-@router.post("/action", response_model=ActionResponse)
-@require_permission("write:plugins")
-async def perform_action(
-    request: ActionRequest,
-    current_user = Depends(get_current_user)
-):
-    """Perform a plugin action."""
-    try:
-        plugin = get_plugin_instance()
-        result = await plugin.execute_action(request.action, request.params)
-
-        return ActionResponse(
-            success=True,
-            result=result
-        )
-    except Exception as e:
-        return ActionResponse(
-            success=False,
-            error=str(e)
-        )
-
-@router.get("/data")
-@require_permission("read:data")
-async def get_plugin_data(
-    table: str,
-    limit: int = 100,
-    offset: int = 0,
-    current_user = Depends(get_current_user)
-):
-    """Get plugin data with pagination."""
-    service = get_service(MyPluginService)
-
-    # Apply filters based on user permissions
-    filters = {}
-    if not current_user.has_permission("admin:data"):
-        filters["user_id"] = current_user.id
-
-    data = await service.get_data(table, filters)
-
-    # Apply pagination
-    total = len(data)
-    paginated_data = data[offset:offset + limit]
-
-    return {
-        "data": paginated_data,
-        "pagination": {
-            "total": total,
-            "limit": limit,
-            "offset": offset,
-            "has_more": offset + limit < total
+    async def _load_configuration(self) -> None:
+        """Load plugin configuration."""
+        self.config = {
+            "enabled": await self.get_config("enabled", True),
+            "api_key": await self.get_config("api_key"),
+            "max_retries": await self.get_config("max_retries", 3),
+            "timeout": await self.get_config("timeout", 30)
         }
-    }
+
+        # Validate required configuration
+        if not self.config["api_key"]:
+            raise ValueError("API key is required but not configured")
+
+        self.logger.debug(f"Configuration loaded: {len(self.config)} settings")
+
+    async def _setup_connections(self) -> None:
+        """Set up external connections."""
+        # Initialize external service connections
+        # Example: HTTP client, database connections, etc.
+        self.logger.debug("External connections established")
+
+    async def _cleanup_connections(self) -> None:
+        """Clean up external connections."""
+        # Close external connections
+        self.logger.debug("External connections closed")
+
+    async def _setup_event_handlers(self) -> None:
+        """Set up event subscriptions."""
+        # Subscribe to relevant events
+        await self.subscribe_to_event("user.created", self._handle_user_created)
+        await self.subscribe_to_event("system.maintenance", self._handle_maintenance)
+
+    async def _handle_user_created(self, event):
+        """Handle user creation events."""
+        user_id = event.data.get("user_id")
+        username = event.data.get("username", "Unknown")
+
+        self.logger.info(f"New user created: {username} (ID: {user_id})")
+
+        # Perform any user-specific setup
+        # Example: create user-specific resources, send welcome message, etc.
+
+    async def _handle_maintenance(self, event):
+        """Handle system maintenance events."""
+        self.logger.info("System maintenance event received")
+
+        # Prepare for maintenance
+        await self._save_state()
+
+    async def _execute_action(self, action: str, parameters: Dict[str, Any]) -> Dict[str, Any]:
+        """Execute a specific action."""
+        if action == "ping":
+            return {"message": "pong", "timestamp": datetime.utcnow().isoformat()}
+
+        elif action == "echo":
+            return {"echo": parameters.get("message", "Hello, World!")}
+
+        elif action == "count":
+            return {"current_count": self.action_count}
+
+        else:
+            raise ValueError(f"Unknown action: {action}")
+
+    async def _save_state(self) -> None:
+        """Save plugin state."""
+        await self.set_config("action_count", self.action_count)
+        await self.set_data("last_action", self.last_action)
+
+
+# Plugin factory function
+def create_plugin():
+    """Create and return the plugin instance."""
+    return MyAwesomePlugin()
 ```
 
-## 📡 Event Handlers
+## 🧪 Testing Your Plugin
 
-Handle events from the Nexus platform and other plugins:
-
-```python
-# events/handlers.py
-from nexus.events import event_handler, Event
-from nexus.services import get_service
-from .services.my_service import MyPluginService
-import logging
-
-logger = logging.getLogger(__name__)
-
-class PluginEventHandlers:
-    """Event handlers for the plugin."""
-
-    def __init__(self):
-        self.service = get_service(MyPluginService)
-
-    @event_handler("user.created")
-    async def on_user_created(self, event: Event):
-        """Handle user creation."""
-        logger.info(f"Processing new user: {event.user_id}")
-
-        try:
-            # Create user profile in plugin
-            await self.service.create_user_profile(event.user_id, event.data)
-
-            # Send welcome notification
-            await self.service.send_welcome_notification(event.user_id)
-
-        except Exception as e:
-            logger.error(f"Error processing user creation: {e}")
-
-    @event_handler("user.updated")
-    async def on_user_updated(self, event: Event):
-        """Handle user updates."""
-        logger.info(f"Processing user update: {event.user_id}")
-
-        try:
-            # Update user profile
-            await self.service.update_user_profile(event.user_id, event.data)
-
-        except Exception as e:
-            logger.error(f"Error processing user update: {e}")
-
-    @event_handler("system.shutdown")
-    async def on_system_shutdown(self, event: Event):
-        """Handle system shutdown."""
-        logger.info("System is shutting down, cleaning up plugin resources")
-
-        # Perform any necessary cleanup
-        await self.service.graceful_shutdown()
-
-    @event_handler("plugin.*.loaded")
-    async def on_plugin_loaded(self, event: Event):
-        """Handle when other plugins are loaded."""
-        plugin_name = event.plugin_name
-        logger.info(f"Plugin loaded: {plugin_name}")
-
-        # Check if this plugin depends on the loaded plugin
-        if plugin_name in self.get_dependencies():
-            await self.initialize_integration(plugin_name)
-
-    @event_handler("data.external.updated", priority=10)
-    async def on_external_data_updated(self, event: Event):
-        """Handle external data updates with high priority."""
-        logger.info(f"External data updated: {event.source}")
-
-        try:
-            # Sync with external data
-            await self.service.sync_external_data(event.source, event.data)
-
-        except Exception as e:
-            logger.error(f"Error syncing external data: {e}")
-
-            # Re-emit event for retry
-            await self.emit_event({
-                "type": "data.sync.failed",
-                "source": event.source,
-                "error": str(e),
-                "original_event_id": event.event_id
-            })
-```
-
-## ⚙️ Configuration
-
-Define configuration schema and defaults:
-
-```yaml
-# config/default.yaml
-database:
-  table_prefix: "myplugin_"
-  connection_pool_size: 5
-
-api:
-  base_url: "https://api.external-service.com"
-  timeout: 30
-  retries: 3
-  rate_limit:
-    requests_per_minute: 100
-
-features:
-  auto_sync: true
-  notifications: true
-  analytics: false
-
-cache:
-  enabled: true
-  ttl: 3600  # 1 hour
-  max_entries: 1000
-
-logging:
-  level: "INFO"
-  file: "my_plugin.log"
-  max_size_mb: 10
-  backup_count: 3
-```
-
-## 🧪 Testing
-
-Write comprehensive tests for your plugin:
+Create comprehensive tests for your plugin:
 
 ```python
 # tests/test_plugin.py
 import pytest
-from unittest.mock import AsyncMock, Mock
-from nexus.testing import PluginTestCase, MockEventBus, MockDatabase
-from my_plugin.plugin import MyPlugin
-from my_plugin.services.my_service import MyPluginService
+import asyncio
+from unittest.mock import AsyncMock, MagicMock
 
-class TestMyPlugin(PluginTestCase):
-    """Test cases for MyPlugin."""
+from plugins.my_awesome_plugin.plugin import MyAwesomePlugin
+
+
+class TestMyAwesomePlugin:
+    """Test cases for MyAwesome Plugin."""
 
     async def setup_method(self):
-        """Set up test environment."""
-        self.config = {
-            "api_key": "test_key",
-            "max_retries": 3,
-            "enabled": True
-        }
-        self.plugin = MyPlugin(self.config)
-        await self.plugin.initialize()
+        """Set up test fixtures."""
+        self.plugin = MyAwesomePlugin()
+
+        # Mock dependencies
+        self.plugin.logger = MagicMock()
+        self.plugin.get_config = AsyncMock()
+        self.plugin.set_config = AsyncMock()
+        self.plugin.publish_event = AsyncMock()
 
     async def teardown_method(self):
-        """Clean up test environment."""
-        await self.plugin.cleanup()
+        """Clean up after tests."""
+        if hasattr(self.plugin, 'cleanup'):
+            await self.plugin.shutdown()
 
     async def test_plugin_initialization(self):
-        """Test plugin initialization."""
-        assert self.plugin.name == "my-awesome-plugin"
-        assert self.plugin.enabled is True
-        assert self.plugin.api_key == "test_key"
+        """Test plugin initializes correctly."""
+        # Setup mocks
+        self.plugin.get_config.return_value = "test-api-key"
 
-    async def test_disabled_plugin(self):
-        """Test disabled plugin behavior."""
-        config = self.config.copy()
-        config["enabled"] = False
+        # Test initialization
+        result = await self.plugin.initialize()
 
-        plugin = MyPlugin(config)
-        await plugin.initialize()
+        assert result is True
+        assert self.plugin.initialized is True
+        assert self.plugin.name == "my_awesome_plugin"
 
-        assert plugin.enabled is False
+    async def test_plugin_disabled(self):
+        """Test plugin behavior when disabled."""
+        self.plugin.get_config.return_value = False  # disabled
 
-    async def test_user_created_event_handler(self):
-        """Test user creation event handler."""
-        # Mock event
-        event = Mock()
-        event.user_id = "user_123"
-        event.data = {"username": "testuser", "email": "test@example.com"}
+        # Plugin should still initialize but be disabled
+        result = await self.plugin.initialize()
+        assert result is True
 
-        # Mock service method
-        self.plugin.process_new_user = AsyncMock()
+    async def test_action_execution(self):
+        """Test action execution."""
+        await self.plugin.initialize()
 
-        # Handle event
-        await self.plugin.on_user_created(event)
+        # Test ping action
+        result = await self.plugin._execute_action("ping", {})
+        assert result["message"] == "pong"
 
-        # Verify service method was called
-        self.plugin.process_new_user.assert_called_once_with("user_123")
+        # Test echo action
+        result = await self.plugin._execute_action("echo", {"message": "test"})
+        assert result["echo"] == "test"
 
-    async def test_http_status_endpoint(self):
-        """Test HTTP status endpoint."""
-        response = await self.plugin.get_status()
+        # Test invalid action
+        with pytest.raises(ValueError):
+            await self.plugin._execute_action("invalid", {})
 
-        assert response["plugin"] == "my-awesome-plugin"
-        assert response["enabled"] is True
-        assert response["status"] == "running"
+    async def test_health_check(self):
+        """Test plugin health check."""
+        await self.plugin.initialize()
 
-    async def test_http_action_endpoint(self):
-        """Test HTTP action endpoint."""
-        # Mock request
-        request = Mock()
-        request.json = AsyncMock(return_value={
-            "action": "test_action",
-            "params": {"param1": "value1"}
-        })
+        health = await self.plugin.health_check()
+        assert health.healthy is True
+        assert "actions" in health.components
 
-        # Mock action execution
-        self.plugin.execute_action = AsyncMock(return_value="success")
+    async def test_event_handlers(self):
+        """Test event handling."""
+        await self.plugin.initialize()
 
-        # Call endpoint
-        response = await self.plugin.perform_action(request)
+        # Test user created event
+        event = MagicMock()
+        event.data = {"user_id": "123", "username": "testuser"}
 
-        assert response["result"] == "success"
+        await self.plugin._handle_user_created(event)
 
-    async def test_action_validation(self):
-        """Test action endpoint validation."""
-        # Mock request with missing action
-        request = Mock()
-        request.json = AsyncMock(return_value={})
+        # Verify event was processed (check logs, state changes, etc.)
+        self.plugin.logger.info.assert_called()
 
-        # Call endpoint
-        response, status_code = await self.plugin.perform_action(request)
 
-        assert status_code == 400
-        assert "Missing 'action' parameter" in response["error"]
-
-class TestMyPluginService(PluginTestCase):
-    """Test cases for MyPluginService."""
-
-    async def setup_method(self):
-        """Set up test environment."""
-        self.mock_db = MockDatabase()
-        self.mock_event_bus = MockEventBus()
-        self.service = MyPluginService(self.mock_db, self.mock_event_bus)
-        await self.service.initialize()
-
-    async def teardown_method(self):
-        """Clean up test environment."""
-        await self.service.cleanup()
-
-    async def test_store_data(self):
-        """Test data storage."""
-        # Mock database response
-        self.mock_db.insert.return_value = {"id": "record_123"}
-
-        # Store data
-        data = {"name": "test", "value": 42}
-        record_id = await self.service.store_data("test_table", data)
-
-        # Verify database call
-        self.mock_db.insert.assert_called_once_with("test_table", data)
-        assert record_id == "record_123"
-
-        # Verify event emission
-        self.mock_event_bus.emit.assert_called_once()
-        emitted_event = self.mock_event_bus.emit.call_args[0][0]
-        assert emitted_event["type"] == "data.stored"
-        assert emitted_event["table"] == "test_table"
-        assert emitted_event["record_id"] == "record_123"
-
-    async def test_fetch_external_data(self):
-        """Test external data fetching."""
-        # Mock HTTP response
-        mock_response = AsyncMock()
-        mock_response.json = AsyncMock(return_value={"data": "test"})
-
-        self.service.http_session.get = AsyncMock(return_value=mock_response)
-        self.service.http_session.get.return_value.__aenter__ = AsyncMock(return_value=mock_response)
-        self.service.http_session.get.return_value.__aexit__ = AsyncMock(return_value=None)
-
-        # Fetch data
-        result = await self.service.fetch_external_data("https://api.example.com/data")
-
-        assert result == {"data": "test"}
-
-# Integration tests
-class TestPluginIntegration(PluginTestCase):
-    """Integration tests for the plugin."""
+class TestPluginIntegration:
+    """Integration tests for plugin."""
 
     async def test_full_workflow(self):
         """Test complete plugin workflow."""
-        # This would test the entire plugin in a real environment
-        # with actual database and event bus connections
-        pass
+        plugin = MyAwesomePlugin()
 
-# Performance tests
-class TestPluginPerformance(PluginTestCase):
-    """Performance tests for the plugin."""
+        # Initialize plugin
+        assert await plugin.initialize() is True
 
-    @pytest.mark.performance
-    async def test_event_handler_performance(self):
-        """Test event handler performance under load."""
-        # Test handling many events quickly
-        pass
+        # Perform action
+        result = await plugin._execute_action("count", {})
+        assert "current_count" in result
 
-    @pytest.mark.performance
-    async def test_api_endpoint_performance(self):
-        """Test API endpoint performance under load."""
-        # Test endpoint response times under load
-        pass
+        # Check health
+        health = await plugin.health_check()
+        assert health.healthy is True
+
+        # Shutdown
+        await plugin.shutdown()
 ```
 
 ## 🚀 Plugin Lifecycle
@@ -702,86 +555,105 @@ class TestPluginPerformance(PluginTestCase):
 Understanding the plugin lifecycle is crucial for proper resource management:
 
 ### 1. Discovery
+
 - Nexus scans the plugins directory
-- Validates manifest.json files
-- Checks dependencies
+- Validates `manifest.json` files
+- Checks dependencies and permissions
 
 ### 2. Loading
-- Plugin code is imported
-- Dependencies are resolved
+
+- Plugin module is imported
 - Plugin class is instantiated
+- Dependencies are resolved
 
 ### 3. Initialization
+
 - `initialize()` method is called
 - Resources are set up
 - Event handlers are registered
-- HTTP routes are added
+- API routes are mounted
 
 ### 4. Runtime
+
 - Plugin handles events
 - Serves HTTP requests
 - Performs background tasks
+- Manages its state
 
 ### 5. Shutdown
-- `cleanup()` method is called
-- Resources are released
+
+- `shutdown()` method is called
+- Resources are cleaned up
 - Connections are closed
+- State is saved
 
 ## 🎯 Best Practices
 
 ### 1. Error Handling
+
 ```python
 async def robust_operation(self):
     """Example of robust error handling."""
     try:
-        result = await self.risky_operation()
+        # Risky operation
+        result = await self.external_api_call()
         return result
-    except SpecificError as e:
-        logger.warning(f"Expected error occurred: {e}")
-        return self.fallback_operation()
+    except ConnectionError as e:
+        self.logger.warning(f"Connection failed, retrying: {e}")
+        # Implement retry logic
+        raise
     except Exception as e:
-        logger.error(f"Unexpected error: {e}", exc_info=True)
-        raise PluginError(f"Operation failed: {e}") from e
+        self.logger.error(f"Unexpected error: {e}", exc_info=True)
+        raise
 ```
 
 ### 2. Configuration Validation
+
 ```python
-def validate_config(self, config: Dict[str, Any]) -> Dict[str, Any]:
+async def _validate_config(self) -> None:
     """Validate plugin configuration."""
-    required_fields = ['api_key', 'endpoint_url']
+    api_key = await self.get_config("api_key")
+    if not api_key:
+        raise ValueError("API key is required")
 
-    for field in required_fields:
-        if field not in config:
-            raise ConfigurationError(f"Missing required field: {field}")
+    timeout = await self.get_config("timeout", 30)
+    if timeout <= 0:
+        raise ValueError("Timeout must be positive")
 
-    # Validate data types
-    if not isinstance(config.get('max_retries'), int):
-        raise ConfigurationError("max_retries must be an integer")
-
-    return config
+    max_retries = await self.get_config("max_retries", 3)
+    if not 1 <= max_retries <= 10:
+        raise ValueError("Max retries must be between 1 and 10")
 ```
 
 ### 3. Resource Management
+
 ```python
-class ResourceAwarePlugin(Plugin):
+class ResourceAwarePlugin(BasePlugin):
     """Plugin with proper resource management."""
 
-    def __init__(self, config):
-        super().__init__(config)
+    def __init__(self):
+        super().__init__()
         self.connections = []
         self.background_tasks = []
 
-    async def initialize(self):
+    async def initialize(self) -> bool:
         """Initialize with resource tracking."""
-        # Create connections
-        connection = await self.create_connection()
-        self.connections.append(connection)
+        try:
+            # Set up resources
+            connection = await self.create_connection()
+            self.connections.append(connection)
 
-        # Start background tasks
-        task = asyncio.create_task(self.background_worker())
-        self.background_tasks.append(task)
+            # Start background tasks
+            task = asyncio.create_task(self.background_worker())
+            self.background_tasks.append(task)
 
-    async def cleanup(self):
+            return True
+        except Exception as e:
+            # Clean up partial initialization
+            await self.cleanup()
+            raise
+
+    async def shutdown(self) -> None:
         """Clean up all resources."""
         # Cancel background tasks
         for task in self.background_tasks:
@@ -794,27 +666,26 @@ class ResourceAwarePlugin(Plugin):
         # Close connections
         for connection in self.connections:
             await connection.close()
+
+        self.connections.clear()
+        self.background_tasks.clear()
 ```
 
 ### 4. Async Best Practices
+
 ```python
 # Good: Use async/await properly
 async def process_items(self, items):
-    """Process items concurrently."""
+    return [await self.process_item(item) for item in items]
+
+# Better: Use asyncio.gather for concurrent processing
+async def process_items_concurrent(self, items):
     tasks = [self.process_item(item) for item in items]
-    results = await asyncio.gather(*tasks, return_exceptions=True)
-    return results
+    return await asyncio.gather(*tasks)
 
-# Good: Use context managers
-async def with_connection(self):
-    """Use connection with proper cleanup."""
-    async with self.get_connection() as conn:
-        return await conn.execute_query()
-
-# Good: Limit concurrency
-async def process_with_limit(self, items):
-    """Process items with concurrency limit."""
-    semaphore = asyncio.Semaphore(10)  # Max 10 concurrent operations
+# Best: Use semaphore to limit concurrency
+async def process_items_limited(self, items):
+    semaphore = asyncio.Semaphore(5)  # Limit to 5 concurrent operations
 
     async def limited_process(item):
         async with semaphore:
@@ -826,12 +697,14 @@ async def process_with_limit(self, items):
 
 ## 🎯 Next Steps
 
-- **[API Routes](api-routes.md)** - Learn about creating HTTP endpoints
-- **[Database Integration](database.md)** - Work with databases in plugins
-- **[Event Handling](events.md)** - Master the event system
-- **[Testing Plugins](testing.md)** - Comprehensive testing strategies
-- **[Advanced Features](advanced.md)** - Advanced plugin development
+Now that you understand plugin basics:
+
+1. **[API Routes](api-routes.md)** - Create HTTP endpoints
+2. **[Database Integration](database.md)** - Work with data persistence
+3. **[Event System](events.md)** - Handle and emit events
+4. **[Plugin Testing](testing.md)** - Test your plugins thoroughly
+5. **[Advanced Patterns](advanced.md)** - Complex plugin architectures
 
 ---
 
-**Congratulations!** You now have the foundation to build powerful Nexus plugins. Start with a simple plugin and gradually add more features as you become comfortable with the platform.
+**Ready to build something amazing?** Start with our [First Plugin](../getting-started/first-plugin.md) tutorial!
