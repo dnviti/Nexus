@@ -4,11 +4,11 @@ This directory contains scripts to help manage the versioned documentation for t
 
 ## 📁 Scripts Overview
 
-| Script | Purpose | Usage |
-|--------|---------|-------|
-| `manage_versions.py` | Core version management | Create, list, update, and remove documentation versions |
-| `release.sh` | Release automation | Automated workflow for creating new documentation releases |
-| `serve.sh` | Local development | Serve different documentation versions locally |
+| Script               | Purpose                 | Usage                                                      |
+| -------------------- | ----------------------- | ---------------------------------------------------------- |
+| `manage_versions.py` | Core version management | Create, list, update, and remove documentation versions    |
+| `release.sh`         | Release automation      | Automated workflow for creating new documentation releases |
+| `serve.sh`           | Local development       | Serve different documentation versions locally             |
 
 ## 🚀 Quick Start
 
@@ -29,7 +29,7 @@ This directory contains scripts to help manage the versioned documentation for t
 
 ```bash
 # Serve latest stable version
-./scripts/docs/serve.sh v2.0.0
+./scripts/docs/serve.sh v0.1.0
 
 # Serve development version
 ./scripts/docs/serve.sh dev
@@ -45,13 +45,13 @@ This directory contains scripts to help manage the versioned documentation for t
 python scripts/docs/manage_versions.py list
 
 # Create version manually
-python scripts/docs/manage_versions.py create v2.1.0
+python scripts/docs/manage_versions.py create v0.2.0
 
 # Set latest version
-python scripts/docs/manage_versions.py set-latest v2.1.0
+python scripts/docs/manage_versions.py set-latest v0.2.0
 
 # Remove version
-python scripts/docs/manage_versions.py remove v2.0.0
+python scripts/docs/manage_versions.py remove v0.1.0
 ```
 
 ## 📋 Detailed Usage
@@ -63,26 +63,31 @@ The Python script provides low-level version management functionality.
 #### Commands
 
 **Create a new version:**
+
 ```bash
 python scripts/docs/manage_versions.py create <version> [--from <source_version>]
 ```
 
 **List all versions:**
+
 ```bash
 python scripts/docs/manage_versions.py list
 ```
 
 **Set latest version:**
+
 ```bash
 python scripts/docs/manage_versions.py set-latest <version>
 ```
 
 **Remove a version:**
+
 ```bash
 python scripts/docs/manage_versions.py remove <version>
 ```
 
 **Build documentation:**
+
 ```bash
 python scripts/docs/manage_versions.py build [version]
 ```
@@ -90,17 +95,17 @@ python scripts/docs/manage_versions.py build [version]
 #### Examples
 
 ```bash
-# Create v2.1.0 from latest
-python scripts/docs/manage_versions.py create v2.1.0
+# Create v0.2.0 from latest
+python scripts/docs/manage_versions.py create v0.2.0
 
-# Create v2.1.0 from specific version
-python scripts/docs/manage_versions.py create v2.1.0 --from v2.0.0
+# Create v0.2.0 from specific version
+python scripts/docs/manage_versions.py create v0.2.0 --from v0.1.0
 
 # Build all versions
 python scripts/docs/manage_versions.py build
 
 # Build specific version
-python scripts/docs/manage_versions.py build v2.1.0
+python scripts/docs/manage_versions.py build v0.2.0
 ```
 
 ### 2. `release.sh` - Release Automation
@@ -109,29 +114,29 @@ High-level script that automates the entire release process.
 
 #### Options
 
-| Option | Description |
-|--------|-------------|
-| `-s, --source VERSION` | Source version to copy from |
-| `-l, --set-latest` | Set as latest stable version |
-| `-b, --build` | Build documentation after creation |
-| `-d, --dry-run` | Show what would be done |
-| `-v, --verbose` | Enable verbose output |
-| `-h, --help` | Show help |
+| Option                 | Description                        |
+| ---------------------- | ---------------------------------- |
+| `-s, --source VERSION` | Source version to copy from        |
+| `-l, --set-latest`     | Set as latest stable version       |
+| `-b, --build`          | Build documentation after creation |
+| `-d, --dry-run`        | Show what would be done            |
+| `-v, --verbose`        | Enable verbose output              |
+| `-h, --help`           | Show help                          |
 
 #### Examples
 
 ```bash
 # Basic release
-./scripts/docs/release.sh v2.1.0
+./scripts/docs/release.sh v0.2.0
 
 # Full release workflow
-./scripts/docs/release.sh v2.1.0 --source v2.0.0 --set-latest --build
+./scripts/docs/release.sh v0.2.0 --source v0.1.0 --set-latest --build
 
 # Test what would happen
-./scripts/docs/release.sh v2.1.0 --dry-run --verbose
+./scripts/docs/release.sh v0.2.0 --dry-run --verbose
 
 # Interactive confirmation
-./scripts/docs/release.sh v2.1.0 --set-latest
+./scripts/docs/release.sh v0.2.0 --set-latest
 ```
 
 ### 3. `serve.sh` - Local Development Server
@@ -140,23 +145,23 @@ Serves documentation locally for development and testing.
 
 #### Options
 
-| Option | Description |
-|--------|-------------|
+| Option            | Description                      |
+| ----------------- | -------------------------------- |
 | `-p, --port PORT` | Port to serve on (default: 8000) |
-| `-r, --reload` | Enable live reload |
-| `-h, --help` | Show help |
+| `-r, --reload`    | Enable live reload               |
+| `-h, --help`      | Show help                        |
 
 #### Examples
 
 ```bash
 # Serve latest version
-./scripts/docs/serve.sh v2.0.0
+./scripts/docs/serve.sh v0.1.0
 
 # Serve dev version with live reload
 ./scripts/docs/serve.sh dev --reload
 
 # Custom port
-./scripts/docs/serve.sh v2.0.0 --port 8080
+./scripts/docs/serve.sh v0.1.0 --port 8080
 
 # Interactive version selection
 ./scripts/docs/serve.sh
@@ -223,7 +228,7 @@ git push origin main
 ```
 docs/
 ├── versions.json          # Version metadata
-├── v2.0.0/               # Stable version
+├── v0.1.0/               # Stable version
 │   ├── index.md
 │   ├── getting-started/
 │   └── ...
@@ -248,7 +253,7 @@ For each version, these files are created/updated:
 site/
 ├── index.html           # Version selector page
 ├── versions.json        # Version metadata
-├── v2.0.0/             # Built v2.0.0 docs
+├── v0.1.0/             # Built v0.1.0 docs
 │   ├── index.html
 │   └── ...
 └── dev/                # Built dev docs
@@ -260,10 +265,10 @@ site/
 
 ### Environment Variables
 
-| Variable | Description | Default |
-|----------|-------------|---------|
+| Variable            | Description                  | Default      |
+| ------------------- | ---------------------------- | ------------ |
 | `MKDOCS_CONFIG_DIR` | Directory for MkDocs configs | Project root |
-| `DOCS_BUILD_DIR` | Build output directory | `site/` |
+| `DOCS_BUILD_DIR`    | Build output directory       | `site/`      |
 
 ### Version Metadata Format
 
@@ -273,12 +278,12 @@ The `docs/versions.json` file contains:
 {
   "versions": [
     {
-      "version": "v2.0.0",
-      "title": "v2.0.0 (Latest)",
+      "version": "v0.1.0",
+      "title": "v0.1.0 (Latest)",
       "aliases": ["latest"],
-      "path": "v2.0.0",
+      "path": "v0.1.0",
       "status": "stable",
-      "released": "2024-01-15"
+      "released": "2024-08-18"
     },
     {
       "version": "dev",
@@ -289,7 +294,7 @@ The `docs/versions.json` file contains:
       "released": null
     }
   ],
-  "latest": "v2.0.0",
+  "latest": "v0.1.0",
   "development": "dev"
 }
 ```
@@ -299,24 +304,28 @@ The `docs/versions.json` file contains:
 ### Common Issues
 
 **"Version already exists" error:**
+
 ```bash
 # Remove the existing version first
 python scripts/docs/manage_versions.py remove v2.1.0
 ```
 
 **MkDocs build fails:**
+
 ```bash
 # Check configuration syntax
 poetry run mkdocs build -f mkdocs-v2.1.0.yml --strict --verbose
 ```
 
 **Port already in use:**
+
 ```bash
 # Use a different port
 ./scripts/docs/serve.sh v2.0.0 --port 8081
 ```
 
 **Poetry not found:**
+
 ```bash
 # Install Poetry or use direct MkDocs
 pip install mkdocs mkdocs-material

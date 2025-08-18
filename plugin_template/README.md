@@ -152,7 +152,7 @@ class MyPlugin(BasePlugin):
   "repository": "https://github.com/yourusername/my-plugin",
   "homepage": "https://your-plugin-website.com",
   "dependencies": {
-    "nexus_framework": ">=2.0.0",
+    "nexus_framework": ">=0.1.0",
     "plugins": [],
     "python": ">=3.11",
     "packages": ["package1>=1.0.0", "package2>=2.0.0"]
@@ -195,9 +195,9 @@ class MyPlugin(BasePlugin):
     }
   },
   "compatibility": {
-    "min_framework_version": "2.0.0",
+    "min_framework_version": "0.1.0",
     "max_framework_version": null,
-    "tested_versions": ["2.0.0"]
+    "tested_versions": ["0.1.0"]
   }
 }
 ```

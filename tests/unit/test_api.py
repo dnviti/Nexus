@@ -49,7 +49,7 @@ class TestHealthResponse:
         """Test HealthResponse with default values."""
         response = HealthResponse()
         assert response.status == "healthy"
-        assert response.version == "2.0.0"
+        assert response.version == "0.1.0"
         assert isinstance(response.timestamp, datetime)
         assert response.services == {}
         assert response.uptime is None
@@ -318,7 +318,7 @@ class TestAPIRouterEndpoints:
         assert data["success"] == True
         assert "name" in data["data"]
         assert data["data"]["name"] == "Nexus Framework"
-        assert data["data"]["version"] == "2.0.0"
+        assert data["data"]["version"] == "0.1.0"
         assert "documentation" in data["data"]
         assert "repository" in data["data"]
 
@@ -361,7 +361,7 @@ class TestAPIRouterEndpoints:
         data = response.json()
         assert data["success"] == True
         assert "version" in data["data"]
-        assert data["data"]["version"] == "2.0.0"
+        assert data["data"]["version"] == "0.1.0"
         assert "build" in data["data"]
         assert "release_date" in data["data"]
         assert "python_version" in data["data"]

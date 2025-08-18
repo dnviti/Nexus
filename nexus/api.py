@@ -35,7 +35,7 @@ class HealthResponse(BaseModel):
     """Health check response model."""
 
     status: str = "healthy"
-    version: str = "2.0.0"
+    version: str = "0.1.0"
     timestamp: datetime = datetime.now(timezone.utc)
     services: Dict[str, str] = {}
     uptime: Optional[float] = None
