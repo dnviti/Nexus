@@ -5,10 +5,11 @@ Get Nexus installed and ready for development in 2 minutes.
 ## 🎯 Quick Install
 
 ```bash
-pip install nexus
+pip install nexus-platform
 ```
 
 Verify installation:
+
 ```bash
 nexus --version
 ```
@@ -16,20 +17,24 @@ nexus --version
 ## 📋 System Requirements
 
 ### Python Version
+
 - **Required**: Python 3.11 or higher
 - **Recommended**: Python 3.12 for best performance
 
 Check your Python version:
+
 ```bash
 python --version
 ```
 
 ### Operating Systems
+
 - **Linux**: All major distributions
 - **macOS**: 10.15+ (Catalina or newer)
 - **Windows**: 10/11 with WSL2 recommended
 
 ### Hardware Requirements
+
 - **RAM**: 512MB minimum, 2GB recommended
 - **Disk**: 100MB for framework, 500MB for development
 - **CPU**: Any modern processor
@@ -44,7 +49,7 @@ python -m venv nexus-env
 source nexus-env/bin/activate  # On Windows: nexus-env\Scripts\activate
 
 # Install Nexus
-pip install nexus
+pip install nexus-platform
 
 # Verify installation
 nexus --version
@@ -83,6 +88,7 @@ nexus --version
 ## 🔧 Development Setup
 
 ### VS Code Extensions (Recommended)
+
 ```json
 {
   "recommendations": [
@@ -96,6 +102,7 @@ nexus --version
 ```
 
 ### Git Configuration
+
 ```bash
 # Configure git for contributions
 git config --global user.name "Your Name"
@@ -105,6 +112,7 @@ git config --global user.email "your.email@example.com"
 ## 🐳 Docker Installation
 
 ### Using Pre-built Image
+
 ```bash
 # Pull official image
 docker pull nexus/nexus:latest
@@ -114,6 +122,7 @@ docker run -p 8000:8000 nexus/nexus:latest
 ```
 
 ### Building from Source
+
 ```dockerfile
 FROM python:3.11-slim
 
@@ -129,6 +138,7 @@ CMD ["nexus", "run"]
 ## 🔍 Verify Installation
 
 ### Check Core Components
+
 ```bash
 # Check CLI tools
 nexus --help
@@ -139,6 +149,7 @@ python -c "import nexus; print(f'Nexus {nexus.__version__} installed')"
 ```
 
 ### Test Basic Functionality
+
 ```python
 # test_install.py
 from nexus import create_nexus_app
@@ -148,6 +159,7 @@ print("✓ Nexus installation verified")
 ```
 
 Run test:
+
 ```bash
 python test_install.py
 ```
@@ -157,6 +169,7 @@ python test_install.py
 ### Common Issues
 
 #### Python Version Error
+
 ```bash
 # Error: Python 3.11+ required
 # Solution: Install correct Python version
@@ -165,15 +178,17 @@ pyenv global 3.11.0
 ```
 
 #### Permission Denied
+
 ```bash
 # Error: Permission denied during pip install
 # Solution: Use virtual environment
 python -m venv venv
 source venv/bin/activate
-pip install nexus
+pip install nexus-platform
 ```
 
 #### Import Error
+
 ```bash
 # Error: ModuleNotFoundError: No module named 'nexus'
 # Solution: Activate virtual environment
@@ -183,6 +198,7 @@ venv\Scripts\activate     # Windows
 ```
 
 #### Port Already in Use
+
 ```bash
 # Error: Port 8000 already in use
 # Solution: Use different port
@@ -192,6 +208,7 @@ nexus run --port 8001
 ### Platform-Specific Issues
 
 #### Windows
+
 ```powershell
 # Enable long path support
 New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
@@ -201,6 +218,7 @@ wsl --install
 ```
 
 #### macOS
+
 ```bash
 # Install Xcode command line tools
 xcode-select --install
@@ -210,6 +228,7 @@ brew install python@3.11
 ```
 
 #### Linux
+
 ```bash
 # Ubuntu/Debian - install Python dev headers
 sudo apt update
@@ -222,57 +241,66 @@ sudo yum install python3.11-devel
 ## 🔒 Security Considerations
 
 ### Virtual Environment
+
 Always use virtual environments for isolation:
+
 ```bash
 python -m venv --prompt nexus-project venv
 ```
 
 ### Update pip
+
 Keep pip updated for security patches:
+
 ```bash
 pip install --upgrade pip
 ```
 
 ### Verify Package Integrity
+
 ```bash
-pip install nexus --verify
+pip install nexus-platform --verify
 ```
 
 ## 📦 Optional Dependencies
 
 ### Database Drivers
+
 ```bash
 # PostgreSQL
-pip install nexus[postgresql]
+pip install nexus-platform[postgresql]
 
 # MySQL
-pip install nexus[mysql]
+pip install nexus-platform[mysql]
 
 # All databases
-pip install nexus[all-db]
+pip install nexus-platform[all-db]
 ```
 
 ### Development Tools
+
 ```bash
 # Development dependencies
-pip install nexus[dev]
+pip install nexus-platform[dev]
 
 # Testing tools
-pip install nexus[test]
+pip install nexus-platform[test]
 
 # Documentation tools
-pip install nexus[docs]
+pip install nexus-platform[docs]
 ```
 
 ## ⚡ Performance Optimization
 
 ### Production Dependencies
+
 ```bash
 # Install with performance optimizations
-pip install nexus[production]
+pip install nexus-platform[production]
 ```
 
 ### Environment Variables
+
 ```bash
 # Optimize Python for production
 export PYTHONOPTIMIZE=1

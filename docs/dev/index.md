@@ -45,7 +45,7 @@ Get up and running with Nexus in minutes:
 
 ```bash
 # Install Nexus
-pip install nexus-platform
+pip install nexus-platform-platform
 
 # Create a new application
 nexus create my-app

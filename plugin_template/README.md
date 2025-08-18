@@ -441,7 +441,7 @@ git push -u origin main
 
 ```bash
 # From PyPI
-pip install nexus-plugin-name
+pip install nexus-platform-plugin-name
 
 # From Git
 pip install git+https://github.com/username/nexus-plugin-name.git

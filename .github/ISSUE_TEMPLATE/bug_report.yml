@@ -68,7 +68,7 @@ body:
       label: Steps to Reproduce
       description: Steps to reproduce the behavior
       placeholder: |
-        1. Install Nexus with `pip install nexus`
+        1. Install Nexus with `pip install nexus-platform`
         2. Create a new app with `nexus init`
         3. Run `python main.py`
         4. Navigate to `http://localhost:8000`

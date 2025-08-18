@@ -29,7 +29,7 @@ Nexus revolutionizes application development by making **everything a plugin**. 
 ### Installation
 
 ```bash
-pip install nexus
+pip install nexus-platform
 ```
 
 ### Create Your First Application

@@ -38,7 +38,7 @@ python = "^3.11"
 
 # IMPORTANT: The Nexus Framework is expected to be installed separately
 # It should NOT be listed as a dependency here to avoid version conflicts
-# Users will install it with: pip install nexus-framework
+# Users will install it with: pip install nexus-platform-framework
 # nexus-framework = "^0.1.0"  # DO NOT UNCOMMENT
 
 # Add your plugin's required dependencies here

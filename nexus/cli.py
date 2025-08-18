@@ -130,7 +130,7 @@ if __name__ == "__main__":
         click.echo("✅ Created main.py")
         click.echo("🎉 Project initialized successfully!")
         click.echo("\nNext steps:")
-        click.echo("  1. Install Nexus: pip install nexus-framework")
+        click.echo("  1. Install Nexus: pip install nexus-platform-framework")
         click.echo("  2. Run your app: python main.py")
         click.echo("  3. Visit: http://localhost:8000")
 
