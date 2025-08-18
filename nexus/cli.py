@@ -142,21 +142,83 @@ if __name__ == "__main__":
 @cli.group()
 def plugin() -> None:
     """Plugin management commands"""
-    pass
+    click.echo("Plugin management commands. Use --help for available subcommands.")
 
 
 @plugin.command("list")
+@click.option(
+    "--format",
+    "output_format",
+    default="table",
+    type=click.Choice(["table", "json"]),
+    help="Output format",
+)
+@click.option("--category", help="Filter by plugin category")
 @click.pass_context
-def plugin_list(ctx: Any) -> None:
+def plugin_list(ctx: Any, output_format: str, category: Optional[str]) -> None:
     """List available plugins"""
-    click.echo("📦 Available Plugins:")
+    import asyncio
+    import json
+
+    click.echo("📦 Listing available plugins...")
 
     try:
-        # This would typically load from a plugin registry or scan directories
-        click.echo("  • hello_world - Example greeting plugin")
-        click.echo("  • task_manager - Task management plugin")
-        click.echo("  • auth_advanced - Advanced authentication plugin")
-        click.echo("\nUse 'nexus plugin info <name>' for more details")
+
+        async def list_plugins_async() -> None:
+            from pathlib import Path
+
+            from .core import EventBus, MemoryAdapter, PluginManager, ServiceRegistry
+
+            # Initialize required components
+            event_bus = EventBus()
+            await event_bus.start()
+
+            service_registry = ServiceRegistry()
+            db_adapter = MemoryAdapter()
+            await db_adapter.connect()
+
+            plugin_manager = PluginManager(event_bus, service_registry)
+            plugin_manager.set_database(db_adapter)
+
+            # Discover plugins
+            plugins_path = Path("plugins")
+            discovered_plugins = await plugin_manager.discover_plugins(plugins_path)
+
+            # Filter by category if specified
+            if category:
+                discovered_plugins = [p for p in discovered_plugins if p.category == category]
+
+            if output_format == "json":
+                plugin_data = []
+                for plugin in discovered_plugins:
+                    plugin_data.append(
+                        {
+                            "name": plugin.name,
+                            "category": plugin.category,
+                            "version": plugin.version,
+                            "description": plugin.description,
+                            "author": plugin.author,
+                            "enabled": plugin.enabled,
+                        }
+                    )
+                click.echo(json.dumps(plugin_data, indent=2))
+            else:
+                if not discovered_plugins:
+                    click.echo("No plugins found.")
+                else:
+                    click.echo(f"Found {len(discovered_plugins)} plugins:")
+                    for plugin in discovered_plugins:
+                        status_icon = "✅" if plugin.enabled else "❌"
+                        click.echo(
+                            f"{status_icon} {plugin.category}.{plugin.name} v{plugin.version}"
+                        )
+                        click.echo(f"   Description: {plugin.description}")
+                        click.echo(f"   Author: {plugin.author}")
+
+            await event_bus.shutdown()
+            await db_adapter.disconnect()
+
+        asyncio.run(list_plugins_async())
 
     except Exception as e:
         click.echo(f"❌ Error listing plugins: {e}", err=True)
@@ -165,88 +227,151 @@ def plugin_list(ctx: Any) -> None:
 @plugin.command("create")
 @click.argument("name")
 @click.option("--template", default="basic", help="Plugin template to use")
+@click.option("--category", default="custom", help="Plugin category")
+@click.option("--author", help="Plugin author name")
+@click.option("--description", help="Plugin description")
 @click.pass_context
-def plugin_create(ctx: Any, name: str, template: str) -> None:
+def plugin_create(
+    ctx: Any,
+    name: str,
+    template: str,
+    category: str,
+    author: Optional[str],
+    description: Optional[str],
+) -> None:
     """Create a new plugin"""
+    import json
+
     click.echo(f"🔌 Creating plugin: {name}")
 
     try:
-        plugin_dir = Path(f"plugins/{name}")
+        plugin_dir = Path(f"plugins/{category}/{name}")
         plugin_dir.mkdir(parents=True, exist_ok=True)
 
         # Create plugin structure
-        (plugin_dir / "__init__.py").touch()
+        (plugin_dir / "__init__.py").write_text("# Plugin initialization\n")
+
+        # Create manifest.json
+        manifest = {
+            "name": name,
+            "version": "1.0.0",
+            "description": description or f"A {name} plugin",
+            "author": author or "Unknown",
+            "category": category,
+            "license": "MIT",
+            "dependencies": {},
+            "permissions": [],
+            "tags": [],
+        }
+
+        with open(plugin_dir / "manifest.json", "w") as f:
+            json.dump(manifest, f, indent=2)
 
         # Create basic plugin file
-        plugin_content = f'''"""
-{name.title()} Plugin for Nexus Framework
+        plugin_code = f'''"""
+{name} Plugin
+
+{description or f"A {name} plugin for Nexus platform"}
 """
 
-from nexus.plugins import BasePlugin
+import logging
+from typing import Any, Dict, List
 from fastapi import APIRouter
+from nexus.plugins import BasePlugin
 
+logger = logging.getLogger(__name__)
 
-class {name.title().replace("_", "")}Plugin(BasePlugin):
-    """A sample plugin for Nexus Framework"""
+class {name.title().replace('_', '')}Plugin(BasePlugin):
+    """A {name} plugin."""
 
     def __init__(self):
         super().__init__()
         self.name = "{name}"
         self.version = "1.0.0"
-        self.description = "{name.title().replace("_", " ")} plugin"
+        self.category = "{category}"
 
     async def initialize(self) -> bool:
-        """Initialize the plugin"""
-        self.logger.info(f"Initializing {{self.name}} plugin")
+        """Initialize the plugin."""
+        logger.info(f"Initializing {{self.name}} plugin")
         return True
 
-    def get_api_routes(self):
-        """Get API routes for this plugin"""
-        router = APIRouter(prefix=f"/{{self.name}}", tags=[self.name])
+    async def shutdown(self) -> None:
+        """Shutdown the plugin."""
+        logger.info(f"Shutting down {{self.name}} plugin")
+
+    def get_api_routes(self) -> List[APIRouter]:
+        """Get API routes for this plugin."""
+        router = APIRouter(prefix=f"/plugins/{{self.name}}", tags=[f"{{self.name}}"])
 
         @router.get("/")
-        async def get_info():
+        async def get_plugin_info():
+            """Get plugin information."""
             return {{
-                "plugin": self.name,
+                "name": self.name,
                 "version": self.version,
-                "description": self.description,
-                "status": "active"
+                "category": self.category,
+                "status": "running"
             }}
 
         return [router]
 
-    async def shutdown(self):
-        """Shutdown the plugin"""
-        self.logger.info(f"Shutting down {{self.name}} plugin")
-
-
-# Plugin factory function
-def create_plugin():
-    return {name.title().replace("_", "")}Plugin()
+    def get_database_schema(self) -> Dict[str, Any]:
+        """Get database schema for this plugin."""
+        return {{
+            "collections": {{
+                f"{{self.name}}_data": {{
+                    "indexes": [
+                        {{"field": "id", "unique": True}},
+                        {{"field": "created_at"}}
+                    ]
+                }}
+            }}
+        }}
 '''
 
+        # Write plugin code to file
         with open(plugin_dir / "plugin.py", "w") as f:
-            f.write(plugin_content)
+            f.write(plugin_code)
 
-        # Create manifest file
-        manifest_content = f"""{{
-    "name": "{name}",
-    "version": "1.0.0",
-    "description": "{name.title().replace("_", " ")} plugin",
-    "author": "Developer",
-    "main": "plugin.py",
-    "dependencies": [],
-    "entry_point": "create_plugin"
-}}"""
+        # Create README.md
+        readme_content = f"""# {name.title()} Plugin
 
-        with open(plugin_dir / "manifest.json", "w") as f:
-            f.write(manifest_content)
+{description or f'A {name} plugin for Nexus platform'}
 
-        click.echo(f"✅ Plugin created at: {plugin_dir}")
-        click.echo("📝 Files created:")
-        click.echo(f"  • {plugin_dir}/plugin.py")
-        click.echo(f"  • {plugin_dir}/manifest.json")
-        click.echo(f"  • {plugin_dir}/__init__.py")
+## Installation
+
+This plugin is automatically discovered when placed in the plugins directory.
+
+## Configuration
+
+Add configuration options to your Nexus configuration file:
+
+```yaml
+plugins:
+  {name}:
+    enabled: true
+    # Add plugin-specific configuration here
+```
+
+## API Endpoints
+
+- `GET /plugins/{name}/` - Get plugin information
+
+## Author
+
+{author or 'Unknown'}
+
+## License
+
+MIT
+"""
+
+        with open(plugin_dir / "README.md", "w") as f:
+            f.write(readme_content)
+
+        click.echo(f"✅ Plugin '{name}' created successfully at {plugin_dir}")
+        click.echo(f"📝 Edit {plugin_dir}/plugin.py to implement your plugin logic")
+        click.echo(f"📖 See {plugin_dir}/README.md for usage instructions")
 
     except Exception as e:
         click.echo(f"❌ Error creating plugin: {e}", err=True)
@@ -254,17 +379,172 @@ def create_plugin():
 
 
 @plugin.command("info")
-@click.argument("name")
-def plugin_info(name: str) -> None:
-    """Show plugin information"""
-    click.echo(f"🔍 Plugin Information: {name}")
+@click.argument("plugin_name")
+@click.pass_context
+def plugin_info(ctx: Any, plugin_name: str) -> None:
+    """Show detailed plugin information"""
+    import asyncio
 
-    # This would typically load plugin metadata
-    click.echo("  Name: Sample Plugin")
-    click.echo("  Version: 1.0.0")
-    click.echo("  Author: Developer")
-    click.echo("  Description: A sample plugin")
-    click.echo("  Status: Available")
+    click.echo(f"🔍 Plugin information for: {plugin_name}")
+
+    try:
+
+        async def get_plugin_info_async() -> None:
+            from pathlib import Path
+
+            from .core import EventBus, MemoryAdapter, PluginManager, ServiceRegistry
+
+            # Initialize required components
+            event_bus = EventBus()
+            await event_bus.start()
+
+            service_registry = ServiceRegistry()
+            db_adapter = MemoryAdapter()
+            await db_adapter.connect()
+
+            plugin_manager = PluginManager(event_bus, service_registry)
+            plugin_manager.set_database(db_adapter)
+
+            # Discover plugins
+            plugins_path = Path("plugins")
+            discovered_plugins = await plugin_manager.discover_plugins(plugins_path)
+
+            # Find the plugin
+            plugin = None
+            for p in discovered_plugins:
+                if p.name == plugin_name or f"{p.category}.{p.name}" == plugin_name:
+                    plugin = p
+                    break
+
+            if not plugin:
+                click.echo(f"❌ Plugin '{plugin_name}' not found")
+                return
+
+            click.echo(f"📦 Name: {plugin.name}")
+            click.echo(f"🏷️  Category: {plugin.category}")
+            click.echo(f"🔖 Version: {plugin.version}")
+            click.echo(f"📝 Description: {plugin.description}")
+            click.echo(f"👤 Author: {plugin.author}")
+            click.echo(f"📄 License: {plugin.license}")
+            click.echo(f"🟢 Enabled: {'Yes' if plugin.enabled else 'No'}")
+            click.echo(f"❤️  Health: {plugin.health}")
+
+            if plugin.homepage:
+                click.echo(f"🌐 Homepage: {plugin.homepage}")
+            if plugin.repository:
+                click.echo(f"📦 Repository: {plugin.repository}")
+
+            if plugin.dependencies:
+                click.echo(f"🔗 Dependencies: {', '.join(plugin.dependencies.get('plugins', []))}")
+            if plugin.permissions:
+                click.echo(f"🔐 Required Permissions: {', '.join(plugin.permissions)}")
+            if plugin.tags:
+                click.echo(f"🏷️  Tags: {', '.join(plugin.tags)}")
+
+            await event_bus.shutdown()
+            await db_adapter.disconnect()
+
+        asyncio.run(get_plugin_info_async())
+
+    except Exception as e:
+        click.echo(f"❌ Error getting plugin info: {e}", err=True)
+        sys.exit(1)
+
+
+@plugin.command("enable")
+@click.argument("plugin_name")
+@click.pass_context
+def plugin_enable(ctx: Any, plugin_name: str) -> None:
+    """Enable a plugin"""
+    import asyncio
+
+    click.echo(f"🔌 Enabling plugin: {plugin_name}")
+
+    try:
+
+        async def enable_plugin_async() -> bool:
+            from .core import EventBus, MemoryAdapter, PluginManager, ServiceRegistry
+
+            # Initialize required components
+            event_bus = EventBus()
+            await event_bus.start()
+
+            service_registry = ServiceRegistry()
+            db_adapter = MemoryAdapter()
+            await db_adapter.connect()
+
+            plugin_manager = PluginManager(event_bus, service_registry)
+            plugin_manager.set_database(db_adapter)
+
+            # Enable the plugin
+            success = await plugin_manager.enable_plugin(plugin_name)
+
+            if success:
+                click.echo(f"✅ Plugin '{plugin_name}' enabled successfully")
+                status = plugin_manager.get_plugin_status(plugin_name)
+                click.echo(f"   Status: {status.value}")
+            else:
+                click.echo(f"❌ Failed to enable plugin '{plugin_name}'")
+
+            await event_bus.shutdown()
+            await db_adapter.disconnect()
+            return success
+
+        success = asyncio.run(enable_plugin_async())
+        if not success:
+            sys.exit(1)
+
+    except Exception as e:
+        click.echo(f"❌ Error enabling plugin: {e}", err=True)
+        sys.exit(1)
+
+
+@plugin.command("disable")
+@click.argument("plugin_name")
+@click.pass_context
+def plugin_disable(ctx: Any, plugin_name: str) -> None:
+    """Disable a plugin"""
+    import asyncio
+
+    click.echo(f"🔌 Disabling plugin: {plugin_name}")
+
+    try:
+
+        async def disable_plugin_async() -> bool:
+            from .core import EventBus, MemoryAdapter, PluginManager, ServiceRegistry
+
+            # Initialize required components
+            event_bus = EventBus()
+            await event_bus.start()
+
+            service_registry = ServiceRegistry()
+            db_adapter = MemoryAdapter()
+            await db_adapter.connect()
+
+            plugin_manager = PluginManager(event_bus, service_registry)
+            plugin_manager.set_database(db_adapter)
+
+            # Disable the plugin
+            success = await plugin_manager.disable_plugin(plugin_name)
+
+            if success:
+                click.echo(f"✅ Plugin '{plugin_name}' disabled successfully")
+                status = plugin_manager.get_plugin_status(plugin_name)
+                click.echo(f"   Status: {status.value}")
+            else:
+                click.echo(f"❌ Failed to disable plugin '{plugin_name}'")
+
+            await event_bus.shutdown()
+            await db_adapter.disconnect()
+            return success
+
+        success = asyncio.run(disable_plugin_async())
+        if not success:
+            sys.exit(1)
+
+    except Exception as e:
+        click.echo(f"❌ Error disabling plugin: {e}", err=True)
+        sys.exit(1)
 
 
 @cli.command()

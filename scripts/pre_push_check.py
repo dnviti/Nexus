@@ -309,6 +309,8 @@ class PrePushChecker:
                 "json",
                 "-o",
                 str(report_file),
+                "--configfile",
+                "pyproject.toml",
                 "--quiet",
             ],
             check=False,

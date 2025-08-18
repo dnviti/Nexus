@@ -6,6 +6,7 @@ across all test modules in the test suite.
 """
 
 import asyncio
+import logging
 import sys
 from pathlib import Path
 from typing import Any, Dict
@@ -13,6 +14,10 @@ from unittest.mock import AsyncMock
 
 import pytest
 from fastapi.testclient import TestClient
+
+# Configure logging for tests
+logging.basicConfig(level=logging.CRITICAL)
+logging.getLogger("nexus.core").setLevel(logging.CRITICAL)
 
 # Add project root to path for imports
 project_root = Path(__file__).parent.parent

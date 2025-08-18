@@ -1,0 +1,332 @@
+# Nexus Platform Database Configuration Examples
+# This file demonstrates how to configure different database backends
+
+# =============================================================================
+# SQLite Configuration (Default - Recommended for Development)
+# =============================================================================
+sqlite_development:
+  database:
+    type: "sqlite"
+    path: "./nexus_dev.db"
+    # SQLite is file-based, no network configuration needed
+    pool_size: 5
+    pool_timeout: 30
+
+sqlite_production:
+  database:
+    type: "sqlite"
+    path: "/var/lib/nexus/nexus.db"
+    # For production, use absolute paths and ensure proper permissions
+    pool_size: 10
+    pool_timeout: 30
+
+# =============================================================================
+# PostgreSQL Configuration (Recommended for Production)
+# =============================================================================
+postgresql_development:
+  database:
+    type: "postgresql"
+    host: "localhost"
+    port: 5432
+    database: "nexus_dev"
+    username: "nexus_dev"
+    password: "dev_password"
+    pool_size: 10
+    max_overflow: 20
+    pool_timeout: 30
+    # Connection URL alternative:
+    # url: "postgresql+asyncpg://nexus_dev:dev_password@localhost:5432/nexus_dev"
+
+postgresql_production:
+  database:
+    type: "postgresql"
+    host: "postgres.example.com"
+    port: 5432
+    database: "nexus_prod"
+    username: "nexus_user"
+    password: "${NEXUS_DB_PASSWORD}"  # Use environment variable
+    pool_size: 20
+    max_overflow: 30
+    pool_timeout: 60
+    # SSL configuration for production
+    ssl_enabled: true
+    ssl_cert_path: "/etc/ssl/certs/client-cert.pem"
+    ssl_key_path: "/etc/ssl/private/client-key.pem"
+    ssl_ca_path: "/etc/ssl/certs/ca-cert.pem"
+
+postgresql_with_url:
+  database:
+    # Direct connection URL (overrides individual settings)
+    url: "postgresql+asyncpg://user:password@localhost:5432/nexus"
+    pool_size: 15
+    max_overflow: 25
+
+# =============================================================================
+# MariaDB/MySQL Configuration
+# =============================================================================
+mariadb_development:
+  database:
+    type: "mariadb"  # or "mysql"
+    host: "localhost"
+    port: 3306
+    database: "nexus_dev"
+    username: "nexus_dev"
+    password: "dev_password"
+    pool_size: 10
+    max_overflow: 20
+    pool_timeout: 30
+
+mariadb_production:
+  database:
+    type: "mariadb"
+    host: "mariadb.example.com"
+    port: 3306
+    database: "nexus_prod"
+    username: "nexus_user"
+    password: "${NEXUS_DB_PASSWORD}"
+    pool_size: 20
+    max_overflow: 30
+    pool_timeout: 60
+    # SSL configuration
+    ssl_enabled: true
+    ssl_cert_path: "/etc/ssl/certs/client-cert.pem"
+    ssl_key_path: "/etc/ssl/private/client-key.pem"
+    ssl_ca_path: "/etc/ssl/certs/ca-cert.pem"
+
+mysql_with_url:
+  database:
+    # Direct connection URL
+    url: "mysql+aiomysql://user:password@localhost:3306/nexus"
+    pool_size: 15
+    max_overflow: 25
+
+# =============================================================================
+# MongoDB Configuration
+# =============================================================================
+mongodb_development:
+  database:
+    type: "mongodb"
+    host: "localhost"
+    port: 27017
+    database: "nexus_dev"
+    username: "nexus_dev"
+    password: "dev_password"
+    auth_source: "admin"
+    # MongoDB doesn't use connection pools like SQL databases
+    # but you can configure connection settings
+
+mongodb_production:
+  database:
+    type: "mongodb"
+    host: "mongodb.example.com"
+    port: 27017
+    database: "nexus_prod"
+    username: "nexus_user"
+    password: "${NEXUS_DB_PASSWORD}"
+    auth_source: "admin"
+    # Replica set configuration
+    replica_set: "nexus-replica-set"
+    # SSL configuration
+    ssl_enabled: true
+    ssl_cert_path: "/etc/ssl/certs/mongodb-client.pem"
+    ssl_ca_path: "/etc/ssl/certs/mongodb-ca.pem"
+
+mongodb_cluster:
+  database:
+    type: "mongodb"
+    # MongoDB connection string with multiple hosts
+    url: "mongodb://user:password@mongo1.example.com:27017,mongo2.example.com:27017,mongo3.example.com:27017/nexus?replicaSet=nexus-cluster&authSource=admin"
+    auth_source: "admin"
+    replica_set: "nexus-cluster"
+
+# =============================================================================
+# In-Memory Database (Testing Only)
+# =============================================================================
+memory_testing:
+  database:
+    type: "memory"
+    # No additional configuration needed for in-memory database
+    # Data is lost when application stops
+
+# =============================================================================
+# Environment-Based Configuration
+# =============================================================================
+environment_based:
+  database:
+    type: "${NEXUS_DB_TYPE:-sqlite}"           # Default to SQLite
+    host: "${NEXUS_DB_HOST:-localhost}"
+    port: "${NEXUS_DB_PORT:-5432}"
+    database: "${NEXUS_DB_NAME:-nexus}"
+    username: "${NEXUS_DB_USER:-nexus}"
+    password: "${NEXUS_DB_PASSWORD}"
+    pool_size: "${NEXUS_DB_POOL_SIZE:-10}"
+    max_overflow: "${NEXUS_DB_MAX_OVERFLOW:-20}"
+    ssl_enabled: "${NEXUS_DB_SSL_ENABLED:-false}"
+
+# =============================================================================
+# Complete Application Configuration with Database
+# =============================================================================
+complete_production_example:
+  app:
+    name: "Nexus Production"
+    version: "1.0.0"
+    environment: "production"
+    debug: false
+
+  server:
+    host: "0.0.0.0"
+    port: 8000
+    workers: 4
+
+  database:
+    type: "postgresql"
+    host: "postgres.prod.example.com"
+    port: 5432
+    database: "nexus_production"
+    username: "nexus_prod_user"
+    password: "${NEXUS_DB_PASSWORD}"
+    pool_size: 25
+    max_overflow: 50
+    pool_timeout: 60
+    ssl_enabled: true
+
+  auth:
+    jwt_secret: "${JWT_SECRET_KEY}"
+    jwt_algorithm: "HS256"
+    token_expiry: 3600
+
+  plugins:
+    directory: "plugins"
+    auto_load: true
+    hot_reload: false
+
+  logging:
+    level: "INFO"
+    file_enabled: true
+    file_path: "/var/log/nexus/app.log"
+
+  monitoring:
+    enabled: true
+    metrics_enabled: true
+    health_checks_enabled: true
+
+# =============================================================================
+# Docker Compose Configuration Examples
+# =============================================================================
+docker_postgresql:
+  database:
+    type: "postgresql"
+    host: "postgres"  # Docker service name
+    port: 5432
+    database: "nexus"
+    username: "nexus"
+    password: "nexus123"
+    pool_size: 15
+    max_overflow: 25
+
+docker_mariadb:
+  database:
+    type: "mariadb"
+    host: "mariadb"  # Docker service name
+    port: 3306
+    database: "nexus"
+    username: "nexus"
+    password: "nexus123"
+    pool_size: 15
+    max_overflow: 25
+
+docker_mongodb:
+  database:
+    type: "mongodb"
+    host: "mongodb"  # Docker service name
+    port: 27017
+    database: "nexus"
+    username: "nexus"
+    password: "nexus123"
+    auth_source: "admin"
+
+# =============================================================================
+# Cloud Provider Examples
+# =============================================================================
+aws_rds_postgresql:
+  database:
+    type: "postgresql"
+    host: "nexus-db.cluster-xyz.us-east-1.rds.amazonaws.com"
+    port: 5432
+    database: "nexus"
+    username: "nexus_admin"
+    password: "${AWS_RDS_PASSWORD}"
+    pool_size: 20
+    max_overflow: 40
+    ssl_enabled: true
+
+azure_postgresql:
+  database:
+    type: "postgresql"
+    host: "nexus-db.postgres.database.azure.com"
+    port: 5432
+    database: "nexus"
+    username: "nexus@nexus-db"
+    password: "${AZURE_DB_PASSWORD}"
+    pool_size: 20
+    max_overflow: 40
+    ssl_enabled: true
+
+gcp_cloud_sql:
+  database:
+    type: "postgresql"
+    host: "/cloudsql/project-id:region:instance-name"  # Unix socket connection
+    database: "nexus"
+    username: "nexus"
+    password: "${GCP_DB_PASSWORD}"
+    pool_size: 20
+    max_overflow: 40
+
+mongodb_atlas:
+  database:
+    type: "mongodb"
+    url: "mongodb+srv://nexus:${MONGODB_PASSWORD}@cluster.mongodb.net/nexus?retryWrites=true&w=majority"
+    auth_source: "admin"
+
+# =============================================================================
+# High Availability Configuration
+# =============================================================================
+postgresql_ha:
+  database:
+    type: "postgresql"
+    # Primary connection
+    host: "postgres-primary.example.com"
+    port: 5432
+    database: "nexus"
+    username: "nexus"
+    password: "${NEXUS_DB_PASSWORD}"
+    # Connection pool settings for high load
+    pool_size: 50
+    max_overflow: 100
+    pool_timeout: 120
+    # SSL configuration
+    ssl_enabled: true
+    ssl_cert_path: "/etc/ssl/certs/client-cert.pem"
+    ssl_key_path: "/etc/ssl/private/client-key.pem"
+    ssl_ca_path: "/etc/ssl/certs/ca-cert.pem"
+
+# =============================================================================
+# Usage Instructions
+# =============================================================================
+#
+# To use these configurations:
+#
+# 1. Copy the desired configuration section to your nexus_config.yaml
+# 2. Replace placeholder values (${VARIABLE}) with actual values or environment variables
+# 3. Ensure the database server is running and accessible
+# 4. Install required database drivers:
+#    - SQLite: pip install aiosqlite
+#    - PostgreSQL: pip install asyncpg
+#    - MariaDB/MySQL: pip install aiomysql
+#    - MongoDB: pip install motor pymongo
+#
+# 5. For production, always use environment variables for sensitive data:
+#    export NEXUS_DB_PASSWORD="your_secure_password"
+#    export JWT_SECRET_KEY="your_jwt_secret"
+#
+# 6. Test the connection with: python -m nexus.cli validate --config-file nexus_config.yaml

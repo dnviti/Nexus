@@ -32,8 +32,12 @@ class Environment(str, Enum):
     TESTING = "testing"
 
 
+# Security constants
+DEFAULT_JWT_SECRET = "change-me-in-production"
+
+
 class DatabaseType(str, Enum):
-    """Supported database types."""
+    """Database types supported by the framework."""
 
     POSTGRESQL = "postgresql"
     MYSQL = "mysql"
@@ -195,7 +199,7 @@ class CacheConfig(BaseModel):
 class AuthConfig(BaseModel):
     """Authentication configuration."""
 
-    jwt_secret: str = Field("change-me-in-production", min_length=32)
+    jwt_secret: str = Field(DEFAULT_JWT_SECRET, min_length=32)
     jwt_algorithm: str = "HS256"
     token_expiry: int = 3600  # 1 hour
     refresh_token_expiry: int = 604800  # 7 days
@@ -579,3 +583,159 @@ TESTING_CONFIG = {
         "file_enabled": False,
     },
 }
+
+
+# Database configuration examples
+DATABASE_EXAMPLES = {
+    "sqlite": {"type": "sqlite", "connection": {"path": "./nexus.db"}},
+    "postgresql": {
+        "type": "postgresql",
+        "connection": {
+            "host": "localhost",
+            "port": 5432,
+            "database": "nexus",
+            "username": "nexus_user",
+            "password": "nexus_password",
+        },
+        "pool_size": 20,
+        "max_overflow": 30,
+    },
+    "mariadb": {
+        "type": "mysql",
+        "connection": {
+            "host": "localhost",
+            "port": 3306,
+            "database": "nexus",
+            "username": "nexus_user",
+            "password": "nexus_password",
+        },
+        "pool_size": 20,
+        "max_overflow": 30,
+    },
+    "mongodb": {
+        "type": "mongodb",
+        "connection": {
+            "host": "localhost",
+            "port": 27017,
+            "database": "nexus",
+            "username": "nexus_user",
+            "password": "nexus_password",
+        },
+        "replica_set": None,
+        "auth_source": "admin",
+    },
+}
+
+
+def create_database_config_from_url(url: str) -> DatabaseConfig:
+    """Create database configuration from connection URL."""
+    if url.startswith("sqlite"):
+        return DatabaseConfig(type=DatabaseType.SQLITE)
+    elif url.startswith("postgresql"):
+        return DatabaseConfig(type=DatabaseType.POSTGRESQL)
+    elif url.startswith("mysql"):
+        return DatabaseConfig(type=DatabaseType.MYSQL)
+    elif url.startswith("mongodb"):
+        return DatabaseConfig(type=DatabaseType.MONGODB)
+    else:
+        raise ValueError(f"Unsupported database URL: {url}")
+
+
+class ConfigurationManager:
+    """Configuration manager for runtime configuration operations."""
+
+    def __init__(self, config: AppConfig):
+        self.config = config
+        self._watchers: List[Any] = []
+
+    def get_config(self, section: Optional[str] = None) -> Dict[str, Any]:
+        """Get configuration data."""
+        config_dict = self.config.dict()
+
+        if section:
+            if section in config_dict:
+                return {section: config_dict[section]}
+            else:
+                raise KeyError(f"Configuration section '{section}' not found")
+
+        return config_dict
+
+    def update_config(self, updates: Dict[str, Any]) -> Dict[str, Any]:
+        """Update configuration values."""
+        updated_keys = []
+        restart_required = False
+
+        for key, value in updates.items():
+            if hasattr(self.config, key):
+                setattr(self.config, key, value)
+                updated_keys.append(key)
+
+                # Check if restart is required for certain keys
+                if key in ["server", "database", "plugins"]:
+                    restart_required = True
+            else:
+                # Handle nested updates
+                if "." in key:
+                    section, field = key.split(".", 1)
+                    if hasattr(self.config, section):
+                        section_obj = getattr(self.config, section)
+                        if hasattr(section_obj, field):
+                            setattr(section_obj, field, value)
+                            updated_keys.append(key)
+                            restart_required = True
+
+        return {"updated_keys": updated_keys, "restart_required": restart_required}
+
+    def mask_secrets(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Mask sensitive configuration values."""
+        masked = data.copy()
+
+        secret_keys = ["password", "secret", "key", "token", "api_key"]
+
+        def _mask_recursive(obj: Any) -> None:
+            if isinstance(obj, dict):
+                for k, v in obj.items():
+                    if any(secret in k.lower() for secret in secret_keys):
+                        obj[k] = "***"
+                    else:
+                        _mask_recursive(v)
+            elif isinstance(obj, list):
+                for item in obj:
+                    _mask_recursive(item)
+
+        _mask_recursive(masked)
+        return masked
+
+    def validate_config(self) -> List[str]:
+        """Validate current configuration and return any errors."""
+        errors = []
+
+        # Basic validation
+        if self.config.app.environment == Environment.PRODUCTION:
+            if self.config.app.debug:
+                errors.append("Debug mode should be disabled in production")
+            if self.config.auth.jwt_secret == DEFAULT_JWT_SECRET:
+                errors.append("JWT secret must be changed in production")
+
+        return errors
+
+    def reload_from_file(self, path: Union[str, Path]) -> None:
+        """Reload configuration from file."""
+        new_config_data = ConfigLoader.load_file(path)
+        self.config = AppConfig(**new_config_data)
+
+        # Notify watchers
+        for callback in self._watchers:
+            try:
+                callback(self.config)
+            except Exception as e:
+                logger.warning(f"Error notifying config watcher: {e}")
+
+    def add_watcher(self, callback: Any) -> None:
+        """Add a configuration change watcher."""
+        self._watchers.append(callback)
+
+    def remove_watcher(self, callback: Any) -> None:
+        """Remove a configuration change watcher."""
+        if callback in self._watchers:
+            self._watchers.remove(callback)

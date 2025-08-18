@@ -49,7 +49,7 @@ def admin(ctx: Any, verbose: bool, config: Optional[str]) -> None:
 @admin.group()
 def user() -> None:
     """User management commands."""
-    pass
+    click.echo("User management commands. Use --help for available subcommands.")
 
 
 @user.command("create")
@@ -103,24 +103,37 @@ def user_list(ctx: Any, output_format: str) -> None:
     try:
 
         async def list_users_async() -> None:
-            # Initialize auth manager for future user management
+            # Initialize auth manager for user management
             auth_manager = AuthenticationManager()
-            # In a real implementation, this would get all users from auth_manager
-            # For now, using sample data until auth_manager.list_users() is implemented
-            users = [
-                {"username": "admin", "email": "admin@example.com", "created": "2024-01-01"},
-                {"username": "user1", "email": "user1@example.com", "created": "2024-01-02"},
-            ]
-            # TODO: Replace with: users = await auth_manager.list_users()
+            users_list = await auth_manager.list_users()
+
+            # Convert user objects to dictionaries for display
+            users = []
+            for user in users_list:
+                users.append(
+                    {
+                        "id": user.id,
+                        "username": user.username,
+                        "email": user.email,
+                        "full_name": user.full_name,
+                        "is_active": user.is_active,
+                        "is_superuser": user.is_superuser,
+                        "created": user.created_at.isoformat(),
+                        "last_login": user.last_login.isoformat() if user.last_login else None,
+                        "roles": user.roles,
+                        "permissions": user.permissions,
+                    }
+                )
 
             if output_format == "json":
                 click.echo(json.dumps(users, indent=2))
             else:
                 click.echo("Username | Email                | Created")
                 click.echo("-" * 50)
-                for user in users:
+                for user_data in users:
                     click.echo(
-                        f"{user['username']:<8} | {user['email']:<20} | " f"{user['created']}"
+                        f"{user_data['username']:<8} | {user_data['email']:<20} | "
+                        f"{user_data['created']}"
                     )
 
         asyncio.run(list_users_async())
@@ -151,10 +164,214 @@ def user_delete(ctx: Any, username: str, confirm: bool) -> None:
         sys.exit(1)
 
 
+@user.command("add-role")
+@click.argument("username")
+@click.argument("role")
+@click.pass_context
+def user_add_role(ctx: Any, username: str, role: str) -> None:
+    """Add a role to a user."""
+    click.echo(f"👤 Adding role '{role}' to user: {username}")
+
+    try:
+
+        async def add_role_async() -> bool:
+            from .auth import AuthenticationManager
+
+            auth_manager = AuthenticationManager()
+
+            # Find user by username
+            users = await auth_manager.list_users()
+            user = next((u for u in users if u.username == username), None)
+
+            if not user:
+                click.echo(f"❌ User '{username}' not found")
+                return False
+
+            success = await auth_manager.add_role(user.id, role)
+            if success:
+                click.echo(f"✅ Role '{role}' added to user '{username}'")
+                return True
+            else:
+                click.echo(f"❌ Failed to add role '{role}' to user '{username}'")
+                return False
+
+        success = asyncio.run(add_role_async())
+        if not success:
+            sys.exit(1)
+
+    except Exception as e:
+        click.echo(f"❌ Error adding role: {e}", err=True)
+        sys.exit(1)
+
+
+@user.command("remove-role")
+@click.argument("username")
+@click.argument("role")
+@click.pass_context
+def user_remove_role(ctx: Any, username: str, role: str) -> None:
+    """Remove a role from a user."""
+    click.echo(f"👤 Removing role '{role}' from user: {username}")
+
+    try:
+
+        async def remove_role_async() -> bool:
+            from .auth import AuthenticationManager
+
+            auth_manager = AuthenticationManager()
+
+            # Find user by username
+            users = await auth_manager.list_users()
+            user = next((u for u in users if u.username == username), None)
+
+            if not user:
+                click.echo(f"❌ User '{username}' not found")
+                return False
+
+            success = await auth_manager.remove_role(user.id, role)
+            if success:
+                click.echo(f"✅ Role '{role}' removed from user '{username}'")
+                return True
+            else:
+                click.echo(f"❌ Failed to remove role '{role}' from user '{username}'")
+                return False
+
+        success = asyncio.run(remove_role_async())
+        if not success:
+            sys.exit(1)
+
+    except Exception as e:
+        click.echo(f"❌ Error removing role: {e}", err=True)
+        sys.exit(1)
+
+
+@user.command("add-permission")
+@click.argument("username")
+@click.argument("permission")
+@click.pass_context
+def user_add_permission(ctx: Any, username: str, permission: str) -> None:
+    """Add a permission to a user."""
+    click.echo(f"👤 Adding permission '{permission}' to user: {username}")
+
+    try:
+
+        async def add_permission_async() -> bool:
+            from .auth import AuthenticationManager
+
+            auth_manager = AuthenticationManager()
+
+            # Find user by username
+            users = await auth_manager.list_users()
+            user = next((u for u in users if u.username == username), None)
+
+            if not user:
+                click.echo(f"❌ User '{username}' not found")
+                return False
+
+            success = await auth_manager.add_permission(user.id, permission)
+            if success:
+                click.echo(f"✅ Permission '{permission}' added to user '{username}'")
+                return True
+            else:
+                click.echo(f"❌ Failed to add permission '{permission}' to user '{username}'")
+                return False
+
+        success = asyncio.run(add_permission_async())
+        if not success:
+            sys.exit(1)
+
+    except Exception as e:
+        click.echo(f"❌ Error adding permission: {e}", err=True)
+        sys.exit(1)
+
+
+@user.command("remove-permission")
+@click.argument("username")
+@click.argument("permission")
+@click.pass_context
+def user_remove_permission(ctx: Any, username: str, permission: str) -> None:
+    """Remove a permission from a user."""
+    click.echo(f"👤 Removing permission '{permission}' from user: {username}")
+
+    try:
+
+        async def remove_permission_async() -> bool:
+            from .auth import AuthenticationManager
+
+            auth_manager = AuthenticationManager()
+
+            # Find user by username
+            users = await auth_manager.list_users()
+            user = next((u for u in users if u.username == username), None)
+
+            if not user:
+                click.echo(f"❌ User '{username}' not found")
+                return False
+
+            success = await auth_manager.remove_permission(user.id, permission)
+            if success:
+                click.echo(f"✅ Permission '{permission}' removed from user '{username}'")
+                return True
+            else:
+                click.echo(f"❌ Failed to remove permission '{permission}' from user '{username}'")
+                return False
+
+        success = asyncio.run(remove_permission_async())
+        if not success:
+            sys.exit(1)
+
+    except Exception as e:
+        click.echo(f"❌ Error removing permission: {e}", err=True)
+        sys.exit(1)
+
+
+@user.command("show")
+@click.argument("username")
+@click.pass_context
+def user_show(ctx: Any, username: str) -> None:
+    """Show detailed user information."""
+    click.echo(f"👤 User details for: {username}")
+
+    try:
+
+        async def show_user_async() -> None:
+            from .auth import AuthenticationManager
+
+            auth_manager = AuthenticationManager()
+
+            # Find user by username
+            users = await auth_manager.list_users()
+            user = next((u for u in users if u.username == username), None)
+
+            if not user:
+                click.echo(f"❌ User '{username}' not found")
+                return
+
+            click.echo(f"📧 Email: {user.email}")
+            click.echo(f"👤 Full Name: {user.full_name or 'Not set'}")
+            click.echo(f"🟢 Active: {'Yes' if user.is_active else 'No'}")
+            click.echo(f"🔑 Superuser: {'Yes' if user.is_superuser else 'No'}")
+            click.echo(f"📅 Created: {user.created_at}")
+            click.echo(f"🕐 Last Login: {user.last_login or 'Never'}")
+            click.echo(f"🏷️  Roles: {', '.join(user.roles) if user.roles else 'None'}")
+            click.echo(
+                f"🔐 Permissions: {', '.join(user.permissions) if user.permissions else 'None'}"
+            )
+
+            # Show active sessions
+            active_sessions = await auth_manager.get_active_sessions(user.id)
+            click.echo(f"🔗 Active Sessions: {len(active_sessions)}")
+
+        asyncio.run(show_user_async())
+
+    except Exception as e:
+        click.echo(f"❌ Error showing user details: {e}", err=True)
+        sys.exit(1)
+
+
 @admin.group()
 def plugin() -> None:
     """Plugin administration commands."""
-    pass
+    click.echo("Plugin administration commands. Use --help for available subcommands.")
 
 
 @plugin.command("status")
@@ -205,8 +422,39 @@ def plugin_enable(ctx: Any, plugin_name: str) -> None:
     click.echo(f"🔌 Enabling plugin: {plugin_name}")
 
     try:
-        # In a real implementation, this would enable the plugin
-        click.echo(f"✅ Plugin '{plugin_name}' enabled successfully")
+
+        async def enable_plugin_async() -> bool:
+            from .core import EventBus, MemoryAdapter, PluginManager, ServiceRegistry
+
+            # Initialize required components
+            event_bus = EventBus()
+            await event_bus.start()
+
+            service_registry = ServiceRegistry()
+            db_adapter = MemoryAdapter()
+            await db_adapter.connect()
+
+            plugin_manager = PluginManager(event_bus, service_registry)
+            plugin_manager.set_database(db_adapter)
+
+            # Enable the plugin
+            success = await plugin_manager.enable_plugin(plugin_name)
+
+            if success:
+                click.echo(f"✅ Plugin '{plugin_name}' enabled successfully")
+                # Get plugin status
+                status = plugin_manager.get_plugin_status(plugin_name)
+                click.echo(f"   Status: {status.value}")
+            else:
+                click.echo(f"❌ Failed to enable plugin '{plugin_name}'")
+
+            await event_bus.shutdown()
+            await db_adapter.disconnect()
+            return success
+
+        success = asyncio.run(enable_plugin_async())
+        if not success:
+            sys.exit(1)
 
     except Exception as e:
         click.echo(f"❌ Error enabling plugin: {e}", err=True)
@@ -221,18 +469,218 @@ def plugin_disable(ctx: Any, plugin_name: str) -> None:
     click.echo(f"🔌 Disabling plugin: {plugin_name}")
 
     try:
-        # In a real implementation, this would disable the plugin
-        click.echo(f"✅ Plugin '{plugin_name}' disabled successfully")
+
+        async def disable_plugin_async() -> bool:
+            from .core import EventBus, MemoryAdapter, PluginManager, ServiceRegistry
+
+            # Initialize required components
+            event_bus = EventBus()
+            await event_bus.start()
+
+            service_registry = ServiceRegistry()
+            db_adapter = MemoryAdapter()
+            await db_adapter.connect()
+
+            plugin_manager = PluginManager(event_bus, service_registry)
+            plugin_manager.set_database(db_adapter)
+
+            # Disable the plugin
+            success = await plugin_manager.disable_plugin(plugin_name)
+
+            if success:
+                click.echo(f"✅ Plugin '{plugin_name}' disabled successfully")
+                # Get plugin status
+                status = plugin_manager.get_plugin_status(plugin_name)
+                click.echo(f"   Status: {status.value}")
+            else:
+                click.echo(f"❌ Failed to disable plugin '{plugin_name}'")
+
+            await event_bus.shutdown()
+            await db_adapter.disconnect()
+            return success
+
+        success = asyncio.run(disable_plugin_async())
+        if not success:
+            sys.exit(1)
 
     except Exception as e:
         click.echo(f"❌ Error disabling plugin: {e}", err=True)
         sys.exit(1)
 
 
+@plugin.command("list")
+@click.option(
+    "--format",
+    "output_format",
+    default="table",
+    type=click.Choice(["table", "json"]),
+    help="Output format",
+)
+@click.option("--category", help="Filter by plugin category")
+@click.option("--status", help="Filter by plugin status")
+@click.pass_context
+def plugin_list(
+    ctx: Any, output_format: str, category: Optional[str], status: Optional[str]
+) -> None:
+    """List all available plugins."""
+    click.echo("📦 Listing plugins...")
+
+    try:
+
+        async def list_plugins_async() -> None:
+            from pathlib import Path
+
+            from .core import EventBus, MemoryAdapter, PluginManager, ServiceRegistry
+
+            # Initialize required components
+            event_bus = EventBus()
+            await event_bus.start()
+
+            service_registry = ServiceRegistry()
+            db_adapter = MemoryAdapter()
+            await db_adapter.connect()
+
+            plugin_manager = PluginManager(event_bus, service_registry)
+            plugin_manager.set_database(db_adapter)
+
+            # Discover plugins
+            plugins_path = Path("plugins")
+            discovered_plugins = await plugin_manager.discover_plugins(plugins_path)
+
+            # Filter plugins
+            filtered_plugins = discovered_plugins
+            if category:
+                filtered_plugins = [p for p in filtered_plugins if p.category == category]
+            if status:
+                filtered_plugins = [p for p in filtered_plugins if p.health == status]
+
+            if output_format == "json":
+                plugin_data = []
+                for plugin in filtered_plugins:
+                    plugin_data.append(
+                        {
+                            "name": plugin.name,
+                            "category": plugin.category,
+                            "version": plugin.version,
+                            "description": plugin.description,
+                            "author": plugin.author,
+                            "enabled": plugin.enabled,
+                            "health": plugin.health,
+                        }
+                    )
+                click.echo(json.dumps(plugin_data, indent=2))
+            else:
+                if not filtered_plugins:
+                    click.echo("No plugins found.")
+                else:
+                    click.echo(f"Found {len(filtered_plugins)} plugins:")
+                    click.echo("")
+                    for plugin in filtered_plugins:
+                        status_icon = "✅" if plugin.enabled else "❌"
+                        click.echo(
+                            f"{status_icon} {plugin.category}.{plugin.name} v{plugin.version}"
+                        )
+                        click.echo(f"   Description: {plugin.description}")
+                        click.echo(f"   Author: {plugin.author}")
+                        click.echo(f"   Health: {plugin.health}")
+                        click.echo("")
+
+            await event_bus.shutdown()
+            await db_adapter.disconnect()
+
+        asyncio.run(list_plugins_async())
+
+    except Exception as e:
+        click.echo(f"❌ Error listing plugins: {e}", err=True)
+        sys.exit(1)
+
+
+@plugin.command("install")
+@click.argument("plugin_source")
+@click.option("--force", is_flag=True, help="Force installation even if plugin exists")
+@click.option("--category", help="Plugin category")
+@click.pass_context
+def plugin_install(ctx: Any, plugin_source: str, force: bool, category: Optional[str]) -> None:
+    """Install a plugin from source."""
+    click.echo(f"📦 Installing plugin from: {plugin_source}")
+
+    try:
+
+        async def install_plugin_async() -> bool:
+            import os
+            import shutil
+            import tempfile
+            import zipfile
+            from pathlib import Path
+
+            from .core import EventBus, MemoryAdapter, PluginManager, ServiceRegistry
+
+            # Initialize required components
+            event_bus = EventBus()
+            await event_bus.start()
+
+            service_registry = ServiceRegistry()
+            db_adapter = MemoryAdapter()
+            await db_adapter.connect()
+
+            plugin_manager = PluginManager(event_bus, service_registry)
+            plugin_manager.set_database(db_adapter)
+
+            # Determine source type
+            if plugin_source.startswith(("http://", "https://")):
+                click.echo("📥 Downloading plugin from URL...")
+                # In a real implementation, download the plugin
+                click.echo("❌ URL downloads not implemented yet")
+                return False
+            elif plugin_source.endswith(".zip"):
+                click.echo("📦 Extracting plugin from ZIP...")
+                # Extract ZIP file
+                plugins_dir = Path("plugins")
+                plugins_dir.mkdir(exist_ok=True)
+
+                with zipfile.ZipFile(plugin_source, "r") as zip_ref:
+                    extract_path = plugins_dir / (category or "extracted")
+                    zip_ref.extractall(extract_path)
+
+                click.echo(f"✅ Plugin extracted to {extract_path}")
+                return True
+            elif Path(plugin_source).is_dir():
+                click.echo("📁 Installing plugin from directory...")
+                # Copy directory
+                plugins_dir = Path("plugins")
+                plugins_dir.mkdir(exist_ok=True)
+
+                dest_category = category or "local"
+                dest_path = plugins_dir / dest_category / Path(plugin_source).name
+
+                if dest_path.exists() and not force:
+                    click.echo(
+                        f"❌ Plugin already exists at {dest_path}. Use --force to overwrite."
+                    )
+                    return False
+
+                shutil.copytree(plugin_source, dest_path, dirs_exist_ok=force)
+                click.echo(f"✅ Plugin installed to {dest_path}")
+                return True
+            else:
+                click.echo(f"❌ Unknown plugin source type: {plugin_source}")
+                return False
+
+        success = asyncio.run(install_plugin_async())
+        if success:
+            click.echo("✅ Plugin installation completed")
+        else:
+            sys.exit(1)
+
+    except Exception as e:
+        click.echo(f"❌ Error installing plugin: {e}", err=True)
+        sys.exit(1)
+
+
 @admin.group()
 def system() -> None:
     """System administration commands."""
-    pass
+    click.echo("System administration commands. Use --help for available subcommands.")
 
 
 @system.command("info")
@@ -405,7 +853,7 @@ def system_logs(ctx: Any, lines: int, follow: bool, level: Optional[str]) -> Non
 @admin.group()
 def backup() -> None:
     """Backup and restore commands"""
-    pass
+    click.echo("Backup and restore commands. Use --help for available subcommands.")
 
 
 @backup.command("create")

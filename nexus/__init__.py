@@ -28,7 +28,6 @@ from .config import AppConfig, create_default_config, load_config
 # Core imports
 from .core import (
     DatabaseAdapter,
-    DatabaseConfig,
     Event,
     EventBus,
     EventPriority,
@@ -37,6 +36,10 @@ from .core import (
     PluginStatus,
     ServiceRegistry,
 )
+
+# Database imports
+from .database import DatabaseConfig as DatabaseConfigImpl
+from .database import create_database_adapter, create_default_database_config
 from .plugins import (
     BasePlugin,
     PluginContext,
@@ -68,7 +71,6 @@ __all__ = [
     "DatabaseAdapter",
     # Configuration
     "AppConfig",
-    "DatabaseConfig",
     "create_default_config",
     "load_config",
     # Decorators and utilities
@@ -85,6 +87,38 @@ __all__ = [
     "PluginInfo",
     "PluginStatus",
 ]
+
+
+def _convert_config_to_database_config(config_db_config: Any) -> DatabaseConfigImpl:
+    """Convert config.DatabaseConfig to database.DatabaseConfig."""
+    from .config import DatabaseType
+
+    # Map database types
+    type_mapping = {
+        DatabaseType.SQLITE: "sqlite",
+        DatabaseType.POSTGRESQL: "postgresql",
+        DatabaseType.MYSQL: "mysql",
+        DatabaseType.MONGODB: "mongodb",
+        DatabaseType.REDIS: "redis",
+    }
+
+    db_type = type_mapping.get(config_db_config.type, "sqlite")
+
+    # Create database config for database module
+    db_config = DatabaseConfigImpl(
+        type=db_type,
+        host=config_db_config.connection.host,
+        port=config_db_config.connection.port,
+        database=config_db_config.connection.database,
+        username=config_db_config.connection.username,
+        password=config_db_config.connection.password,
+        path=config_db_config.connection.path or "./nexus.db",
+        pool_size=config_db_config.pool.min_size,
+        max_overflow=config_db_config.pool.max_overflow,
+        pool_timeout=config_db_config.pool.pool_timeout,
+    )
+
+    return db_config
 
 
 class NexusApp:
@@ -125,10 +159,24 @@ class NexusApp:
             event_bus=self.event_bus, service_registry=self.service_registry
         )
 
-        # Initialize database adapter if configured
+        # Initialize database adapter
         self.database: Optional[DatabaseAdapter] = None
-        # Database adapter will be initialized by plugins that need it
-        if self.config.database and self.database:
+        if hasattr(self.config, "database") and self.config.database:
+            # Create database adapter from configuration
+            if hasattr(self.config.database, "type"):
+                converted_config = _convert_config_to_database_config(self.config.database)
+                self.database = create_database_adapter(converted_config)
+            else:
+                # Fallback to default SQLite
+                default_config = create_default_database_config()
+                self.database = create_database_adapter(default_config)
+        else:
+            # Use default SQLite database
+            default_config = create_default_database_config()
+            self.database = create_database_adapter(default_config)
+
+        # Set database for plugin manager
+        if self.database:
             self.plugin_manager.set_database(self.database)
 
         # Create FastAPI application with lifespan management
@@ -173,18 +221,34 @@ class NexusApp:
 
         # Connect to database
         if self.database:
-            await self.database.connect()
-            logger.info("Database connected")
+            try:
+                await self.database.connect()
+                health = await self.database.health_check()
+                logger.info(
+                    f"Database connected: {health.get('type', 'unknown')} ({health.get('status', 'unknown')})"
+                )
+            except Exception as e:
+                logger.error(f"Failed to connect to database: {e}")
+                # Fall back to memory adapter
+                from .core import MemoryAdapter
+
+                self.database = MemoryAdapter()
+                await self.database.connect()
+                logger.info("Fell back to in-memory database")
 
         # Start event bus
         asyncio.create_task(self.event_bus.process_events())
         logger.info("Event bus started")
 
         # Discover and load plugins
-        plugins_path = Path(self.config.plugins.directory)
+        plugins_path = Path(getattr(self.config.plugins, "directory", "plugins"))
         if plugins_path.exists():
-            await self.plugin_manager.discover_plugins(plugins_path)
-            logger.info(f"Loaded {len(self.plugin_manager.get_loaded_plugins())} plugins")
+            discovered = await self.plugin_manager.discover_plugins(plugins_path)
+            logger.info(f"Discovered {len(discovered)} plugins")
+
+            # Load enabled plugins
+            loaded_count = len(self.plugin_manager.get_loaded_plugins())
+            logger.info(f"Loaded {loaded_count} plugins")
 
         # Register plugin routes
         self._register_plugin_routes()
@@ -482,21 +546,36 @@ def create_nexus_app(
         ... )
         >>> app.run()
     """
+    from .config import DatabaseConfig as ConfigDatabaseConfig
+
     # Handle different config types
+    final_config: AppConfig
     if config is None:
-        config = create_default_config()
+        final_config = create_default_config()
+        # Set default database configuration
+        if not hasattr(final_config, "database") or not final_config.database:
+            final_config.database = ConfigDatabaseConfig()
     elif isinstance(config, str):
         # Load from file
-        config = load_config(config)
+        final_config = load_config(config)
+        # Ensure database config exists
+        if not hasattr(final_config, "database") or not final_config.database:
+            final_config.database = ConfigDatabaseConfig()
     elif isinstance(config, dict):
         # Create from dictionary
-        config = AppConfig(**config)
+        config_dict = dict(config)  # Create a copy to avoid modifying original
+        if "database" not in config_dict:
+            config_dict["database"] = ConfigDatabaseConfig().dict()
+        final_config = AppConfig(**config_dict)
+    else:
+        # config is AppConfig
+        final_config = config
 
     return NexusApp(
         title=title,
         version=version,
         description=description,
-        config=config,
+        config=final_config,
         **kwargs,
     )
 

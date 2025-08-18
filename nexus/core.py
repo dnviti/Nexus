@@ -17,23 +17,27 @@ from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
 
+# Import DatabaseConfig from database module
+from .database import DatabaseConfig
+
+# Explicit exports
+__all__ = [
+    "AppConfig",
+    "Event",
+    "EventPriority",
+    "EventBus",
+    "PluginInfo",
+    "PluginStatus",
+    "PluginManager",
+    "ServiceRegistry",
+    "DatabaseAdapter",
+    "MemoryAdapter",
+    "TransactionContext",
+    "create_database_adapter",
+]
+
 
 # Configuration Classes
-@dataclass
-class DatabaseConfig:
-    """Database configuration."""
-
-    type: str = "sqlite"  # sqlite, postgresql, mongodb, redis
-    url: str = "sqlite:///./nexus.db"
-    host: str = "localhost"
-    port: int = 5432
-    database: str = "nexus"
-    username: str = ""
-    password: str = ""
-    pool_size: int = 10
-    max_overflow: int = 20
-    auto_migrate: bool = True
-    echo: bool = False
 
 
 @dataclass
@@ -309,104 +313,14 @@ class ServiceRegistry:
         return list(self._services.keys())
 
 
-# Database Adapter
-class DatabaseAdapter(ABC):
-    """Abstract database adapter interface."""
-
-    @abstractmethod
-    async def connect(self) -> None:
-        """Connect to the database."""
-        pass
-
-    @abstractmethod
-    async def disconnect(self) -> None:
-        """Disconnect from the database."""
-        pass
-
-    @abstractmethod
-    async def get(self, key: str, default: Any = None) -> Any:
-        """Get a value by key."""
-        pass
-
-    @abstractmethod
-    async def set(self, key: str, value: Any) -> None:
-        """Set a value for a key."""
-        pass
-
-    @abstractmethod
-    async def delete(self, key: str) -> None:
-        """Delete a key."""
-        pass
-
-    @abstractmethod
-    async def exists(self, key: str) -> bool:
-        """Check if a key exists."""
-        pass
-
-    @abstractmethod
-    async def list_keys(self, pattern: str = "*") -> List[str]:
-        """List keys matching a pattern."""
-        pass
-
-    @abstractmethod
-    async def transaction(self) -> "TransactionContext":
-        """Start a database transaction."""
-        pass
-
-    @abstractmethod
-    async def migrate(self) -> None:
-        """Run database migrations."""
-        pass
-
-
-class TransactionContext:
-    """Database transaction context."""
-
-    def __init__(self, adapter: DatabaseAdapter):
-        self.adapter = adapter
-        self._operations: List[Dict[str, Any]] = []
-
-    async def __aenter__(self) -> "TransactionContext":
-        return self
-
-    async def __aexit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
-        if exc_type is None:
-            await self.commit()
-        else:
-            await self.rollback()
-
-    async def get(self, key: str) -> Any:
-        """Get a value within the transaction."""
-        # Check pending operations first
-        for op in reversed(self._operations):
-            if op["type"] == "set" and op["key"] == key:
-                return op["value"]
-            elif op["type"] == "delete" and op["key"] == key:
-                return None
-
-        return await self.adapter.get(key)
-
-    async def set(self, key: str, value: Any) -> None:
-        """Set a value within the transaction."""
-        self._operations.append({"type": "set", "key": key, "value": value})
-
-    async def delete(self, key: str) -> None:
-        """Delete a key within the transaction."""
-        self._operations.append({"type": "delete", "key": key})
-
-    async def commit(self) -> None:
-        """Commit the transaction."""
-        for op in self._operations:
-            if op["type"] == "set":
-                await self.adapter.set(op["key"], op["value"])
-            elif op["type"] == "delete":
-                await self.adapter.delete(op["key"])
-
-        self._operations.clear()
-
-    async def rollback(self) -> None:
-        """Rollback the transaction."""
-        self._operations.clear()
+# Import database components from the new database module
+from .database import (
+    DatabaseAdapter,
+    DatabaseConfig,
+    MemoryAdapter,
+    TransactionContext,
+    create_database_adapter,
+)
 
 
 # Plugin Manager
@@ -512,8 +426,14 @@ class PluginManager:
             self._plugin_status[plugin_id] = PluginStatus.LOADING
 
             # Import plugin module dynamically
-            category, name = plugin_id.split(".")
-            module_path = f"plugins.{category}.{name}.plugin"
+            parts = plugin_id.split(".")
+            if len(parts) == 2:
+                category, name = parts
+                module_path = f"plugins.{category}.{name}.plugin"
+            else:
+                # Handle simple plugin names without category
+                name = plugin_id
+                module_path = f"plugins.{name}.plugin"
 
             import importlib
 

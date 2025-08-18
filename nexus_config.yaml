@@ -1,0 +1,41 @@
+# Nexus Platform Configuration
+
+app:
+  name: "Nexus Platform Demo"
+  version: "1.0.0"
+  description: "Complete Nexus Platform demonstration"
+  environment: "development"
+  debug: true
+
+server:
+  host: "0.0.0.0"
+  port: 8000
+  workers: 1
+  reload: true
+
+database:
+  type: "memory"
+  # For SQLite:
+  # type: "sqlite"
+  # url: "sqlite:///./nexus.db"
+
+auth:
+  jwt_secret: "your-secret-key-change-in-production"
+  jwt_algorithm: "HS256"
+  token_expiry: 3600
+  password_min_length: 8
+
+plugins:
+  directory: "plugins"
+  auto_load: true
+  hot_reload: true
+
+cors:
+  enabled: true
+  origins: ["*"]
+  methods: ["*"]
+  headers: ["*"]
+
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
