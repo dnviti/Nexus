@@ -1,19 +1,14 @@
-# Nexus Platform Documentation - Main Configuration
-# This configuration is maintained for backward compatibility
-# and redirects to the latest stable version (v2.0.0)
-
-site_name: Nexus Platform Documentation
-site_description: The Ultimate Plugin-Based Application Platform
+site_name: Nexus Platform Documentation (Development)
+site_description: The Ultimate Plugin-Based Application Platform - Development Version
 site_author: Nexus Team
-site_url: https://dnviti.github.io/nexus-platform/
+site_url: https://dnviti.github.io/nexus-platform/dev/
 
 repo_name: dnviti/nexus-platform
 repo_url: https://github.com/dnviti/nexus-platform
-edit_uri: edit/main/docs/v2.0.0/
+edit_uri: edit/develop/docs/dev/
 
-# Point to latest stable version
-docs_dir: docs/v2.0.0
-site_dir: site
+docs_dir: docs/dev
+site_dir: site/dev
 
 theme:
   name: material
@@ -25,16 +20,17 @@ theme:
     - search.highlight
     - search.share
     - content.code.copy
+    - announce.dismiss
   palette:
     - scheme: default
-      primary: blue
-      accent: blue
+      primary: orange
+      accent: orange
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
     - scheme: slate
-      primary: blue
-      accent: blue
+      primary: orange
+      accent: orange
       toggle:
         icon: material/brightness-4
         name: Switch to light mode
@@ -43,7 +39,7 @@ theme:
 extra:
   version:
     provider: mike
-    default: latest
+    default: dev
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/dnviti/nexus-platform

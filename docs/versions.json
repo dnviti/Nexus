@@ -1,0 +1,22 @@
+{
+  "versions": [
+    {
+      "version": "v2.0.0",
+      "title": "v2.0.0 (Latest)",
+      "aliases": ["latest"],
+      "path": "v2.0.0",
+      "status": "stable",
+      "released": "2024-01-15"
+    },
+    {
+      "version": "dev",
+      "title": "Development",
+      "aliases": ["develop"],
+      "path": "dev",
+      "status": "development",
+      "released": null
+    }
+  ],
+  "latest": "v2.0.0",
+  "development": "dev"
+}
