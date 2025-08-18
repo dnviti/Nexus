@@ -74,6 +74,7 @@ jobs:
           echo "✅ Version format is valid: $VERSION"
 
       - name: Check if version exists
+        if: github.event_name == 'workflow_dispatch'
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           if git tag | grep -q "^v$VERSION$"; then
