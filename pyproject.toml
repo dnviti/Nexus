@@ -130,7 +130,7 @@ responses = "^0.24.1"
 aioresponses = "^0.7.6"
 
 # Code Quality
-black = "^23.12.1"
+black = "^24.10.0"
 isort = "^5.13.2"
 flake8 = "^7.0.0"
 flake8-docstrings = "^1.7.0"
