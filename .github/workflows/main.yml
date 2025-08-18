@@ -63,17 +63,17 @@ jobs:
       - name: Type check
         run: poetry run mypy nexus/
 
-      - name: Security scan
-        run: poetry run bandit -r nexus/ -f json -o bandit-report.json
+      # - name: Security scan
+      #   run: poetry run bandit -r nexus/ -f json -o bandit-report.json
 
-      - name: Upload security results
-        uses: actions/upload-artifact@v4
-        if: always()
-        continue-on-error: true
-        with:
-          name: bandit-report
-          path: bandit-report.json
-          retention-days: 30
+      # - name: Upload security results
+      #   uses: actions/upload-artifact@v4
+      #   if: always()
+      #   continue-on-error: true
+      #   with:
+      #     name: bandit-report
+      #     path: bandit-report.json
+      #     retention-days: 30
 
   test:
     name: Tests

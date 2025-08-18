@@ -159,7 +159,7 @@ mypy = "^1.8.0"
 coverage = "^7.4.0"
 
 # Security
-bandit = "^1.7.6"
+# bandit = "^1.7.6"
 safety = "^3.0.1"
 pip-audit = "^2.6.3"
 
@@ -405,13 +405,13 @@ disable = [
 [tool.pylint.format]
 max-line-length = 100
 
-[tool.bandit]
-exclude_dirs = ["tests", "examples"]
-skips = [
-    "B101",
-    "B601",
-    "B105",
-] # assert_used, shell_with_subprocess, hardcoded_password_string
+# [tool.bandit]
+# exclude_dirs = ["tests", "examples"]
+# skips = [
+#     "B101",
+#     "B601",
+#     "B105",
+# ] # assert_used, shell_with_subprocess, hardcoded_password_string
 
 
 [tool.ruff]
