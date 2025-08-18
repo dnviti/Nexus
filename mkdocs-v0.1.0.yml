@@ -1,14 +1,14 @@
-site_name: Nexus Platform Documentation v2.0.0
+site_name: Nexus Platform Documentation v0.1.0
 site_description: The Ultimate Plugin-Based Application Platform
 site_author: Nexus Team
-site_url: https://dnviti.github.io/nexus-platform/v2.0.0/
+site_url: https://dnviti.github.io/nexus-platform/v0.1.0/
 
 repo_name: dnviti/nexus-platform
 repo_url: https://github.com/dnviti/nexus-platform
-edit_uri: edit/main/docs/v2.0.0/
+edit_uri: edit/main/docs/v0.1.0/
 
-docs_dir: docs/v2.0.0
-site_dir: site/v2.0.0
+docs_dir: docs/v0.1.0
+site_dir: site/v0.1.0
 
 theme:
   name: material
@@ -37,7 +37,7 @@ theme:
 extra:
   version:
     provider: mike
-    default: v2.0.0
+    default: v0.1.0
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/dnviti/nexus-platform

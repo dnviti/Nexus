@@ -6,7 +6,7 @@ This document provides a comprehensive overview of the versioned documentation s
 
 The Nexus Platform now supports versioned documentation with the following key features:
 
-- **Version-specific documentation** (e.g., v2.0.0, v2.1.0)
+- **Version-specific documentation** (e.g., v0.1.0, v0.2.0)
 - **Development documentation** with warning banners
 - **Automated GitHub Pages deployment**
 - **Version management scripts**
@@ -21,7 +21,7 @@ nexus-platform/
 │   ├── index.html                 # Version selector landing page
 │   ├── README.md                  # Documentation guide
 │   ├── overrides/                 # Custom theme overrides
-│   ├── v2.0.0/                    # Latest stable version
+├── v0.1.0/                    # Latest stable version
 │   │   ├── index.md
 │   │   ├── getting-started/
 │   │   ├── architecture/
@@ -43,7 +43,7 @@ nexus-platform/
 │   ├── release.sh                 # Release automation
 │   └── serve.sh                   # Local development server
 ├── mkdocs.yml                     # Main config (backward compatibility)
-├── mkdocs-v2.0.0.yml             # v2.0.0 specific config
+├── mkdocs-v0.1.0.yml             # v0.1.0 specific config
 ├── mkdocs-dev.yml                # Development config
 └── .github/workflows/docs.yml    # Updated CI/CD pipeline
 ```
@@ -53,7 +53,7 @@ nexus-platform/
 | Version             | URL                                             | Branch  | Status                   |
 | ------------------- | ----------------------------------------------- | ------- | ------------------------ |
 | **Landing Page**    | https://dnviti.github.io/nexus-platform/        | main    | Auto-redirects to latest |
-| **v2.0.0 (Latest)** | https://dnviti.github.io/nexus-platform/v2.0.0/ | main    | Stable                   |
+| **v0.1.0 (Latest)** | https://dnviti.github.io/nexus-platform/v0.1.0/ | main    | Stable                   |
 | **Development**     | https://dnviti.github.io/nexus-platform/dev/    | develop | Development              |
 
 ## 🛠️ Key Features
@@ -72,12 +72,12 @@ nexus-platform/
 {
   "versions": [
     {
-      "version": "v2.0.0",
-      "title": "v2.0.0 (Latest)",
+      "version": "v0.1.0",
+      "title": "v0.1.0 (Latest)",
       "aliases": ["latest"],
-      "path": "v2.0.0",
+      "path": "v0.1.0",
       "status": "stable",
-      "released": "2024-01-15"
+      "released": "2024-08-18"
     },
     {
       "version": "dev",
@@ -88,7 +88,7 @@ nexus-platform/
       "released": null
     }
   ],
-  "latest": "v2.0.0",
+  "latest": "v0.1.0",
   "development": "dev"
 }
 ```
@@ -99,7 +99,7 @@ The development documentation automatically includes a prominent warning banner:
 
 ```markdown
 !!! warning "Development Documentation"
-This is the **development version** of the Nexus Platform documentation. The content here may be incomplete, experimental, or subject to change. For stable documentation, please visit the [latest release version](../v2.0.0/).
+This is the **development version** of the Nexus Platform documentation. The content here may be incomplete, experimental, or subject to change. For stable documentation, please visit the [latest release version](../v0.1.0/).
 ```
 
 **Visual Distinctions:**
@@ -111,7 +111,7 @@ This is the **development version** of the Nexus Platform documentation. The con
 
 **Updated Workflow (`.github/workflows/docs.yml`):**
 
-- **Tag Push (e.g., v2.0.0):** Builds and deploys that specific version's documentation
+- **Tag Push (e.g., v0.1.0):** Builds and deploys that specific version's documentation
 - **Develop Branch:** Builds and deploys development documentation only
 - **Main Branch:** No documentation build (alignment branch only)
 - **Pull Requests:** Tests documentation builds without deployment
@@ -149,18 +149,18 @@ jobs:
 **Tag-Based Method (Recommended):**
 
 ```bash
-# Prepare v2.1.0 and create tag (triggers auto-deployment)
-./scripts/docs/release.sh v2.1.0 --set-latest --create-tag
+# Prepare v0.2.0 and create tag (triggers auto-deployment)
+./scripts/docs/release.sh v0.2.0 --set-latest --create-tag
 ```
 
 **Manual Method:**
 
 ```bash
 # Step-by-step approach
-python scripts/docs/manage_versions.py prepare-tag v2.1.0
-python scripts/docs/manage_versions.py set-latest v2.1.0
-git add . && git commit -m "docs: prepare v2.1.0 for release"
-git tag v2.1.0 && git push origin v2.1.0
+python scripts/docs/manage_versions.py prepare-tag v0.2.0
+python scripts/docs/manage_versions.py set-latest v0.2.0
+git add . && git commit -m "docs: prepare v0.2.0 for release"
+git tag v0.2.0 && git push origin v0.2.0
 ```
 
 ### Local Development
@@ -169,7 +169,7 @@ git tag v2.1.0 && git push origin v2.1.0
 
 ```bash
 # Serve latest stable version
-./scripts/docs/serve.sh v2.0.0
+./scripts/docs/serve.sh v0.1.0
 
 # Serve development version with live reload
 ./scripts/docs/serve.sh dev --reload --port 8080
@@ -208,10 +208,10 @@ python scripts/docs/manage_versions.py build
 
 ```bash
 # 1. Prepare version and create tag (auto-deploys)
-./scripts/docs/release.sh v2.1.0 --set-latest --create-tag
+./scripts/docs/release.sh v0.2.0 --set-latest --create-tag
 
 # 2. Test locally (if needed)
-./scripts/docs/serve.sh v2.1.0
+./scripts/docs/serve.sh v0.2.0
 
 # 3. Tag push triggers automatic deployment
 # GitHub Actions builds and deploys documentation automatically
@@ -239,11 +239,11 @@ git push origin develop
 python scripts/docs/manage_versions.py remove v1.0.0
 
 # Update latest version (updates metadata only)
-python scripts/docs/manage_versions.py set-latest v2.1.0
+python scripts/docs/manage_versions.py set-latest v0.2.0
 
 # Prepare and tag new version (triggers deployment)
-python scripts/docs/manage_versions.py prepare-tag v2.1.0
-git tag v2.1.0 && git push origin v2.1.0
+python scripts/docs/manage_versions.py prepare-tag v0.2.0
+git tag v0.2.0 && git push origin v0.2.0
 ```
 
 ## 🏗️ Technical Implementation
@@ -252,18 +252,18 @@ git tag v2.1.0 && git push origin v2.1.0
 
 **Version-Specific Configs:**
 
-- `mkdocs-v2.0.0.yml` - Stable version configuration
+- `mkdocs-v0.1.0.yml` - Stable version configuration
 - `mkdocs-dev.yml` - Development version configuration
 - `mkdocs.yml` - Backward compatibility (points to latest)
 
 **Key Configuration Differences:**
 
 ```yaml
-# Stable Version (mkdocs-v2.0.0.yml)
-site_name: Nexus Platform Documentation v2.0.0
-site_url: https://dnviti.github.io/nexus-platform/v2.0.0/
-docs_dir: docs/v2.0.0
-site_dir: site/v2.0.0
+# Stable Version (mkdocs-v0.1.0.yml)
+site_name: Nexus Platform Documentation v0.1.0
+site_url: https://dnviti.github.io/nexus-platform/v0.1.0/
+docs_dir: docs/v0.1.0
+site_dir: site/v0.1.0
 theme:
   palette:
     primary: blue
@@ -286,7 +286,7 @@ theme:
 https://dnviti.github.io/nexus-platform/
 ├── index.html           # Landing page with version selector
 ├── versions.json        # Version metadata API
-├── v2.0.0/             # Latest stable documentation
+├── v0.1.0/             # Latest stable documentation
 │   ├── index.html
 │   ├── getting-started/
 │   └── ...
@@ -374,21 +374,21 @@ The `versions.json` file serves as a simple API for:
 
 ```bash
 # Check configuration syntax
-poetry run mkdocs build -f mkdocs-v2.1.0.yml --strict --verbose
+poetry run mkdocs build -f mkdocs-v0.2.0.yml --strict --verbose
 ```
 
 **Version Conflicts:**
 
 ```bash
 # Remove existing version
-python scripts/docs/manage_versions.py remove v2.1.0
+python scripts/docs/manage_versions.py remove v0.2.0
 ```
 
 **Local Server Issues:**
 
 ```bash
 # Use different port
-./scripts/docs/serve.sh v2.0.0 --port 8081
+./scripts/docs/serve.sh v0.1.0 --port 8081
 ```
 
 ### Validation Commands

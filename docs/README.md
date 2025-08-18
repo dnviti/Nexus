@@ -9,7 +9,7 @@ docs/
 ├── README.md                 # This file
 ├── versions.json            # Version metadata
 ├── overrides/              # Custom theme overrides
-├── v2.0.0/                 # Stable version documentation
+├── v0.1.0/                 # Stable version documentation
 │   ├── index.md
 │   ├── getting-started/
 │   ├── architecture/
@@ -32,7 +32,7 @@ docs/
 
 ### Available Versions
 
-- **v2.0.0** - Latest stable release
+- **v0.1.0** - Latest stable release
 - **dev** - Development version (from `develop` branch)
 
 ### Creating a New Version
@@ -41,16 +41,16 @@ Use the documentation management script to create new versions:
 
 ```bash
 # Create a new version from the latest
-python scripts/docs/manage_versions.py create v2.1.0
+python scripts/docs/manage_versions.py create v0.2.0
 
 # Create a new version from a specific source
-python scripts/docs/manage_versions.py create v2.1.0 --from v2.0.0
+python scripts/docs/manage_versions.py create v0.2.0 --from v0.1.0
 
 # List all versions
 python scripts/docs/manage_versions.py list
 
 # Set a version as latest
-python scripts/docs/manage_versions.py set-latest v2.1.0
+python scripts/docs/manage_versions.py set-latest v0.2.0
 ```
 
 ### Manual Version Creation
@@ -58,14 +58,16 @@ python scripts/docs/manage_versions.py set-latest v2.1.0
 If you prefer to create versions manually:
 
 1. **Create version directory:**
+
    ```bash
-   mkdir docs/v2.1.0
-   cp -r docs/v2.0.0/* docs/v2.1.0/
+   mkdir docs/v0.2.0
+   cp -r docs/v0.1.0/* docs/v0.2.0/
    ```
 
 2. **Create MkDocs config:**
+
    ```bash
-   cp mkdocs-v2.0.0.yml mkdocs-v2.1.0.yml
+   cp mkdocs-v0.1.0.yml mkdocs-v0.2.0.yml
    # Edit the new config file to update paths and version info
    ```
 
@@ -83,21 +85,21 @@ python scripts/docs/manage_versions.py build
 ### Build Specific Version
 
 ```bash
-# Build v2.0.0
-mkdocs build -f mkdocs-v2.0.0.yml
+# Build v0.1.0
+mkdocs build -f mkdocs-v0.1.0.yml
 
 # Build dev version
 mkdocs build -f mkdocs-dev.yml
 
 # Build specific version using script
-python scripts/docs/manage_versions.py build v2.0.0
+python scripts/docs/manage_versions.py build v0.1.0
 ```
 
 ### Local Development
 
 ```bash
-# Serve v2.0.0 documentation
-mkdocs serve -f mkdocs-v2.0.0.yml
+# Serve v0.1.0 documentation
+mkdocs serve -f mkdocs-v0.1.0.yml
 
 # Serve dev documentation
 mkdocs serve -f mkdocs-dev.yml
@@ -133,7 +135,7 @@ The development version includes an automatic warning banner:
 
 ```markdown
 !!! warning "Development Documentation"
-    This is the **development version** of the Nexus Platform documentation. The content here may be incomplete, experimental, or subject to change. For stable documentation, please visit the [latest release version](../v2.0.0/).
+This is the **development version** of the Nexus Platform documentation. The content here may be incomplete, experimental, or subject to change. For stable documentation, please visit the [latest release version](../v0.1.0/).
 ```
 
 ## 🔄 GitHub Actions
@@ -151,8 +153,9 @@ The documentation is automatically built and deployed using GitHub Actions:
 ### Deployment
 
 Documentation is deployed to GitHub Pages at:
+
 - Main site: https://dnviti.github.io/nexus-platform/
-- v2.0.0: https://dnviti.github.io/nexus-platform/v2.0.0/
+- v0.1.0: https://dnviti.github.io/nexus-platform/v0.1.0/
 - Development: https://dnviti.github.io/nexus-platform/dev/
 
 ## 📝 Writing Documentation
@@ -211,18 +214,22 @@ Each documentation version should include:
 ### Common Issues
 
 **Build fails with "Configuration file not found"**
+
 - Ensure the MkDocs config file exists for the version you're building
 - Check that the `docs_dir` path in the config is correct
 
 **Links broken between versions**
+
 - Use relative links when possible
 - Update cross-references when moving content
 
 **Development warning not showing**
+
 - Check that the warning is in the `docs/dev/index.md` file
 - Ensure the `admonition` extension is enabled
 
 **GitHub Actions failing**
+
 - Check that Poetry dependencies are up to date
 - Verify MkDocs config syntax
 - Ensure all referenced files exist

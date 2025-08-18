@@ -1,5 +1,5 @@
 !!! warning "Development Documentation"
-This is the **development version** of the Nexus Platform documentation. The content here may be incomplete, experimental, or subject to change. For stable documentation, please visit the [latest release version](../v2.0.0/).
+This is the **development version** of the Nexus Platform documentation. The content here may be incomplete, experimental, or subject to change. For stable documentation, please visit the [latest release version](../v0.1.0/).
 
 # Nexus Platform
 

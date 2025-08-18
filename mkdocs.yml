@@ -1,6 +1,6 @@
 # Nexus Platform Documentation - Main Configuration
 # This configuration is maintained for backward compatibility
-# and redirects to the latest stable version (v2.0.0)
+# and redirects to the latest stable version (v0.1.0)
 
 site_name: Nexus Platform Documentation
 site_description: The Ultimate Plugin-Based Application Platform
@@ -9,10 +9,10 @@ site_url: https://dnviti.github.io/nexus-platform/
 
 repo_name: dnviti/nexus-platform
 repo_url: https://github.com/dnviti/nexus-platform
-edit_uri: edit/main/docs/v2.0.0/
+edit_uri: edit/main/docs/v0.1.0/
 
 # Point to latest stable version
-docs_dir: docs/v2.0.0
+docs_dir: docs/v0.1.0
 site_dir: site
 
 theme:
