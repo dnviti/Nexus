@@ -546,29 +546,37 @@ def create_nexus_app(
         ... )
         >>> app.run()
     """
-    from .config import DatabaseConfig as ConfigDatabaseConfig
-
     # Handle different config types
     final_config: AppConfig
     if config is None:
         final_config = create_default_config()
         # Set default database configuration
         if not hasattr(final_config, "database") or not final_config.database:
-            final_config.database = ConfigDatabaseConfig()
+            from .config import DatabaseConfig
+
+            final_config.database = DatabaseConfig()
     elif isinstance(config, str):
         # Load from file
         final_config = load_config(config)
         # Ensure database config exists
         if not hasattr(final_config, "database") or not final_config.database:
-            final_config.database = ConfigDatabaseConfig()
+            from .config import DatabaseConfig
+
+            final_config.database = DatabaseConfig()
     elif isinstance(config, dict):
         # Create from dictionary
         config_dict = dict(config)  # Create a copy to avoid modifying original
         if "database" not in config_dict:
-            config_dict["database"] = ConfigDatabaseConfig().dict()
+            from .config import DatabaseConfig
+
+            config_dict["database"] = DatabaseConfig().dict()
         final_config = AppConfig(**config_dict)
     else:
-        # config is AppConfig
+        # config should be AppConfig instance
+        if not isinstance(config, AppConfig):
+            raise TypeError(
+                f"Invalid config type: {type(config)}. Expected AppConfig, str, dict, or None"
+            )
         final_config = config
 
     return NexusApp(

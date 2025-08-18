@@ -353,17 +353,27 @@ class MongoDBAdapter(DatabaseAdapter):
 
             connection_url = self._build_connection_url()
 
+            # Ensure AsyncIOMotorClient is available
+            if AsyncIOMotorClient is None:
+                raise ImportError(
+                    "motor package could not be imported properly. "
+                    "Ensure that motor is installed and importable."
+                )
+
             # Create async client
             self.client = AsyncIOMotorClient(connection_url)
 
             # Test connection
             if self.client is None:
-                raise RuntimeError("Database not connected")
-            await self.client.admin.command("ping")
+                raise RuntimeError("Failed to instantiate MongoDB client")
+            try:
+                await self.client.admin.command("ping")
+            except Exception as e:
+                raise RuntimeError(f"Failed to connect to MongoDB: {e}")
 
             self.database = self.client[self.config.database]
             if self.database is None:
-                raise RuntimeError("Failed to connect to database")
+                raise RuntimeError("Failed to access database")
             self.collection = self.database.nexus_kv_store
 
             # Create indexes
@@ -375,10 +385,10 @@ class MongoDBAdapter(DatabaseAdapter):
             self.connected = True
             logger.info("Connected to MongoDB database")
 
-        except ImportError:
+        except ImportError as ie:
             raise ImportError(
                 "motor and pymongo are required for MongoDB support. Install with: pip install motor pymongo"
-            )
+            ) from ie
         except Exception as e:
             logger.error(f"Failed to connect to MongoDB: {e}")
             raise

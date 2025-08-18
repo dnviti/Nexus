@@ -1,0 +1,11 @@
+{
+  "name": "security_center",
+  "version": "1.0.0",
+  "description": "A security_center plugin",
+  "author": "Unknown",
+  "category": "security",
+  "license": "MIT",
+  "dependencies": {},
+  "permissions": [],
+  "tags": []
+}

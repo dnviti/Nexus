@@ -1,0 +1,41 @@
+{
+    "terminal": {
+        "shell": {
+            "program": "default"
+        }
+    },
+    "languages": {
+        "Python": {
+            "formatter": {
+                "external": {
+                    "command": "black",
+                    "arguments": ["--line-length", "100", "-"]
+                }
+            },
+            "language_servers": ["pyright"]
+        }
+    },
+    "lsp": {
+        "pyright": {
+            "settings": {
+                "python.analysis.typeCheckingMode": "strict",
+                "python.analysis.autoImportCompletions": true
+            }
+        }
+    },
+    "vim_mode": false,
+    "ui_font_size": 16,
+    "buffer_font_size": 14,
+    "theme": {
+        "mode": "system",
+        "light": "One Light",
+        "dark": "One Dark"
+    },
+    "format_on_save": "on",
+    "autosave": "on_focus_change",
+    "show_whitespaces": "selection",
+    "soft_wrap": "preferred_line_length",
+    "preferred_line_length": 100,
+    "tab_size": 4,
+    "hard_tabs": false
+}

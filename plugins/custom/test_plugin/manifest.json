@@ -1,0 +1,11 @@
+{
+  "name": "test_plugin",
+  "version": "1.0.0",
+  "description": "A test_plugin plugin",
+  "author": "Unknown",
+  "category": "custom",
+  "license": "MIT",
+  "dependencies": {},
+  "permissions": [],
+  "tags": []
+}

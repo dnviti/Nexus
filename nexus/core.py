@@ -6,6 +6,7 @@ Essential building blocks for the plugin-based application framework.
 import asyncio
 import json
 import logging
+import sys
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -425,6 +426,9 @@ class PluginManager:
         try:
             self._plugin_status[plugin_id] = PluginStatus.LOADING
 
+            # Ensure plugins directory is in Python path and properly structured
+            self._setup_plugins_path()
+
             # Import plugin module dynamically
             parts = plugin_id.split(".")
             if len(parts) == 2:
@@ -432,10 +436,19 @@ class PluginManager:
                 module_path = f"plugins.{category}.{name}.plugin"
             else:
                 # Handle simple plugin names without category
+                # First try to find the plugin in any category
                 name = plugin_id
-                module_path = f"plugins.{name}.plugin"
+                found_path = self._find_plugin_module_path(name)
+                if found_path:
+                    module_path = found_path
+                else:
+                    module_path = f"plugins.{name}.plugin"
 
             import importlib
+
+            # Clear any cached modules to ensure fresh import
+            if module_path in sys.modules:
+                importlib.reload(sys.modules[module_path])
 
             module = importlib.import_module(module_path)
 
@@ -570,3 +583,61 @@ class PluginManager:
         """Shutdown all plugins."""
         for plugin_id in list(self._plugins.keys()):
             await self.unload_plugin(plugin_id)
+
+    def _setup_plugins_path(self) -> None:
+        """Setup plugins directory structure and Python path."""
+        # Get current working directory
+        cwd = Path.cwd()
+        plugins_dir = cwd / "plugins"
+
+        # Add current directory to Python path if not already there
+        cwd_str = str(cwd)
+        if cwd_str not in sys.path:
+            sys.path.insert(0, cwd_str)
+
+        # Create plugins directory if it doesn't exist
+        plugins_dir.mkdir(exist_ok=True)
+
+        # Create __init__.py files dynamically
+        self._ensure_init_files(plugins_dir)
+
+    def _ensure_init_files(self, plugins_dir: Path) -> None:
+        """Ensure all necessary __init__.py files exist."""
+        # Create main plugins/__init__.py
+        init_file = plugins_dir / "__init__.py"
+        if not init_file.exists():
+            init_file.write_text("# Auto-generated plugins package\n")
+
+        # Create __init__.py for all category directories
+        for category_dir in plugins_dir.iterdir():
+            if category_dir.is_dir() and not category_dir.name.startswith("."):
+                category_init = category_dir / "__init__.py"
+                if not category_init.exists():
+                    category_init.write_text(
+                        f"# Auto-generated {category_dir.name} category package\n"
+                    )
+
+                # Create __init__.py for all plugin directories
+                for plugin_dir in category_dir.iterdir():
+                    if plugin_dir.is_dir() and not plugin_dir.name.startswith("."):
+                        plugin_init = plugin_dir / "__init__.py"
+                        if not plugin_init.exists():
+                            plugin_init.write_text(
+                                f"# Auto-generated {plugin_dir.name} plugin package\n"
+                            )
+
+    def _find_plugin_module_path(self, plugin_name: str) -> Optional[str]:
+        """Find the full module path for a plugin by searching all categories."""
+        plugins_dir = Path.cwd() / "plugins"
+
+        if not plugins_dir.exists():
+            return None
+
+        # Search in all category directories
+        for category_dir in plugins_dir.iterdir():
+            if category_dir.is_dir() and not category_dir.name.startswith("."):
+                plugin_dir = category_dir / plugin_name
+                if plugin_dir.exists() and (plugin_dir / "plugin.py").exists():
+                    return f"plugins.{category_dir.name}.{plugin_name}.plugin"
+
+        return None

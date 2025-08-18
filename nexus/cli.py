@@ -420,6 +420,7 @@ def plugin_info(ctx: Any, plugin_name: str) -> None:
                 click.echo(f"❌ Plugin '{plugin_name}' not found")
                 return
 
+            click.echo("Information:")
             click.echo(f"📦 Name: {plugin.name}")
             click.echo(f"🏷️  Category: {plugin.category}")
             click.echo(f"🔖 Version: {plugin.version}")

@@ -1,0 +1,37 @@
+[
+    {
+        "label": "Run Nexus App",
+        "command": "python",
+        "args": ["-m", "nexus.cli", "run"]
+    },
+    {
+        "label": "Install Dependencies",
+        "command": "poetry",
+        "args": ["install"]
+    },
+    {
+        "label": "Run Tests",
+        "command": "poetry",
+        "args": ["run", "pytest"]
+    },
+    {
+        "label": "Format Code",
+        "command": "poetry",
+        "args": ["run", "black", ".", "--line-length", "100"]
+    },
+    {
+        "label": "Type Check",
+        "command": "poetry",
+        "args": ["run", "mypy", "nexus"]
+    },
+    {
+        "label": "Build Documentation",
+        "command": "poetry",
+        "args": ["run", "mkdocs", "build"]
+    },
+    {
+        "label": "Serve Documentation",
+        "command": "poetry",
+        "args": ["run", "mkdocs", "serve"]
+    }
+]

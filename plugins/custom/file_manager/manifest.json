@@ -1,0 +1,11 @@
+{
+  "name": "file_manager",
+  "version": "1.0.0",
+  "description": "A file_manager plugin",
+  "author": "Unknown",
+  "category": "custom",
+  "license": "MIT",
+  "dependencies": {},
+  "permissions": [],
+  "tags": []
+}

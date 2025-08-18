@@ -168,11 +168,11 @@ class TestPluginCommands:
 
     def test_plugin_enable(self):
         """Test plugin enable command"""
-        result = self.runner.invoke(plugin_enable, ["test_plugin"])
+        result = self.runner.invoke(plugin_enable, ["nonexistent_plugin"])
 
         assert result.exit_code == 1
-        assert "Enabling plugin: test_plugin" in result.output
-        assert "Failed to enable plugin 'test_plugin'" in result.output
+        assert "Enabling plugin: nonexistent_plugin" in result.output
+        assert "Failed to enable plugin 'nonexistent_plugin'" in result.output
 
     def test_plugin_disable(self):
         """Test plugin disable command"""
@@ -438,10 +438,10 @@ class TestAllCommands:
 
     def test_plugin_enable(self):
         """Test plugin enable command"""
-        result = self.runner.invoke(plugin_enable, ["test_plugin"])
+        result = self.runner.invoke(plugin_enable, ["nonexistent_plugin"])
         assert result.exit_code == 1
-        assert "Enabling plugin: test_plugin" in result.output
-        assert "Failed to enable plugin 'test_plugin'" in result.output
+        assert "Enabling plugin: nonexistent_plugin" in result.output
+        assert "Failed to enable plugin 'nonexistent_plugin'" in result.output
 
     def test_plugin_disable(self):
         """Test plugin disable command"""

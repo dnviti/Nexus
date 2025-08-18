@@ -1,0 +1,119 @@
+{
+    "name": "analytics_dashboard",
+    "version": "1.0.0",
+    "description": "Comprehensive analytics dashboard providing metrics collection, visualization, and reporting capabilities with web API and UI",
+    "author": "Nexus Platform Team",
+    "category": "analytics",
+    "license": "MIT",
+    "homepage": "https://nexus-platform.dev/plugins/analytics-dashboard",
+    "repository": "https://github.com/nexus-platform/analytics-dashboard-plugin",
+    "dependencies": {
+        "fastapi": ">=0.104.0",
+        "pydantic": ">=2.0.0",
+        "python": ">=3.11"
+    },
+    "permissions": [
+        "database.read",
+        "database.write",
+        "events.publish",
+        "events.subscribe",
+        "api.create_routes",
+        "ui.serve_content"
+    ],
+    "tags": [
+        "analytics",
+        "dashboard",
+        "metrics",
+        "visualization",
+        "reporting",
+        "charts",
+        "business-intelligence",
+        "monitoring",
+        "webui"
+    ],
+    "features": [
+        "Real-time metrics collection and storage",
+        "Interactive web dashboard with charts and graphs",
+        "Customizable widgets and layouts",
+        "Automated report generation",
+        "RESTful API for metrics data",
+        "Multi-category metric organization",
+        "Historical data analysis",
+        "Export capabilities for reports"
+    ],
+    "api_endpoints": [
+        {
+            "method": "GET",
+            "path": "/plugins/analytics_dashboard/metrics",
+            "description": "Retrieve metrics data with filtering options"
+        },
+        {
+            "method": "POST",
+            "path": "/plugins/analytics_dashboard/metrics",
+            "description": "Create new metric entries"
+        },
+        {
+            "method": "GET",
+            "path": "/plugins/analytics_dashboard/metrics/summary",
+            "description": "Get aggregated metrics summary"
+        },
+        {
+            "method": "GET",
+            "path": "/plugins/analytics_dashboard/dashboard",
+            "description": "Get dashboard configuration"
+        },
+        {
+            "method": "GET",
+            "path": "/plugins/analytics_dashboard/ui",
+            "description": "Serve interactive dashboard web interface"
+        },
+        {
+            "method": "GET",
+            "path": "/plugins/analytics_dashboard/reports",
+            "description": "List available analytics reports"
+        },
+        {
+            "method": "POST",
+            "path": "/plugins/analytics_dashboard/reports",
+            "description": "Create new analytics report"
+        }
+    ],
+    "events": {
+        "publishes": [
+            "analytics.metric.created",
+            "analytics.dashboard.shutdown",
+            "analytics.collection.started"
+        ],
+        "subscribes": []
+    },
+    "configuration": {
+        "collection_interval": {
+            "type": "integer",
+            "default": 60,
+            "description": "Metric collection interval in seconds"
+        },
+        "retention_days": {
+            "type": "integer",
+            "default": 30,
+            "description": "Number of days to retain metric data"
+        },
+        "enable_real_time": {
+            "type": "boolean",
+            "default": true,
+            "description": "Enable real-time metric updates"
+        },
+        "dashboard_theme": {
+            "type": "string",
+            "default": "light",
+            "options": ["light", "dark"],
+            "description": "Dashboard UI theme"
+        }
+    },
+    "database_schema": {
+        "collections": {
+            "analytics_dashboard_metrics": "Stores metric data points",
+            "analytics_dashboard_widgets": "Dashboard widget configurations",
+            "analytics_dashboard_reports": "Saved analytics reports"
+        }
+    }
+}

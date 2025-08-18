@@ -1,0 +1,174 @@
+[
+  {
+    "label": "Debug Nexus FastAPI App",
+    "adapter": "Debugpy",
+    "request": "launch",
+    "program": "main.py",
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "env": {
+      "NEXUS_ENV": "development",
+      "NEXUS_DEBUG": "true",
+      "NEXUS_LOG_LEVEL": "DEBUG",
+      "PYTHONPATH": "$ZED_WORKTREE_ROOT"
+    },
+    "args": [],
+    "justMyCode": false,
+    "console": "integratedTerminal"
+  },
+  {
+    "label": "Debug Nexus with Uvicorn",
+    "adapter": "Debugpy",
+    "request": "launch",
+    "module": "uvicorn",
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "env": {
+      "NEXUS_ENV": "development",
+      "NEXUS_DEBUG": "true",
+      "NEXUS_LOG_LEVEL": "DEBUG",
+      "PYTHONPATH": "$ZED_WORKTREE_ROOT"
+    },
+    "args": [
+      "main:main",
+      "--host",
+      "0.0.0.0",
+      "--port",
+      "8000",
+      "--reload",
+      "--log-level",
+      "debug"
+    ],
+    "justMyCode": false,
+    "console": "integratedTerminal",
+    "autoReload": {
+      "enable": true
+    }
+  },
+  {
+    "label": "Debug Current Python File",
+    "adapter": "Debugpy",
+    "request": "launch",
+    "program": "$ZED_FILE",
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "env": {
+      "NEXUS_ENV": "development",
+      "NEXUS_DEBUG": "true",
+      "NEXUS_LOG_LEVEL": "DEBUG",
+      "PYTHONPATH": "$ZED_WORKTREE_ROOT"
+    },
+    "args": [],
+    "justMyCode": false,
+    "console": "integratedTerminal"
+  },
+  {
+    "label": "Debug Nexus CLI",
+    "adapter": "Debugpy",
+    "request": "launch",
+    "module": "nexus.cli",
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "env": {
+      "NEXUS_ENV": "development",
+      "NEXUS_DEBUG": "true",
+      "NEXUS_LOG_LEVEL": "DEBUG",
+      "PYTHONPATH": "$ZED_WORKTREE_ROOT"
+    },
+    "args": ["--help"],
+    "justMyCode": false,
+    "console": "integratedTerminal"
+  },
+  {
+    "label": "Debug Nexus Admin",
+    "adapter": "Debugpy",
+    "request": "launch",
+    "module": "nexus.admin",
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "env": {
+      "NEXUS_ENV": "development",
+      "NEXUS_DEBUG": "true",
+      "NEXUS_LOG_LEVEL": "DEBUG",
+      "PYTHONPATH": "$ZED_WORKTREE_ROOT"
+    },
+    "args": ["--help"],
+    "justMyCode": false,
+    "console": "integratedTerminal"
+  },
+  {
+    "label": "Debug All Tests",
+    "adapter": "Debugpy",
+    "request": "launch",
+    "module": "pytest",
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "env": {
+      "NEXUS_ENV": "testing",
+      "NEXUS_DEBUG": "true",
+      "NEXUS_LOG_LEVEL": "DEBUG",
+      "PYTHONPATH": "$ZED_WORKTREE_ROOT"
+    },
+    "args": [
+      "tests/",
+      "-v",
+      "--tb=short",
+      "--no-cov"
+    ],
+    "justMyCode": false,
+    "console": "integratedTerminal"
+  },
+  {
+    "label": "Debug Current Test File",
+    "adapter": "Debugpy",
+    "request": "launch",
+    "module": "pytest",
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "env": {
+      "NEXUS_ENV": "testing",
+      "NEXUS_DEBUG": "true",
+      "NEXUS_LOG_LEVEL": "DEBUG",
+      "PYTHONPATH": "$ZED_WORKTREE_ROOT"
+    },
+    "args": [
+      "$ZED_FILE",
+      "-v",
+      "--tb=short",
+      "--no-cov"
+    ],
+    "justMyCode": false,
+    "console": "integratedTerminal"
+  },
+  {
+    "label": "Debug Tests with Coverage",
+    "adapter": "Debugpy",
+    "request": "launch",
+    "module": "pytest",
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "env": {
+      "NEXUS_ENV": "testing",
+      "NEXUS_DEBUG": "true",
+      "NEXUS_LOG_LEVEL": "DEBUG",
+      "PYTHONPATH": "$ZED_WORKTREE_ROOT"
+    },
+    "args": [
+      "tests/",
+      "-v",
+      "--cov=nexus",
+      "--cov-report=html",
+      "--cov-report=term"
+    ],
+    "justMyCode": false,
+    "console": "integratedTerminal"
+  },
+  {
+    "label": "Attach to Remote Process",
+    "adapter": "Debugpy",
+    "request": "attach",
+    "connect": {
+      "host": "localhost",
+      "port": 5678
+    },
+    "pathMappings": [
+      {
+        "localRoot": "$ZED_WORKTREE_ROOT",
+        "remoteRoot": "/app"
+      }
+    ],
+    "justMyCode": false
+  }
+]

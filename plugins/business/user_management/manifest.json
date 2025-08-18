@@ -1,0 +1,11 @@
+{
+  "name": "user_management",
+  "version": "1.0.0",
+  "description": "A user_management plugin",
+  "author": "Unknown",
+  "category": "business",
+  "license": "MIT",
+  "dependencies": {},
+  "permissions": [],
+  "tags": []
+}
