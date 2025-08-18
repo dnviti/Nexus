@@ -156,9 +156,20 @@ class TestFrameworkMetadata:
         version_parts = nexus.__version__.split(".")
         assert len(version_parts) >= 3  # At least major.minor.patch
 
-        # First three parts should be numeric
-        for part in version_parts[:3]:
+        # First two parts should be numeric (major.minor)
+        for part in version_parts[:2]:
             assert part.isdigit()
+
+        # Third part (patch) may contain build number suffix like "1-1"
+        patch_part = version_parts[2]
+        if "-" in patch_part:
+            # Handle build number suffix (e.g., "1-1")
+            patch_base, build_num = patch_part.split("-", 1)
+            assert patch_base.isdigit()
+            assert build_num.isdigit()
+        else:
+            # Standard patch version
+            assert patch_part.isdigit()
 
 
 if __name__ == "__main__":
