@@ -1,0 +1,234 @@
+/* Extra CSS for Nexus Platform Documentation */
+
+/* Mermaid diagram styling */
+.mermaid {
+    text-align: center;
+    margin: 1.5em 0;
+}
+
+/* Dark mode mermaid adjustments */
+[data-md-color-scheme="slate"] .mermaid {
+    filter: invert(1) hue-rotate(180deg);
+}
+
+/* Version badge styling */
+.version-badge {
+    display: inline-block;
+    padding: 0.2em 0.6em;
+    border-radius: 0.25em;
+    font-size: 0.75em;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.version-badge.stable {
+    background-color: #2196f3;
+    color: white;
+}
+
+.version-badge.development {
+    background-color: #ff9800;
+    color: white;
+}
+
+/* Enhanced code blocks */
+.highlight {
+    margin: 1.5em 0;
+    border-radius: 0.5em;
+    overflow: hidden;
+}
+
+/* Navigation enhancements */
+.md-nav__item .md-nav__link--active {
+    font-weight: 600;
+}
+
+/* Version selector styling */
+.version-selector {
+    background: var(--md-primary-fg-color--light);
+    border-radius: 0.25em;
+    padding: 0.5em;
+    margin: 1em 0;
+}
+
+.version-selector h3 {
+    margin: 0 0 0.5em 0;
+    color: var(--md-primary-bg-color);
+}
+
+.version-selector a {
+    display: inline-block;
+    padding: 0.5em 1em;
+    margin: 0.25em;
+    background: var(--md-primary-bg-color);
+    color: var(--md-primary-fg-color);
+    text-decoration: none;
+    border-radius: 0.25em;
+    transition: all 0.2s ease;
+}
+
+.version-selector a:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+/* Enhanced admonitions */
+.md-typeset .admonition.version-info {
+    border-color: #2196f3;
+}
+
+.md-typeset .admonition.version-info > .admonition-title::before {
+    background-color: #2196f3;
+    -webkit-mask-image: var(--md-admonition-icon--info);
+    mask-image: var(--md-admonition-icon--info);
+}
+
+/* Responsive adjustments */
+@media screen and (max-width: 768px) {
+    .version-selector a {
+        display: block;
+        margin: 0.25em 0;
+        text-align: center;
+    }
+}
+
+/* Footer enhancements */
+.md-footer {
+    margin-top: 2em;
+}
+
+/* Search result highlighting */
+.md-search-result__teaser mark {
+    background-color: var(--md-accent-fg-color--transparent);
+    color: var(--md-accent-fg-color);
+}
+
+/* Custom grid for feature showcase */
+.feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5em;
+    margin: 2em 0;
+}
+
+.feature-card {
+    padding: 1.5em;
+    border: 1px solid var(--md-default-fg-color--lightest);
+    border-radius: 0.5em;
+    background: var(--md-code-bg-color);
+}
+
+.feature-card h3 {
+    margin-top: 0;
+    color: var(--md-primary-fg-color);
+}
+
+/* Mermaid diagram responsive adjustments */
+@media screen and (max-width: 768px) {
+    .mermaid svg {
+        max-width: 100% !important;
+        height: auto !important;
+    }
+}
+
+/* Plugin showcase styling */
+.plugin-showcase {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1em;
+    margin: 1.5em 0;
+}
+
+.plugin-card {
+    flex: 1;
+    min-width: 200px;
+    padding: 1em;
+    border: 1px solid var(--md-default-fg-color--lightest);
+    border-radius: 0.25em;
+    background: var(--md-code-bg-color);
+}
+
+.plugin-card h4 {
+    margin-top: 0;
+    color: var(--md-primary-fg-color);
+}
+
+/* API endpoint styling */
+.api-endpoint {
+    font-family: var(--md-code-font);
+    background: var(--md-code-bg-color);
+    padding: 0.5em 1em;
+    border-radius: 0.25em;
+    border-left: 4px solid var(--md-primary-fg-color);
+    margin: 1em 0;
+}
+
+.api-method {
+    font-weight: 600;
+    color: var(--md-primary-fg-color);
+    margin-right: 0.5em;
+}
+
+.api-method.get { color: #4caf50; }
+.api-method.post { color: #2196f3; }
+.api-method.put { color: #ff9800; }
+.api-method.delete { color: #f44336; }
+.api-method.patch { color: #9c27b0; }
+
+/* Architecture diagram container */
+.architecture-diagram {
+    text-align: center;
+    margin: 2em 0;
+    padding: 1em;
+    background: var(--md-code-bg-color);
+    border-radius: 0.5em;
+    border: 1px solid var(--md-default-fg-color--lightest);
+}
+
+/* Configuration example styling */
+.config-example {
+    position: relative;
+    margin: 1.5em 0;
+}
+
+.config-example::before {
+    content: "Configuration";
+    position: absolute;
+    top: -0.5em;
+    left: 1em;
+    background: var(--md-primary-fg-color);
+    color: var(--md-primary-bg-color);
+    padding: 0.25em 0.75em;
+    border-radius: 0.25em;
+    font-size: 0.75em;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Enhanced tables */
+.md-typeset table:not([class]) {
+    border: 1px solid var(--md-default-fg-color--lightest);
+    border-radius: 0.25em;
+    overflow: hidden;
+}
+
+.md-typeset table:not([class]) th {
+    background: var(--md-primary-fg-color--light);
+    color: var(--md-primary-bg-color);
+    font-weight: 600;
+}
+
+/* Status indicators */
+.status-indicator {
+    display: inline-block;
+    width: 0.75em;
+    height: 0.75em;
+    border-radius: 50%;
+    margin-right: 0.5em;
+}
+
+.status-indicator.active { background-color: #4caf50; }
+.status-indicator.inactive { background-color: #f44336; }
+.status-indicator.pending { background-color: #ff9800; }

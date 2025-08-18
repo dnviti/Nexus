@@ -1,6 +1,5 @@
-# Nexus Platform Documentation - Main Configuration
-# This configuration is maintained for backward compatibility
-# and redirects to the latest stable version (v0)
+# Nexus Platform Documentation - Unified Configuration
+# Single source of truth for all documentation builds
 
 site_name: Nexus Platform Documentation
 site_description: The Ultimate Plugin-Based Application Platform
@@ -9,10 +8,9 @@ site_url: https://dnviti.github.io/nexus-platform/
 
 repo_name: dnviti/nexus-platform
 repo_url: https://github.com/dnviti/nexus-platform
-edit_uri: edit/main/docs/v0/
+edit_uri: edit/main/docs/
 
-# Point to latest stable version
-docs_dir: docs/v0
+docs_dir: docs
 site_dir: site
 
 theme:
@@ -25,6 +23,12 @@ theme:
         - search.highlight
         - search.share
         - content.code.copy
+        - content.action.edit
+        - content.action.view
+        - navigation.footer
+        - navigation.indexes
+        - navigation.instant
+        - navigation.tracking
     palette:
         - scheme: default
           primary: blue
@@ -46,6 +50,10 @@ extra:
     social:
         - icon: fontawesome/brands/github
           link: https://github.com/dnviti/nexus-platform
+        - icon: fontawesome/brands/discord
+          link: https://discord.gg/nexus
+        - icon: fontawesome/brands/twitter
+          link: https://twitter.com/nexus_dev
 
 nav:
     - Home: index.md
@@ -90,6 +98,7 @@ nav:
           - Configuration: guides/configuration.md
           - Development: guides/development.md
           - Plugins: guides/plugins.md
+          - Database Setup: database-setup.md
 
 markdown_extensions:
     - admonition
@@ -98,9 +107,11 @@ markdown_extensions:
           custom_fences:
               - name: mermaid
                 class: mermaid
-                format: pymdownx.superfences.fence_code_format
+                format: !!python/name:pymdownx.superfences.fence_code_format
     - pymdownx.highlight:
           anchor_linenums: true
+          line_spans: __span
+          pygments_lang_class: true
     - pymdownx.inlinehilite
     - pymdownx.snippets
     - attr_list
@@ -114,10 +125,27 @@ markdown_extensions:
           custom_checkbox: true
     - toc:
           permalink: true
+          title: On this page
+    - def_list
+    - footnotes
+    - meta
+    - abbr
 
 plugins:
     - search:
           separator: '[\s\-,:!=\[\]()"`/]+|\.(?!\d)|&[lg]t;|(?!\b)(?=[A-Z][a-z])'
     - autorefs
+    - mermaid2:
+          arguments:
+              theme: |
+                  ^(JSON.parse(__md_get("__palette").index == 1)) ?
+                  'dark' : 'light'
 
-copyright: Copyright &copy; 2024 Nexus Team
+extra_css:
+    - stylesheets/extra.css
+
+extra_javascript:
+    - https://unpkg.com/mermaid@10.6.1/dist/mermaid.min.js
+    - javascripts/mermaid.js
+
+copyright: Copyright &copy; 2024-2025 Nexus Team

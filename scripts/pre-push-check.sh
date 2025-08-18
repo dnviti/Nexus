@@ -302,6 +302,44 @@ run_build_check() {
     fi
 }
 
+# Documentation build check
+run_documentation_check() {
+    if [ "$FAST_MODE" = true ]; then
+        print_warning "Skipping documentation build (fast mode)"
+        return 0
+    fi
+
+    print_step "Testing documentation builds..."
+
+    print_step "Testing documentation build..."
+
+    # Test main config
+    if [ -f "mkdocs.yml" ]; then
+        print_step "Testing build with mkdocs.yml..."
+        if poetry run mkdocs build --config-file mkdocs.yml --site-dir test-site; then
+            print_success "Build successful for mkdocs.yml"
+
+            # Verify Mermaid integration
+            print_step "Verifying Mermaid integration..."
+            if find test-site -name "*.html" -exec grep -l "mermaid" {} \; | head -1 > /dev/null; then
+                print_success "Mermaid integration verified"
+            else
+                print_warning "Mermaid integration not found in built docs"
+            fi
+
+            # Clean up test site
+            rm -rf test-site
+            return 0
+        else
+            print_error "Build failed for mkdocs.yml"
+            return 1
+        fi
+    else
+        print_error "mkdocs.yml not found!"
+        return 1
+    fi
+}
+
 # Diagnostic checks
 run_diagnostic_check() {
     print_step "Running diagnostic checks..."
@@ -443,6 +481,13 @@ main() {
         failed_checks+=("Build Check")
     fi
 
+    # Documentation Pipeline
+    print_header "DOCUMENTATION"
+
+    if ! run_documentation_check; then
+        failed_checks+=("Documentation Build")
+    fi
+
     # Additional Checks
     print_header "ADDITIONAL CHECKS"
 
@@ -489,6 +534,7 @@ main() {
         echo "  poetry run isort nexus/ tests/ scripts/"
         echo "  poetry run mypy nexus/"
         echo "  poetry run pytest tests/unit/"
+        echo "  poetry run mkdocs build -f mkdocs.yml"
 
         exit 1
     fi
