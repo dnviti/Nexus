@@ -442,6 +442,50 @@ class PrePushChecker:
             self.print_error("Package integrity check failed!")
             return False
 
+    def run_documentation_check(self) -> bool:
+        """Test documentation build."""
+        self.print_step("Testing documentation build...")
+
+        # Check if mkdocs config files exist
+        mkdocs_configs = ["mkdocs.yml", "mkdocs-dev.yml", "mkdocs-v0.yml"]
+        available_configs = []
+
+        for config in mkdocs_configs:
+            config_path = self.project_root / config
+            if config_path.exists():
+                available_configs.append(config)
+
+        if not available_configs:
+            self.print_warning("No MkDocs configuration files found, skipping documentation check")
+            return True
+
+        # Test build for each configuration
+        success = True
+        for config in available_configs:
+            self.print_step(f"Building documentation with {config}...")
+
+            # Use --strict to catch warnings as errors
+            returncode, stdout, stderr = self.run_command(
+                ["poetry", "run", "mkdocs", "build", "--strict", "--clean", "-f", config],
+                check=False,
+            )
+
+            if returncode != 0:
+                self.print_error(f"Documentation build failed with {config}!")
+                if stderr:
+                    print(f"{Colors.RED}Error output:{Colors.NC}")
+                    print(stderr)
+                success = False
+            else:
+                self.print_success(f"Documentation built successfully with {config}")
+
+        if success:
+            self.print_success("All documentation builds passed")
+            return True
+        else:
+            self.print_error("Documentation build failed!")
+            return False
+
     def _check_todo_fixme_comments(self) -> None:
         """Check for TODO/FIXME comments."""
         try:
@@ -634,8 +678,14 @@ fi
         # Build Pipeline
         self.print_header("BUILD & PACKAGE")
 
-        if not self.run_build_check():
-            self.failed_checks.append("Build Check")
+        build_checks = [
+            ("Package Build", self.run_build_check),
+            ("Documentation Build", self.run_documentation_check),
+        ]
+
+        for check_name, check_func in build_checks:
+            if not check_func():
+                self.failed_checks.append(check_name)
 
         # Additional Checks
         self.print_header("ADDITIONAL CHECKS")
