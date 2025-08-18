@@ -318,7 +318,7 @@ class TestAPIRouterEndpoints:
         assert data["success"] == True
         assert "name" in data["data"]
         assert data["data"]["name"] == "Nexus Framework"
-        assert data["data"]["version"] == "0.1.1"
+        assert data["data"]["version"] == "0.1.1-1"
         assert "documentation" in data["data"]
         assert "repository" in data["data"]
 
@@ -361,7 +361,7 @@ class TestAPIRouterEndpoints:
         data = response.json()
         assert data["success"] == True
         assert "version" in data["data"]
-        assert data["data"]["version"] == "0.1.1"
+        assert data["data"]["version"] == "0.1.1-1"
         assert "build" in data["data"]
         assert "release_date" in data["data"]
         assert "python_version" in data["data"]
