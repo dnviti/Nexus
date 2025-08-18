@@ -56,7 +56,9 @@ jobs:
             venv-${{ runner.os }}-
 
       - name: Install dependencies
-        run: poetry install --no-interaction --with dev
+        run: |
+          poetry install --no-interaction --with dev
+          poetry show --tree
 
       - name: Format check
         run: poetry run black --check --diff nexus/ tests/
