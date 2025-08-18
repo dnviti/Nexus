@@ -147,7 +147,7 @@ theme:
       toggle:
         icon: material/brightness-4
         name: Switch to light mode
-  custom_dir: docs/overrides
+
 
 extra:
   version:
