@@ -5,7 +5,7 @@ A cutting-edge, plugin-based application platform that enables developers to
 create highly modular, maintainable, and scalable applications.
 """
 
-__version__ = "0.1.2"
+__version__ = "0.1.3"
 __author__ = "Nexus Team"
 __license__ = "MIT"
 
