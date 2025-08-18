@@ -1,12 +1,13 @@
 {
   "versions": [
     {
-      "version": "v0.1.0",
-      "title": "v0.1.0 (Latest)",
-      "aliases": ["latest"],
-      "path": "v0.1.0",
+      "version": "v0",
+      "title": "v0.x (Latest Stable)",
+      "aliases": ["latest", "stable"],
+      "path": "v0",
       "status": "stable",
-      "released": "2024-08-18"
+      "released": "2025-08-18",
+      "current_version": "v0.1.1"
     },
     {
       "version": "dev",
@@ -17,6 +18,6 @@
       "released": null
     }
   ],
-  "latest": "v0.1.0",
+  "latest": "v0",
   "development": "dev"
 }

@@ -75,21 +75,43 @@ jobs:
       - name: Install dependencies
         run: poetry install --no-interaction --with docs
 
+      - name: Determine documentation version
+        id: doc_version
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          echo "Tag version: ${VERSION}"
+
+          # Extract major version for documentation
+          if [[ "$VERSION" =~ ^v([0-9]+)\. ]]; then
+            MAJOR_VERSION="v${BASH_REMATCH[1]}"
+            echo "doc_version=${MAJOR_VERSION}" >> $GITHUB_OUTPUT
+            echo "config_file=mkdocs-${MAJOR_VERSION}.yml" >> $GITHUB_OUTPUT
+            echo "Documentation will be built for major version: ${MAJOR_VERSION}"
+          else
+            echo "doc_version=${VERSION}" >> $GITHUB_OUTPUT
+            echo "config_file=mkdocs-${VERSION}.yml" >> $GITHUB_OUTPUT
+            echo "Documentation will be built for version: ${VERSION}"
+          fi
+
       - name: Create documentation version
         run: |
           VERSION="${{ steps.version.outputs.version }}"
-          echo "Creating documentation for version: ${VERSION}"
+          DOC_VERSION="${{ steps.doc_version.outputs.doc_version }}"
+          echo "Creating documentation for doc version: ${DOC_VERSION} (from tag ${VERSION})"
 
           # Create version if it doesn't exist
-          python scripts/docs/manage_versions.py create "${VERSION}" || echo "Version already exists"
+          python scripts/docs/manage_versions.py create "${DOC_VERSION}" || echo "Version already exists"
 
           # Set as latest version
-          python scripts/docs/manage_versions.py set-latest "${VERSION}"
+          python scripts/docs/manage_versions.py set-latest "${DOC_VERSION}"
 
       - name: Build tagged version documentation
         run: |
           VERSION="${{ steps.version.outputs.version }}"
-          poetry run mkdocs build --strict --verbose -f "mkdocs-${VERSION}.yml"
+          DOC_VERSION="${{ steps.doc_version.outputs.doc_version }}"
+          CONFIG_FILE="${{ steps.doc_version.outputs.config_file }}"
+          echo "Building documentation for ${DOC_VERSION} using ${CONFIG_FILE}"
+          poetry run mkdocs build --strict --verbose -f "${CONFIG_FILE}"
 
       - name: Download existing site (preserve other versions)
         continue-on-error: true
@@ -111,7 +133,9 @@ jobs:
           fi
 
           # Update main landing page
-          cat > site/index.html << 'EOF'
+          DOC_VERSION="${{ steps.doc_version.outputs.doc_version }}"
+          VERSION="${{ steps.version.outputs.version }}"
+          cat > site/index.html << EOF
           <!DOCTYPE html>
           <html lang="en">
           <head>
@@ -119,7 +143,7 @@ jobs:
               <meta name="viewport" content="width=device-width, initial-scale=1.0">
               <title>Nexus Platform Documentation</title>
               <meta name="description" content="The Ultimate Plugin-Based Application Platform - Choose your documentation version">
-              <meta http-equiv="refresh" content="5; url=./${{ steps.version.outputs.version }}/">
+              <meta http-equiv="refresh" content="5; url=./${DOC_VERSION}/">
               <style>
                   body {
                       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -172,11 +196,11 @@ jobs:
               <div class="container">
                   <div class="logo">🚀 Nexus Platform</div>
                   <h1>Documentation</h1>
-                  <p>Redirecting to latest version (${{ steps.version.outputs.version }}) in 5 seconds...</p>
+                  <p>Redirecting to latest version (${DOC_VERSION}) in 5 seconds...</p>
 
                   <div class="version-card latest">
-                      <h3><a href="./${{ steps.version.outputs.version }}/">${{ steps.version.outputs.version }} (Latest)</a></h3>
-                      <p>Latest stable release with all features and improvements.</p>
+                      <h3><a href="./${DOC_VERSION}/">${DOC_VERSION} (Latest Stable)</a></h3>
+                      <p>Latest stable release (${VERSION}) with all features and improvements.</p>
                   </div>
 
                   <div class="version-card dev">
@@ -333,7 +357,7 @@ jobs:
                   <p>Select a documentation version:</p>
 
                   <div class="version-card latest">
-                      <h3><a href="./v0.1.0/">v0.1.0 (Latest Stable)</a></h3>
+                      <h3><a href="./v0/">v0.x (Latest Stable)</a></h3>
                       <p>Latest stable release with all features and improvements.</p>
                   </div>
 
@@ -393,12 +417,12 @@ jobs:
         run: |
           poetry run mkdocs build --strict --verbose -f mkdocs-dev.yml
 
-      - name: Test build v0.1.0 documentation (if config exists)
+      - name: Test build v0 documentation (if config exists)
         run: |
-          if [ -f mkdocs-v0.1.0.yml ]; then
-            poetry run mkdocs build --strict --verbose -f mkdocs-v0.1.0.yml
+          if [ -f mkdocs-v0.yml ]; then
+            poetry run mkdocs build --strict --verbose -f mkdocs-v0.yml
           else
-            echo "v0.1.0 config not found, skipping"
+            echo "v0 config not found, skipping"
           fi
 
       - name: Upload build artifacts
