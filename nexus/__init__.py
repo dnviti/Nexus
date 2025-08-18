@@ -236,14 +236,35 @@ class NexusApp:
     def _setup_middleware(self) -> None:
         """Set up application middleware."""
         # CORS middleware
-        # CORS middleware configuration
-        if self.config.cors.enabled:
+        # CORS middleware configuration - handle both config formats
+        cors_enabled = False
+        cors_origins = ["*"]
+        cors_credentials = True
+        cors_methods = ["*"]
+        cors_headers = ["*"]
+
+        # Check for new config format (nexus.config.AppConfig)
+        if hasattr(self.config, "cors") and hasattr(self.config.cors, "enabled"):
+            cors_enabled = self.config.cors.enabled
+            cors_origins = self.config.cors.origins
+            cors_credentials = self.config.cors.credentials
+            cors_methods = self.config.cors.methods
+            cors_headers = self.config.cors.headers
+        # Check for old config format (nexus.core.AppConfig)
+        elif hasattr(self.config, "security"):
+            cors_enabled = getattr(self.config.security, "cors_enabled", False)
+            cors_origins = getattr(self.config.security, "cors_origins", ["*"])
+            cors_credentials = True
+            cors_methods = ["*"]
+            cors_headers = ["*"]
+
+        if cors_enabled:
             self.app.add_middleware(
                 CORSMiddleware,
-                allow_origins=self.config.cors.origins,
-                allow_credentials=self.config.cors.credentials,
-                allow_methods=self.config.cors.methods,
-                allow_headers=self.config.cors.headers,
+                allow_origins=cors_origins,
+                allow_credentials=cors_credentials,
+                allow_methods=cors_methods,
+                allow_headers=cors_headers,
             )
 
         # Custom error handler
