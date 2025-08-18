@@ -6,7 +6,7 @@ Core API routing and utilities.
 import asyncio
 import logging
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
 import psutil
@@ -173,24 +173,24 @@ def create_core_api_router() -> APIRouter:
             "metrics": {
                 "requests_per_second": [
                     {"timestamp": now.isoformat(), "value": 10.5},
-                    {"timestamp": (now.replace(minute=now.minute - 1)).isoformat(), "value": 12.3},
+                    {"timestamp": (now - timedelta(minutes=1)).isoformat(), "value": 12.3},
                 ],
                 "response_time_ms": [
                     {"timestamp": now.isoformat(), "value": 45.2},
-                    {"timestamp": (now.replace(minute=now.minute - 1)).isoformat(), "value": 38.7},
+                    {"timestamp": (now - timedelta(minutes=1)).isoformat(), "value": 38.7},
                 ],
                 "memory_usage_mb": [
                     {"timestamp": now.isoformat(), "value": current_metrics["memory_usage_mb"]},
                     {
-                        "timestamp": (now.replace(minute=now.minute - 1)).isoformat(),
+                        "timestamp": (now - timedelta(minutes=1)).isoformat(),
                         "value": current_metrics["memory_usage_mb"] * 0.95,
                     },
                 ],
                 "cpu_usage_percent": [
                     {"timestamp": now.isoformat(), "value": current_metrics["cpu_usage_percent"]},
                     {
-                        "timestamp": (now.replace(minute=now.minute - 1)).isoformat(),
-                        "value": current_metrics["cpu_usage_percent"] * 0.8,
+                        "timestamp": (now - timedelta(minutes=1)).isoformat(),
+                        "value": current_metrics["cpu_usage_percent"] * 1.1,
                     },
                 ],
             },
