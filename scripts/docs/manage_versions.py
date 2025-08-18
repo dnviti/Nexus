@@ -156,10 +156,6 @@ extra:
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/dnviti/nexus-platform
-    - icon: fontawesome/brands/discord
-      link: https://discord.gg/nexus
-    - icon: fontawesome/brands/twitter
-      link: https://twitter.com/nexus_dev
 
 nav:
   - Home: index.md

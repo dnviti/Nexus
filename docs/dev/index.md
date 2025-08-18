@@ -235,15 +235,14 @@ Choose your path:
 ### Community Support
 
 - **GitHub Issues**: Bug reports and feature requests
-- **GitHub Discussions**: Questions and community help
-- **Discord**: Real-time community support
+- **GitHub Repository**: Questions and community help
+- **Documentation**: Comprehensive guides and tutorials
 
 ## Community & Support
 
 - **GitHub**: [dnviti/nexus-platform](https://github.com/dnviti/nexus-platform)
-- **Discord**: [Join our community](https://discord.gg/nexus)
-- **Twitter**: [@nexus_dev](https://twitter.com/nexus_dev)
 - **Issues**: [Report bugs and request features](https://github.com/dnviti/nexus-platform/issues)
+- **Documentation**: [Latest Documentation](https://dnviti.github.io/nexus-platform/)
 
 ## License
 

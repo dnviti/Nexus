@@ -11,6 +11,18 @@
     },
     {
       "pattern": "^https://127.0.0.1"
+    },
+    {
+      "pattern": "^https://github.com/dnviti/nexus-platform/discussions"
+    },
+    {
+      "pattern": "^https://dnviti.github.io/nexus-platform/"
+    },
+    {
+      "pattern": "^https://discord.gg/"
+    },
+    {
+      "pattern": "^https://twitter.com/"
     }
   ],
   "replacementPatterns": [
