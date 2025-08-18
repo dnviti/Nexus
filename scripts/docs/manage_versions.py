@@ -5,12 +5,18 @@ Documentation Version Management Script
 This script helps manage versioned documentation for the Nexus Platform.
 It can create new versions, update existing ones, and manage the versions.json metadata.
 
+This script is designed to work with the tag-based documentation workflow:
+- develop branch builds only 'dev' documentation
+- tag pushes (e.g., v2.0.0) build that specific version's documentation
+- main branch is only for alignment and doesn't build documentation
+
 Usage:
     python manage_versions.py create <version>          # Create new version
     python manage_versions.py list                      # List all versions
     python manage_versions.py set-latest <version>      # Set latest version
     python manage_versions.py remove <version>          # Remove version
     python manage_versions.py build [version]           # Build specific or all versions
+    python manage_versions.py prepare-tag <version>     # Prepare version for tag release
 """
 
 import argparse
@@ -482,6 +488,41 @@ This is a new version - documentation content will be added here.
                 )
                 return
 
+    def prepare_tag_release(self, version: str) -> None:
+        """Prepare a version for tag-based release.
+
+        This ensures the version directory and MkDocs config exist
+        before the tag is pushed and triggers the GitHub Actions workflow.
+
+        Args:
+            version: Version to prepare (e.g., 'v2.0.0')
+        """
+        print(f"Preparing version {version} for tag release...")
+
+        # Ensure version directory exists
+        version_dir = self.docs_root / version
+        config_file = self.project_root / f"mkdocs-{version}.yml"
+
+        if not version_dir.exists():
+            print(f"Creating version directory for {version}")
+            self.create_version(version)
+        else:
+            print(f"Version directory already exists for {version}")
+
+        if not config_file.exists():
+            print(f"Creating MkDocs config for {version}")
+            self._create_mkdocs_config(version, is_dev=(version == "dev"))
+        else:
+            print(f"MkDocs config already exists for {version}")
+
+        print(f"Version {version} is ready for tag release!")
+        print(f"Next steps:")
+        print(
+            f"  1. Commit any changes: git add . && git commit -m 'docs: prepare {version} for release'"
+        )
+        print(f"  2. Create and push tag: git tag {version} && git push origin {version}")
+        print(f"  3. GitHub Actions will build and deploy the documentation automatically")
+
 
 def main():
     """Main CLI interface."""
@@ -522,6 +563,10 @@ Examples:
     build_parser = subparsers.add_parser("build", help="Build documentation")
     build_parser.add_argument("version", nargs="?", help="Specific version to build (optional)")
 
+    # Prepare tag command
+    tag_parser = subparsers.add_parser("prepare-tag", help="Prepare version for tag release")
+    tag_parser.add_argument("version", help="Version to prepare for tag (e.g., v2.1.0)")
+
     args = parser.parse_args()
 
     if not args.command:
@@ -541,6 +586,8 @@ Examples:
             manager.remove_version(args.version)
         elif args.command == "build":
             manager.build_version(args.version)
+        elif args.command == "prepare-tag":
+            manager.prepare_tag_release(args.version)
 
     except Exception as e:
         print(f"Error: {e}")

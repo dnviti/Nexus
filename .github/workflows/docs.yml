@@ -2,7 +2,7 @@ name: Documentation
 
 on:
   push:
-    branches: [main, develop]
+    branches: [develop]
     paths:
       - "docs/**"
       - "README.md"
@@ -11,6 +11,8 @@ on:
       - "mkdocs*.yml"
       - ".github/workflows/docs.yml"
       - "scripts/docs/**"
+    tags:
+      - "v*.*.*"
   pull_request:
     branches: [main, develop]
     paths:
@@ -33,10 +35,10 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  docs-main:
-    name: Build and Deploy Documentation (Main Branch)
+  docs-tag:
+    name: Build and Deploy Tagged Version Documentation
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    if: startsWith(github.ref, 'refs/tags/v') && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     permissions:
       contents: read
       pages: write
@@ -46,6 +48,13 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "Building documentation for version: ${VERSION}"
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -66,21 +75,51 @@ jobs:
       - name: Install dependencies
         run: poetry install --no-interaction --with docs
 
-      - name: Build v2.0.0 documentation
+      - name: Create documentation version
         run: |
-          poetry run mkdocs build --strict --verbose -f mkdocs-v2.0.0.yml
+          VERSION="${{ steps.version.outputs.version }}"
+          echo "Creating documentation for version: ${VERSION}"
 
-      - name: Create main site structure
+          # Create version if it doesn't exist
+          python scripts/docs/manage_versions.py create "${VERSION}" || echo "Version already exists"
+
+          # Set as latest version
+          python scripts/docs/manage_versions.py set-latest "${VERSION}"
+
+      - name: Build tagged version documentation
         run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          poetry run mkdocs build --strict --verbose -f "mkdocs-${VERSION}.yml"
+
+      - name: Download existing site (preserve other versions)
+        continue-on-error: true
+        run: |
+          curl -s -L -o existing-site.tar.gz "https://github.com/${{ github.repository }}/releases/download/site-backup/site.tar.gz" || echo "No existing site backup found"
+          if [ -f existing-site.tar.gz ]; then
+            mkdir -p site-backup
+            tar -xzf existing-site.tar.gz -C site-backup/ || echo "Failed to extract existing site"
+          fi
+
+      - name: Merge with existing site structure
+        run: |
+          # Create main site structure if it doesn't exist
           mkdir -p site
-          # Create a simple index.html that redirects to latest version
+
+          # Copy existing versions if they exist
+          if [ -d site-backup ]; then
+            cp -r site-backup/* site/ || echo "No previous versions to merge"
+          fi
+
+          # Update main landing page
           cat > site/index.html << 'EOF'
           <!DOCTYPE html>
-          <html>
+          <html lang="en">
           <head>
               <meta charset="utf-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
               <title>Nexus Platform Documentation</title>
-              <meta http-equiv="refresh" content="0; url=./v2.0.0/">
+              <meta name="description" content="The Ultimate Plugin-Based Application Platform - Choose your documentation version">
+              <meta http-equiv="refresh" content="5; url=./${{ steps.version.outputs.version }}/">
               <style>
                   body {
                       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -90,13 +129,14 @@ jobs:
                       height: 100vh;
                       margin: 0;
                       background: #f5f5f5;
+                      text-align: center;
                   }
                   .container {
-                      text-align: center;
                       padding: 2rem;
                       background: white;
                       border-radius: 8px;
                       box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                      max-width: 600px;
                   }
                   .logo {
                       font-size: 2rem;
@@ -104,38 +144,49 @@ jobs:
                       color: #1976d2;
                       margin-bottom: 1rem;
                   }
-                  .spinner {
-                      width: 40px;
-                      height: 40px;
-                      border: 4px solid #f3f3f3;
-                      border-top: 4px solid #1976d2;
-                      border-radius: 50%;
-                      animation: spin 1s linear infinite;
-                      margin: 1rem auto;
+                  .version-card {
+                      margin: 1rem 0;
+                      padding: 1rem;
+                      border: 1px solid #ddd;
+                      border-radius: 4px;
                   }
-                  @keyframes spin {
-                      0% { transform: rotate(0deg); }
-                      100% { transform: rotate(360deg); }
-                  }
-                  a {
+                  .version-card a {
                       color: #1976d2;
                       text-decoration: none;
+                      font-weight: 500;
                   }
-                  a:hover {
+                  .version-card a:hover {
                       text-decoration: underline;
+                  }
+                  .latest {
+                      border-color: #1976d2;
+                      background: #f3f8ff;
+                  }
+                  .dev {
+                      border-color: #ff9800;
+                      background: #fff8f0;
                   }
               </style>
           </head>
           <body>
               <div class="container">
                   <div class="logo">🚀 Nexus Platform</div>
-                  <div class="spinner"></div>
-                  <p>Redirecting to documentation...</p>
-                  <p><a href="./v2.0.0/">Click here if you are not redirected automatically</a></p>
+                  <h1>Documentation</h1>
+                  <p>Redirecting to latest version (${{ steps.version.outputs.version }}) in 5 seconds...</p>
+
+                  <div class="version-card latest">
+                      <h3><a href="./${{ steps.version.outputs.version }}/">${{ steps.version.outputs.version }} (Latest)</a></h3>
+                      <p>Latest stable release with all features and improvements.</p>
+                  </div>
+
+                  <div class="version-card dev">
+                      <h3><a href="./dev/">Development Version</a></h3>
+                      <p>Cutting-edge features and improvements. May contain experimental content.</p>
+                  </div>
+
                   <hr style="margin: 2rem 0;">
-                  <h3>Available Versions:</h3>
-                  <p><a href="./v2.0.0/">v2.0.0 (Latest)</a></p>
-                  <p><a href="./dev/">Development Version</a></p>
+                  <p><a href="https://github.com/dnviti/nexus-platform">GitHub Repository</a> |
+                     <a href="https://github.com/dnviti/nexus-platform/issues">Issues</a></p>
               </div>
           </body>
           </html>
@@ -144,6 +195,11 @@ jobs:
       - name: Copy versions metadata
         run: |
           cp docs/versions.json site/
+
+      - name: Create site backup for future builds
+        run: |
+          cd site
+          tar -czf ../site-backup.tar.gz .
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
@@ -191,29 +247,37 @@ jobs:
         run: |
           poetry run mkdocs build --strict --verbose -f mkdocs-dev.yml
 
-      - name: Download existing site
+      - name: Download existing stable site
         continue-on-error: true
         run: |
-          # Try to download the existing site to preserve other versions
-          curl -s -o site.tar.gz "https://dnviti.github.io/nexus-platform/site.tar.gz" || echo "No existing site found"
-          if [ -f site.tar.gz ]; then
-            tar -xzf site.tar.gz || echo "Failed to extract existing site"
+          # Try to get the current deployed site to preserve stable versions
+          curl -s -L -o current-site.tar.gz "https://github.com/${{ github.repository }}/releases/download/site-backup/site.tar.gz" || echo "No existing site found"
+          if [ -f current-site.tar.gz ]; then
+            mkdir -p current-site
+            tar -xzf current-site.tar.gz -C current-site/ || echo "Failed to extract current site"
           fi
 
-      - name: Create/update site structure
+      - name: Create/update site structure for dev deployment
         run: |
-          # Ensure site directory exists
-          mkdir -p site
+          # Start with existing site or create minimal structure
+          if [ -d current-site ]; then
+            cp -r current-site/* site/ || mkdir -p site
+          else
+            mkdir -p site
+          fi
 
-          # If no main site exists, create minimal structure
-          if [ ! -f site/index.html ]; then
-            cat > site/index.html << 'EOF'
+          # The dev version is already built in site/dev by mkdocs
+          # Just need to ensure the main index.html exists and works
+
+          # Create or update landing page to include dev version
+          cat > site/index.html << 'EOF'
           <!DOCTYPE html>
-          <html>
+          <html lang="en">
           <head>
               <meta charset="utf-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
               <title>Nexus Platform Documentation</title>
-              <meta http-equiv="refresh" content="0; url=./v2.0.0/">
+              <meta name="description" content="The Ultimate Plugin-Based Application Platform - Choose your documentation version">
               <style>
                   body {
                       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -223,13 +287,14 @@ jobs:
                       height: 100vh;
                       margin: 0;
                       background: #f5f5f5;
+                      text-align: center;
                   }
                   .container {
-                      text-align: center;
                       padding: 2rem;
                       background: white;
                       border-radius: 8px;
                       box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                      max-width: 600px;
                   }
                   .logo {
                       font-size: 2rem;
@@ -237,43 +302,53 @@ jobs:
                       color: #1976d2;
                       margin-bottom: 1rem;
                   }
-                  .spinner {
-                      width: 40px;
-                      height: 40px;
-                      border: 4px solid #f3f3f3;
-                      border-top: 4px solid #1976d2;
-                      border-radius: 50%;
-                      animation: spin 1s linear infinite;
-                      margin: 1rem auto;
+                  .version-card {
+                      margin: 1rem 0;
+                      padding: 1rem;
+                      border: 1px solid #ddd;
+                      border-radius: 4px;
                   }
-                  @keyframes spin {
-                      0% { transform: rotate(0deg); }
-                      100% { transform: rotate(360deg); }
-                  }
-                  a {
+                  .version-card a {
                       color: #1976d2;
                       text-decoration: none;
+                      font-weight: 500;
                   }
-                  a:hover {
+                  .version-card a:hover {
                       text-decoration: underline;
+                  }
+                  .latest {
+                      border-color: #1976d2;
+                      background: #f3f8ff;
+                  }
+                  .dev {
+                      border-color: #ff9800;
+                      background: #fff8f0;
                   }
               </style>
           </head>
           <body>
               <div class="container">
                   <div class="logo">🚀 Nexus Platform</div>
-                  <div class="spinner"></div>
-                  <p>Redirecting to documentation...</p>
-                  <p><a href="./v2.0.0/">Click here if you are not redirected automatically</a></p>
+                  <h1>Documentation</h1>
+                  <p>Select a documentation version:</p>
+
+                  <div class="version-card latest">
+                      <h3><a href="./v2.0.0/">v2.0.0 (Latest Stable)</a></h3>
+                      <p>Latest stable release with all features and improvements.</p>
+                  </div>
+
+                  <div class="version-card dev">
+                      <h3><a href="./dev/">Development Version</a> 🚧</h3>
+                      <p><strong>Updated!</strong> Cutting-edge features and improvements. May contain experimental content.</p>
+                  </div>
+
                   <hr style="margin: 2rem 0;">
-                  <h3>Available Versions:</h3>
-                  <p><a href="./v2.0.0/">v2.0.0 (Latest)</a></p>
-                  <p><a href="./dev/">Development Version</a></p>
+                  <p><a href="https://github.com/dnviti/nexus-platform">GitHub Repository</a> |
+                     <a href="https://github.com/dnviti/nexus-platform/issues">Issues</a></p>
               </div>
           </body>
           </html>
           EOF
-          fi
 
       - name: Copy versions metadata
         run: |
@@ -314,13 +389,17 @@ jobs:
       - name: Install dependencies
         run: poetry install --no-interaction --with docs
 
-      - name: Test build v2.0.0 documentation
-        run: |
-          poetry run mkdocs build --strict --verbose -f mkdocs-v2.0.0.yml
-
       - name: Test build development documentation
         run: |
           poetry run mkdocs build --strict --verbose -f mkdocs-dev.yml
+
+      - name: Test build v2.0.0 documentation (if config exists)
+        run: |
+          if [ -f mkdocs-v2.0.0.yml ]; then
+            poetry run mkdocs build --strict --verbose -f mkdocs-v2.0.0.yml
+          else
+            echo "v2.0.0 config not found, skipping"
+          fi
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4

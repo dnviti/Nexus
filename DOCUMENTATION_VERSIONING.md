@@ -50,22 +50,24 @@ nexus-platform/
 
 ## 🌐 Live Documentation URLs
 
-| Version | URL | Branch | Status |
-|---------|-----|---------|--------|
-| **Landing Page** | https://dnviti.github.io/nexus-platform/ | main | Auto-redirects to latest |
-| **v2.0.0 (Latest)** | https://dnviti.github.io/nexus-platform/v2.0.0/ | main | Stable |
-| **Development** | https://dnviti.github.io/nexus-platform/dev/ | develop | Development |
+| Version             | URL                                             | Branch  | Status                   |
+| ------------------- | ----------------------------------------------- | ------- | ------------------------ |
+| **Landing Page**    | https://dnviti.github.io/nexus-platform/        | main    | Auto-redirects to latest |
+| **v2.0.0 (Latest)** | https://dnviti.github.io/nexus-platform/v2.0.0/ | main    | Stable                   |
+| **Development**     | https://dnviti.github.io/nexus-platform/dev/    | develop | Development              |
 
 ## 🛠️ Key Features
 
 ### 1. Version Management System
 
 **Automated Scripts:**
+
 - `manage_versions.py` - Core version operations (create, list, remove, build)
 - `release.sh` - Complete release workflow automation
 - `serve.sh` - Local development server
 
 **Version Metadata (`versions.json`):**
+
 ```json
 {
   "versions": [
@@ -97,10 +99,11 @@ The development documentation automatically includes a prominent warning banner:
 
 ```markdown
 !!! warning "Development Documentation"
-    This is the **development version** of the Nexus Platform documentation. The content here may be incomplete, experimental, or subject to change. For stable documentation, please visit the [latest release version](../v2.0.0/).
+This is the **development version** of the Nexus Platform documentation. The content here may be incomplete, experimental, or subject to change. For stable documentation, please visit the [latest release version](../v2.0.0/).
 ```
 
 **Visual Distinctions:**
+
 - **Stable versions:** Blue theme (`primary: blue`)
 - **Development version:** Orange theme (`primary: orange`)
 
@@ -108,29 +111,32 @@ The development documentation automatically includes a prominent warning banner:
 
 **Updated Workflow (`.github/workflows/docs.yml`):**
 
-- **Main Branch:** Builds and deploys v2.0.0 stable documentation
-- **Develop Branch:** Builds and deploys development documentation
+- **Tag Push (e.g., v2.0.0):** Builds and deploys that specific version's documentation
+- **Develop Branch:** Builds and deploys development documentation only
+- **Main Branch:** No documentation build (alignment branch only)
 - **Pull Requests:** Tests documentation builds without deployment
-- **Concurrent Deployment:** Both stable and dev versions can be deployed independently
 
 **Deployment Strategy:**
+
 ```yaml
 jobs:
-  docs-main:        # Deploys stable versions from main branch
-  docs-develop:     # Deploys dev version from develop branch
-  build-only:       # Tests builds for PRs
-  lint-docs:        # Validates documentation quality
+  docs-tag: # Deploys specific version from tag push
+  docs-develop: # Deploys dev version from develop branch
+  build-only: # Tests builds for PRs
+  lint-docs: # Validates documentation quality
 ```
 
 ### 4. Landing Page & Version Selection
 
 **Auto-redirect Landing Page (`docs/index.html`):**
+
 - Automatically redirects to latest stable version after 5 seconds
 - Provides manual version selection interface
 - Modern, responsive design with version cards
 - Stops auto-redirect on user interaction
 
 **Features:**
+
 - Version status indicators (Latest, Development)
 - Release date information
 - Responsive design for mobile devices
@@ -140,23 +146,27 @@ jobs:
 
 ### Creating a New Documentation Version
 
-**Quick Method (Recommended):**
+**Tag-Based Method (Recommended):**
+
 ```bash
-# Create v2.1.0 and set as latest with build
-./scripts/docs/release.sh v2.1.0 --set-latest --build
+# Prepare v2.1.0 and create tag (triggers auto-deployment)
+./scripts/docs/release.sh v2.1.0 --set-latest --create-tag
 ```
 
 **Manual Method:**
+
 ```bash
 # Step-by-step approach
-python scripts/docs/manage_versions.py create v2.1.0
+python scripts/docs/manage_versions.py prepare-tag v2.1.0
 python scripts/docs/manage_versions.py set-latest v2.1.0
-python scripts/docs/manage_versions.py build v2.1.0
+git add . && git commit -m "docs: prepare v2.1.0 for release"
+git tag v2.1.0 && git push origin v2.1.0
 ```
 
 ### Local Development
 
 **Serve Specific Version:**
+
 ```bash
 # Serve latest stable version
 ./scripts/docs/serve.sh v2.0.0
@@ -166,6 +176,7 @@ python scripts/docs/manage_versions.py build v2.1.0
 ```
 
 **Interactive Version Selection:**
+
 ```bash
 # Prompts for version selection
 ./scripts/docs/serve.sh
@@ -174,16 +185,19 @@ python scripts/docs/manage_versions.py build v2.1.0
 ### Version Management
 
 **List All Versions:**
+
 ```bash
 python scripts/docs/manage_versions.py list
 ```
 
 **Remove Old Version:**
+
 ```bash
 python scripts/docs/manage_versions.py remove v1.0.0
 ```
 
 **Build All Versions:**
+
 ```bash
 python scripts/docs/manage_versions.py build
 ```
@@ -193,16 +207,14 @@ python scripts/docs/manage_versions.py build
 ### 1. New Feature Release
 
 ```bash
-# 1. Create and deploy new version
-./scripts/docs/release.sh v2.1.0 --set-latest --build
+# 1. Prepare version and create tag (auto-deploys)
+./scripts/docs/release.sh v2.1.0 --set-latest --create-tag
 
-# 2. Test locally
+# 2. Test locally (if needed)
 ./scripts/docs/serve.sh v2.1.0
 
-# 3. Commit and deploy
-git add .
-git commit -m "docs: add documentation for v2.1.0"
-git push origin main
+# 3. Tag push triggers automatic deployment
+# GitHub Actions builds and deploys documentation automatically
 ```
 
 ### 2. Development Documentation Update
@@ -226,11 +238,12 @@ git push origin develop
 # Remove outdated version
 python scripts/docs/manage_versions.py remove v1.0.0
 
-# Update latest version
+# Update latest version (updates metadata only)
 python scripts/docs/manage_versions.py set-latest v2.1.0
 
-# Rebuild all documentation
-python scripts/docs/manage_versions.py build
+# Prepare and tag new version (triggers deployment)
+python scripts/docs/manage_versions.py prepare-tag v2.1.0
+git tag v2.1.0 && git push origin v2.1.0
 ```
 
 ## 🏗️ Technical Implementation
@@ -238,11 +251,13 @@ python scripts/docs/manage_versions.py build
 ### MkDocs Configuration Strategy
 
 **Version-Specific Configs:**
+
 - `mkdocs-v2.0.0.yml` - Stable version configuration
 - `mkdocs-dev.yml` - Development version configuration
 - `mkdocs.yml` - Backward compatibility (points to latest)
 
 **Key Configuration Differences:**
+
 ```yaml
 # Stable Version (mkdocs-v2.0.0.yml)
 site_name: Nexus Platform Documentation v2.0.0
@@ -266,6 +281,7 @@ theme:
 ### GitHub Pages Deployment
 
 **Site Structure:**
+
 ```
 https://dnviti.github.io/nexus-platform/
 ├── index.html           # Landing page with version selector
@@ -283,6 +299,7 @@ https://dnviti.github.io/nexus-platform/
 ### Version Metadata API
 
 The `versions.json` file serves as a simple API for:
+
 - Version listing and status
 - Latest version detection
 - Client-side version switching (future enhancement)
@@ -292,25 +309,28 @@ The `versions.json` file serves as a simple API for:
 
 ### Environment Variables
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `MKDOCS_CONFIG_DIR` | MkDocs config directory | Project root |
-| `DOCS_BUILD_DIR` | Documentation build output | `site/` |
+| Variable            | Description                | Default      |
+| ------------------- | -------------------------- | ------------ |
+| `MKDOCS_CONFIG_DIR` | MkDocs config directory    | Project root |
+| `DOCS_BUILD_DIR`    | Documentation build output | `site/`      |
 
 ### Theme Customization
 
 **Custom Overrides Directory:** `docs/overrides/`
+
 - Custom templates
 - Additional CSS/JS
 - Theme modifications
 
 **Color Schemes:**
+
 - Stable: Blue theme for production-ready documentation
 - Development: Orange theme to clearly indicate experimental content
 
 ### Script Configuration
 
 **Default Behaviors:**
+
 - New versions default to copying from latest stable
 - Development version always includes warning banner
 - Auto-redirect timeout: 5 seconds
@@ -319,26 +339,30 @@ The `versions.json` file serves as a simple API for:
 ## 📊 Benefits Achieved
 
 ### 1. User Experience
+
 - ✅ Clear version distinction with visual cues
 - ✅ Automatic latest version redirection
 - ✅ Warning banners for development content
 - ✅ Mobile-responsive documentation
 
 ### 2. Developer Experience
-- ✅ Automated version creation workflow
+
+- ✅ Tag-based automated deployment workflow
 - ✅ Local development with live reload
 - ✅ Simple script-based management
 - ✅ Comprehensive error handling and validation
 
 ### 3. Maintenance
-- ✅ Automated CI/CD deployment
-- ✅ Independent branch-based documentation
+
+- ✅ Automated CI/CD on tag deployment
+- ✅ Clean separation: develop=dev docs, tags=version docs
 - ✅ Version metadata tracking
 - ✅ Easy cleanup of old versions
 
 ### 4. Scalability
+
 - ✅ Support for unlimited documentation versions
-- ✅ Independent deployment pipelines
+- ✅ Tag-triggered deployment pipelines
 - ✅ Flexible configuration system
 - ✅ API-ready version metadata
 
@@ -347,18 +371,21 @@ The `versions.json` file serves as a simple API for:
 ### Common Issues
 
 **Build Failures:**
+
 ```bash
 # Check configuration syntax
 poetry run mkdocs build -f mkdocs-v2.1.0.yml --strict --verbose
 ```
 
 **Version Conflicts:**
+
 ```bash
 # Remove existing version
 python scripts/docs/manage_versions.py remove v2.1.0
 ```
 
 **Local Server Issues:**
+
 ```bash
 # Use different port
 ./scripts/docs/serve.sh v2.0.0 --port 8081
@@ -380,12 +407,14 @@ python scripts/docs/manage_versions.py build
 ## 📚 Next Steps & Future Enhancements
 
 ### Immediate Actions
+
 1. Test the complete workflow with a new version
 2. Update existing documentation content
 3. Train team members on new scripts
 4. Monitor GitHub Actions deployment
 
 ### Future Enhancements
+
 1. **Version Selector Widget:** Add version switching to each page
 2. **Automated Archival:** Remove very old versions automatically
 3. **Analytics Integration:** Track version usage patterns
@@ -397,16 +426,18 @@ python scripts/docs/manage_versions.py build
 
 The Nexus Platform now has a robust, scalable documentation versioning system that provides:
 
-- **Clear separation** between stable and development documentation
-- **Automated workflows** for creating and managing versions
+- **Tag-based deployment** for stable releases with automatic CI/CD
+- **Clear separation** between stable (tag-based) and development (branch-based) documentation
 - **Professional presentation** with version-aware themes and warnings
 - **Developer-friendly tools** for local development and testing
-- **Future-proof architecture** ready for additional versions and features
+- **Scalable architecture** ready for unlimited versions with independent deployments
 
-The implementation successfully addresses the original requirements:
+The implementation successfully addresses the original requirements with the correct workflow:
+
 - ✅ Version-specific documentation folders (`docs/vx.y.z/`)
 - ✅ Development version with warning banners (`docs/dev/`)
 - ✅ GitHub Pages deployment for version selection
-- ✅ Automated CI/CD pipeline supporting both stable and development branches
+- ✅ Tag-based CI/CD pipeline for stable versions, develop branch for dev docs
+- ✅ Main branch as alignment branch only (no documentation builds)
 
-Users can now confidently choose the appropriate documentation version for their needs, while developers have powerful tools to maintain and deploy documentation efficiently.
+Users can now confidently choose the appropriate documentation version for their needs, while developers have a proper tag-based workflow that separates development and release documentation clearly.

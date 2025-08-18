@@ -1,6 +1,11 @@
 #!/bin/bash
 # Documentation Release Script for Nexus Platform
-# Automates the process of creating documentation for a new release
+# Automates the process of preparing documentation for a tag-based release
+#
+# This script works with the new tag-based workflow:
+# - develop branch builds only 'dev' documentation
+# - tag pushes (e.g., v2.0.0) build that specific version's documentation
+# - main branch is only for alignment and doesn't build documentation
 
 set -e
 
@@ -16,7 +21,7 @@ NC='\033[0m' # No Color
 NEW_VERSION=""
 SOURCE_VERSION=""
 SET_AS_LATEST=false
-BUILD_DOCS=false
+CREATE_TAG=false
 DRY_RUN=false
 VERBOSE=false
 
@@ -33,7 +38,7 @@ usage() {
     echo "OPTIONS:"
     echo "  -s, --source VERSION     Source version to copy from (default: current latest)"
     echo "  -l, --set-latest         Set this version as the latest stable version"
-    echo "  -b, --build              Build documentation after creating version"
+    echo "  -t, --create-tag         Create and push git tag after preparation"
     echo "  -d, --dry-run           Show what would be done without making changes"
     echo "  -v, --verbose           Enable verbose output"
     echo "  -h, --help              Show this help message"
@@ -42,18 +47,18 @@ usage() {
     echo "  NEW_VERSION             Version to create (e.g., v2.1.0, 2.1.0)"
     echo ""
     echo "Examples:"
-    echo "  $0 v2.1.0                           # Create v2.1.0 from latest"
-    echo "  $0 v2.1.0 --set-latest --build      # Create, set as latest, and build"
+    echo "  $0 v2.1.0                           # Prepare v2.1.0 documentation"
+    echo "  $0 v2.1.0 --set-latest --create-tag # Prepare, set as latest, and create tag"
     echo "  $0 v2.1.0 --source v2.0.0           # Create v2.1.0 from v2.0.0"
     echo "  $0 v2.1.0 --dry-run                 # Show what would be done"
     echo ""
-    echo "This script will:"
-    echo "  1. Create new documentation version directory"
+    echo "Tag-based Workflow:"
+    echo "  1. Prepare documentation version directory and config"
     echo "  2. Copy content from source version"
-    echo "  3. Create MkDocs configuration file"
-    echo "  4. Update versions.json metadata"
-    echo "  5. Optionally set as latest version"
-    echo "  6. Optionally build documentation"
+    echo "  3. Update versions.json metadata"
+    echo "  4. Optionally set as latest version"
+    echo "  5. Optionally create and push git tag"
+    echo "  6. GitHub Actions builds and deploys on tag push"
     echo ""
 }
 
@@ -264,22 +269,28 @@ set_latest_version() {
     return $?
 }
 
-# Function to build documentation
-build_documentation() {
+# Function to create and push git tag
+create_git_tag() {
     local version="$1"
 
-    log "INFO" "Building documentation for $version"
+    log "INFO" "Creating and pushing git tag for $version"
 
-    cd "$PROJECT_ROOT"
-
-    # Check if Poetry is available
-    if command -v poetry &> /dev/null; then
-        local build_cmd="poetry run mkdocs build -f 'mkdocs-$version.yml' --strict"
-    else
-        local build_cmd="mkdocs build -f 'mkdocs-$version.yml' --strict"
+    # Check if tag already exists
+    if git tag -l | grep -q "^${version}$"; then
+        log "WARN" "Tag $version already exists"
+        return 1
     fi
 
-    run_command "Build documentation for $version" "$build_cmd"
+    # Create tag
+    local tag_cmd="git tag -a '$version' -m 'Release $version'"
+    run_command "Create git tag $version" "$tag_cmd"
+
+    # Push tag
+    local push_cmd="git push origin '$version'"
+    run_command "Push git tag $version" "$push_cmd"
+
+    log "INFO" "Tag $version created and pushed successfully"
+    log "INFO" "GitHub Actions will now build and deploy the documentation"
 
     return $?
 }
@@ -290,13 +301,13 @@ display_summary() {
     local source_version="$2"
 
     echo ""
-    log "INFO" "Documentation release summary:"
+    log "INFO" "Documentation preparation summary:"
     echo -e "  ${CYAN}New Version:${NC} $new_version"
     if [ -n "$source_version" ]; then
         echo -e "  ${CYAN}Source Version:${NC} $source_version"
     fi
     echo -e "  ${CYAN}Set as Latest:${NC} $SET_AS_LATEST"
-    echo -e "  ${CYAN}Build Docs:${NC} $BUILD_DOCS"
+    echo -e "  ${CYAN}Create Tag:${NC} $CREATE_TAG"
     echo -e "  ${CYAN}Dry Run:${NC} $DRY_RUN"
     echo ""
 
@@ -304,7 +315,13 @@ display_summary() {
         log "INFO" "Next steps:"
         echo "  1. Review the generated documentation"
         echo "  2. Test locally: ./scripts/docs/serve.sh $new_version"
-        echo "  3. Commit and push changes to trigger deployment"
+        if [ "$CREATE_TAG" = false ]; then
+            echo "  3. Commit changes: git add . && git commit -m 'docs: prepare $new_version for release'"
+            echo "  4. Create and push tag: git tag $new_version && git push origin $new_version"
+            echo "  5. GitHub Actions will build and deploy automatically"
+        else
+            echo "  3. GitHub Actions will build and deploy automatically"
+        fi
         echo ""
         echo "Files created/modified:"
         echo "  - docs/$new_version/ (documentation content)"
@@ -326,8 +343,8 @@ main() {
                 SET_AS_LATEST=true
                 shift
                 ;;
-            -b|--build)
-                BUILD_DOCS=true
+            -t|--create-tag)
+                CREATE_TAG=true
                 shift
                 ;;
             -d|--dry-run)
@@ -433,34 +450,38 @@ main() {
         fi
     fi
 
-    # Build documentation if requested
-    if [ "$BUILD_DOCS" = true ]; then
-        if ! build_documentation "$NEW_VERSION"; then
-            log "ERROR" "Failed to build documentation"
+    # Create and push git tag if requested
+    if [ "$CREATE_TAG" = true ]; then
+        if ! create_git_tag "$NEW_VERSION"; then
+            log "ERROR" "Failed to create git tag"
             exit 1
         fi
     fi
 
-    log "INFO" "Documentation release completed successfully!"
+    log "INFO" "Documentation preparation completed successfully!"
 
     # Final summary
     echo ""
-    log "INFO" "Release completed for version $NEW_VERSION"
+    log "INFO" "Preparation completed for version $NEW_VERSION"
     if [ "$SET_AS_LATEST" = true ]; then
         log "INFO" "Version $NEW_VERSION is now set as latest"
     fi
-    if [ "$BUILD_DOCS" = true ]; then
-        log "INFO" "Documentation has been built"
+    if [ "$CREATE_TAG" = true ]; then
+        log "INFO" "Git tag has been created and pushed"
+        log "INFO" "GitHub Actions will build and deploy the documentation automatically"
     fi
 
     echo ""
     log "INFO" "To test locally, run:"
     echo "  ./scripts/docs/serve.sh $NEW_VERSION"
     echo ""
-    log "INFO" "To deploy, commit and push your changes:"
-    echo "  git add ."
-    echo "  git commit -m \"docs: add documentation for $NEW_VERSION\""
-    echo "  git push origin main"
+    if [ "$CREATE_TAG" = false ]; then
+        log "INFO" "To deploy, create and push the tag:"
+        echo "  git add ."
+        echo "  git commit -m \"docs: prepare $NEW_VERSION for release\""
+        echo "  git tag $NEW_VERSION"
+        echo "  git push origin $NEW_VERSION"
+    fi
 }
 
 # Run main function
