@@ -101,3 +101,10 @@ bandit*.json
 
 # JUnit XML test reports
 junit*.xml
+*.db
+*.sqlite3
+*.sqlite3-journal
+*.sqlite3-wal
+*.db-journal
+*.db-wal
+*.ini

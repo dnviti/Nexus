@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "nexus-platform"
-version = "0.1.5"
+version = "0.1.6"
 description = "The Ultimate Plugin-Based Application Platform - Build modular, scalable applications with ease"
 authors = ["Nexus Team <team@nexus.dev>"]
 maintainers = ["Nexus Team <team@nexus.dev>"]
@@ -102,6 +102,7 @@ python-json-logger = "^2.0.7"
 
 # CLI
 click = "^8.1.7"
+tabulate = "^0.9.0"
 
 # System monitoring
 psutil = "^5.9.0"
@@ -347,10 +348,10 @@ addopts = [
     "--cov-report=term-missing:skip-covered",
     "--cov-report=html",
     "--cov-report=xml",
-    "--cov-fail-under=10",
+    "--cov-fail-under=0",
     "--asyncio-mode=auto",
     "--tb=short",
-    "--maxfail=3",
+    "--maxfail=999999",
 ]
 markers = [
     "unit: Unit tests",

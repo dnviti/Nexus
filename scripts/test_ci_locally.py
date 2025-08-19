@@ -229,7 +229,7 @@ class TestRunner:
                         "tests/unit/",
                         "-v",
                         "--tb=short",
-                        "--maxfail=5",
+                        "--maxfail=999999",
                         "--asyncio-mode=auto",
                     ],
                 )
@@ -249,7 +249,7 @@ class TestRunner:
                         "--cov-report=term-missing",
                         "--tb=short",
                         "--asyncio-mode=auto",
-                        "--maxfail=10",
+                        "--maxfail=999999",
                     ],
                 )
             ]

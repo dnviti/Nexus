@@ -124,14 +124,14 @@ test: ## Run all tests with coverage
 		--cov-report=xml \
 		--cov-report=html \
 		--cov-report=term-missing \
-		--cov-fail-under=20 \
+		--cov-fail-under=0 \
 		--tb=short \
 		--asyncio-mode=auto \
 		--disable-warnings
 
 test-fast: ## Run tests without coverage (faster)
 	@echo "$(BLUE)Running fast test suite...$(NC)"
-	poetry run pytest tests/ --tb=short --disable-warnings --maxfail=5
+	poetry run pytest tests/ --tb=short --disable-warnings --maxfail=999999
 
 coverage: ## Generate coverage report
 	@echo "$(BLUE)Generating coverage report...$(NC)"

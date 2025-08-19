@@ -145,6 +145,7 @@ class EventBus:
         self._queue: asyncio.Queue[tuple[int, Event]] = asyncio.Queue()
         self._running = False
         self._processor_task: Optional[asyncio.Task[None]] = None
+        self._broadcast_callback: Optional[Callable[..., Any]] = None
 
     async def start(self) -> None:
         """Start the event bus processor."""
@@ -176,6 +177,10 @@ class EventBus:
         """Unsubscribe from an event."""
         if event_name in self._subscribers:
             self._subscribers[event_name].remove(handler)
+
+    def set_broadcast_callback(self, callback: Optional[Callable[..., Any]]) -> None:
+        """Set a callback function to broadcast events for debugging/monitoring."""
+        self._broadcast_callback = callback
 
     async def process_events(self) -> None:
         """Process events from the queue."""
@@ -225,6 +230,16 @@ class EventBus:
 
     async def _call_event_handlers(self, event: Event) -> None:
         """Call all subscribers for an event."""
+        # Call broadcast callback for debugging/monitoring
+        if self._broadcast_callback:
+            try:
+                if asyncio.iscoroutinefunction(self._broadcast_callback):
+                    await self._broadcast_callback(event)
+                else:
+                    self._broadcast_callback(event)
+            except Exception as e:
+                self._safe_log(f"Error in broadcast callback: {e}")
+
         if event.name not in self._subscribers:
             return
 
@@ -366,10 +381,15 @@ class PluginManager:
         self._plugin_info: Dict[str, PluginInfo] = {}
         self._plugin_status: Dict[str, PluginStatus] = {}
         self.db_adapter: Optional[DatabaseAdapter] = None
+        self._hot_reload_manager = None
 
     def set_database(self, db_adapter: DatabaseAdapter) -> None:
         """Set the database adapter for plugins."""
         self.db_adapter = db_adapter
+
+    def set_hot_reload_manager(self, hot_reload_manager: Any) -> None:
+        """Set the hot reload manager for dynamic route management."""
+        self._hot_reload_manager = hot_reload_manager
 
     async def discover_plugins(self, path: Path) -> List[PluginInfo]:
         """Discover available plugins in a directory."""
@@ -476,25 +496,24 @@ class PluginManager:
             plugin.service_registry = self.service_registry
 
             # Initialize plugin
-            if await plugin.initialize():
-                self._plugins[plugin_id] = plugin
-                self._plugin_status[plugin_id] = PluginStatus.LOADED
+            await plugin.initialize(self.db_adapter, self.event_bus, {})
+            self._plugins[plugin_id] = plugin
+            self._plugin_status[plugin_id] = PluginStatus.LOADED
 
-                # Publish event
-                await self.event_bus.publish(
-                    "plugin.loaded", {"plugin_id": plugin_id}, source="PluginManager"
-                )
+            # Publish event
+            await self.event_bus.publish(
+                "plugin.loaded", {"plugin_id": plugin_id}, source="PluginManager"
+            )
 
-                logger.info(f"Successfully loaded plugin: {plugin_id}")
-                return True
-            else:
-                self._plugin_status[plugin_id] = PluginStatus.ERROR
-                logger.error(f"Failed to initialize plugin: {plugin_id}")
-                return False
+            logger.info(f"Successfully loaded plugin: {plugin_id}")
+            return True
 
         except Exception as e:
+            import traceback
+
             self._plugin_status[plugin_id] = PluginStatus.ERROR
             logger.error(f"Failed to load plugin {plugin_id}: {e}")
+            logger.error(f"Full traceback: {traceback.format_exc()}")
             return False
 
     async def unload_plugin(self, plugin_id: str) -> bool:
@@ -525,7 +544,7 @@ class PluginManager:
             logger.error(f"Failed to unload plugin {plugin_id}: {e}")
             return False
 
-    async def enable_plugin(self, plugin_id: str) -> bool:
+    async def enable_plugin(self, plugin_id: str, enable_routes: bool = True) -> bool:
         """Enable a plugin."""
         if plugin_id not in self._plugins:
             # Try to load it first
@@ -536,19 +555,48 @@ class PluginManager:
 
         # Save to database
         if self.db_adapter:
-            enabled_plugins = await self.db_adapter.get("core.plugins.enabled", [])
-            if plugin_id not in enabled_plugins:
-                enabled_plugins.append(plugin_id)
-                await self.db_adapter.set("core.plugins.enabled", enabled_plugins)
+            try:
+                # Check if database is connected
+                if hasattr(self.db_adapter, "connected") and not self.db_adapter.connected:
+                    logger.warning(
+                        f"Database not connected, plugin {plugin_id} enabled but not persisted"
+                    )
+                else:
+                    enabled_plugins = await self.db_adapter.get("core.plugins.enabled", [])
+                    if plugin_id not in enabled_plugins:
+                        enabled_plugins.append(plugin_id)
+                        await self.db_adapter.set("core.plugins.enabled", enabled_plugins)
+            except RuntimeError as e:
+                if "Database not connected" in str(e):
+                    logger.warning(
+                        f"Database not connected, plugin {plugin_id} enabled but not persisted"
+                    )
+                else:
+                    raise
+
+        # Enable plugin routes if hot reload manager is available
+        if enable_routes and hasattr(self, "_hot_reload_manager") and self._hot_reload_manager:
+            plugin = self._plugins.get(plugin_id)
+            if plugin:
+                route_success = self._hot_reload_manager.enable_plugin_routes(plugin_id, plugin)
+                if not route_success:
+                    logger.warning(f"Failed to enable routes for plugin {plugin_id}")
 
         await self.event_bus.publish(
             "plugin.enabled", {"plugin_id": plugin_id}, source="PluginManager"
         )
 
+        logger.info(f"Plugin {plugin_id} enabled successfully")
         return True
 
-    async def disable_plugin(self, plugin_id: str) -> bool:
+    async def disable_plugin(self, plugin_id: str, disable_routes: bool = True) -> bool:
         """Disable a plugin."""
+        # Disable plugin routes first if hot reload manager is available
+        if disable_routes and hasattr(self, "_hot_reload_manager") and self._hot_reload_manager:
+            route_success = self._hot_reload_manager.disable_plugin_routes(plugin_id)
+            if not route_success:
+                logger.warning(f"Failed to disable routes for plugin {plugin_id}")
+
         if plugin_id in self._plugins:
             await self.unload_plugin(plugin_id)
 
@@ -556,15 +604,30 @@ class PluginManager:
 
         # Save to database
         if self.db_adapter:
-            enabled_plugins = await self.db_adapter.get("core.plugins.enabled", [])
-            if plugin_id in enabled_plugins:
-                enabled_plugins.remove(plugin_id)
-                await self.db_adapter.set("core.plugins.enabled", enabled_plugins)
+            try:
+                # Check if database is connected
+                if hasattr(self.db_adapter, "connected") and not self.db_adapter.connected:
+                    logger.warning(
+                        f"Database not connected, plugin {plugin_id} disabled but not persisted"
+                    )
+                else:
+                    enabled_plugins = await self.db_adapter.get("core.plugins.enabled", [])
+                    if plugin_id in enabled_plugins:
+                        enabled_plugins.remove(plugin_id)
+                        await self.db_adapter.set("core.plugins.enabled", enabled_plugins)
+            except RuntimeError as e:
+                if "Database not connected" in str(e):
+                    logger.warning(
+                        f"Database not connected, plugin {plugin_id} disabled but not persisted"
+                    )
+                else:
+                    raise
 
         await self.event_bus.publish(
             "plugin.disabled", {"plugin_id": plugin_id}, source="PluginManager"
         )
 
+        logger.info(f"Plugin {plugin_id} disabled successfully")
         return True
 
     def get_loaded_plugins(self) -> Dict[str, Any]:
@@ -641,3 +704,70 @@ class PluginManager:
                     return f"plugins.{category_dir.name}.{plugin_name}.plugin"
 
         return None
+
+    async def cleanup_enabled_plugins_list(self) -> int:
+        """Clean up enabled plugins list by removing non-existent plugins."""
+        if not self.db_adapter:
+            return 0
+
+        try:
+            enabled_plugins = await self.db_adapter.get("core.plugins.enabled", [])
+            cleaned_plugins = []
+            removed_count = 0
+
+            for plugin_id in enabled_plugins:
+                # Check if plugin still exists in discovered plugins
+                if self.get_plugin_info(plugin_id):
+                    cleaned_plugins.append(plugin_id)
+                else:
+                    logger.warning(f"Removing non-existent plugin {plugin_id} from enabled list")
+                    removed_count += 1
+
+            # Update database if any plugins were removed
+            if removed_count > 0:
+                await self.db_adapter.set("core.plugins.enabled", cleaned_plugins)
+                logger.info(f"Cleaned up {removed_count} non-existent plugins from enabled list")
+
+            return removed_count
+
+        except Exception as e:
+            logger.error(f"Failed to cleanup enabled plugins list: {e}")
+            return 0
+
+    async def get_enabled_plugins_from_db(self) -> List[str]:
+        """Get list of enabled plugins from database."""
+        if not self.db_adapter:
+            return []
+
+        try:
+            result = await self.db_adapter.get("core.plugins.enabled", [])
+            return result if isinstance(result, list) else []
+        except Exception as e:
+            logger.error(f"Failed to get enabled plugins from database: {e}")
+            return []
+
+    async def validate_plugin_state(self, plugin_id: str) -> bool:
+        """Validate that a plugin's state is consistent between memory and database."""
+        try:
+            # Get status from memory
+            memory_status = self.get_plugin_status(plugin_id)
+
+            # Get enabled plugins from database
+            enabled_plugins = await self.get_enabled_plugins_from_db()
+            db_enabled = plugin_id in enabled_plugins
+
+            # Check consistency
+            is_enabled_in_memory = memory_status == PluginStatus.ENABLED
+
+            if is_enabled_in_memory != db_enabled:
+                logger.warning(
+                    f"Plugin {plugin_id} state inconsistency: "
+                    f"memory={memory_status.value}, database={'enabled' if db_enabled else 'disabled'}"
+                )
+                return False
+
+            return True
+
+        except Exception as e:
+            logger.error(f"Failed to validate plugin state for {plugin_id}: {e}")
+            return False

@@ -3,16 +3,31 @@ Nexus Framework Authentication Module
 Basic authentication and authorization functionality.
 """
 
+import configparser
 import logging
 import secrets
 from datetime import datetime
 from functools import wraps
 from typing import Any, Callable, Dict, List, Optional
 
-from fastapi import HTTPException, status
+from fastapi import HTTPException, Request, status
 from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
+
+# Global app instance for database access
+_app_instance = None
+
+
+def set_app_instance(app: Any) -> None:
+    """Set global app instance for database access"""
+    global _app_instance
+    _app_instance = app
+
+
+def get_app_instance() -> Any:
+    """Get global app instance"""
+    return _app_instance
 
 
 class User(BaseModel):
@@ -280,6 +295,7 @@ async def create_default_admin(auth_manager: AuthenticationManager) -> User:
     # Generate a secure random password for the admin user
     import secrets
     import string
+    from pathlib import Path
 
     # Generate a 16-character secure password
     alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
@@ -293,7 +309,26 @@ async def create_default_admin(auth_manager: AuthenticationManager) -> User:
         is_superuser=True,
     )
 
-    # Log the generated password securely (in production, use proper secret management)
+    # Save credentials to auth.ini file
+    try:
+        config = configparser.ConfigParser()
+        config["DEFAULT"] = {
+            "username": "admin",
+            "password": secure_password,
+            "email": "admin@nexus.local",
+            "full_name": "System Administrator",
+            "is_superuser": "True",
+        }
+
+        # Write to auth.ini file in the current directory
+        with open("auth.ini", "w") as configfile:
+            config.write(configfile)
+
+        logger.info("Created default admin user and saved credentials to auth.ini")
+    except Exception as e:
+        logger.error(f"Failed to save credentials to auth.ini: {e}")
+        logger.warning("Default admin password will only be available in logs")
+
     logger.warning(f"Default admin user created with password: {secure_password}")
     logger.warning("SECURITY: Change the admin password immediately in production!")
     logger.info("Created default admin user")
@@ -350,19 +385,71 @@ security = HTTPBearer(auto_error=False)
 
 
 async def get_current_user_dependency(
+    request: Request,
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),  # noqa: B008
 ) -> Optional[User]:
     """Get current authenticated user from authorization credentials."""
-    if not credentials:
+    token = None
+
+    # Try to get token from authorization header
+    if credentials:
+        token = credentials.credentials
+
+    # If no token in header, try to get from cookie
+    if not token:
+        token = request.cookies.get("access_token")
+
+    if not token:
         return None
 
-    auth_manager = get_auth_manager()
-    token = credentials.credentials
+    try:
+        # Import JWT verification
+        import jwt
 
-    if not await auth_manager.is_session_valid(token):
+        # For now, use a simple JWT verification with the same secret as security plugin
+        payload = jwt.decode(token, "your-secret-key", algorithms=["HS256"])
+        user_id = payload.get("user_id")
+
+        if not user_id:
+            return None
+
+        # Get database from global app instance
+        app = get_app_instance()
+        if not app or not app.database:
+            logger.warning("No database connection available for authentication")
+            return None
+
+        db = app.database
+
+        # Query user from database
+        users = await db.query("SELECT * FROM users WHERE id = ? AND is_active = 1", [user_id])
+        if not users:
+            return None
+
+        user_data = users[0]
+
+        return User(
+            id=user_data["id"],
+            username=user_data["username"],
+            email=user_data["email"],
+            full_name=f"{user_data.get('first_name', '')} {user_data.get('last_name', '')}".strip(),
+            is_active=user_data["is_active"],
+            is_superuser=user_data.get("is_superuser", False),
+            created_at=datetime.fromisoformat(user_data["created_at"]),
+            last_login=(
+                datetime.fromisoformat(user_data["last_login"])
+                if user_data.get("last_login")
+                else None
+            ),
+            permissions=(
+                ["read", "write", "admin"] if user_data.get("is_superuser") else ["read", "write"]
+            ),
+            roles=["admin", "user"] if user_data.get("is_superuser") else ["user"],
+        )
+
+    except Exception as e:
+        logger.debug(f"Token validation failed: {e}")
         return None
-
-    return await auth_manager.get_user_by_token(token)
 
 
 async def require_authentication(
@@ -499,6 +586,8 @@ __all__ = [
     "require_authentication",
     "require_permission",
     "require_role",
+    "set_app_instance",
+    "get_app_instance",
     "create_permission_dependency",
     "create_role_dependency",
     "require_admin",

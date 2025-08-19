@@ -72,6 +72,7 @@ nav:
     - Plugin Development:
           - Overview: plugins/README.md
           - Basics: plugins/basics.md
+          - Hot Swap: plugins/hot-swap.md
           - API Routes: plugins/api-routes.md
           - Database: plugins/database.md
           - Testing: plugins/testing.md

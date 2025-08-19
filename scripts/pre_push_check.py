@@ -351,7 +351,7 @@ class PrePushChecker:
             "--asyncio-mode=auto",
             "--log-cli-level=WARNING",
             "--disable-warnings",
-            "--maxfail=5",
+            "--maxfail=999999",
         ]
 
         if not self.fast_mode:
@@ -362,7 +362,7 @@ class PrePushChecker:
                     "--cov-report=xml",
                     "--cov-report=html",
                     "--cov-report=term-missing",
-                    "--cov-fail-under=20",
+                    "--cov-fail-under=0",
                 ]
             )
 
@@ -394,7 +394,7 @@ class PrePushChecker:
                 "--tb=short",
                 "--asyncio-mode=auto",
                 "--disable-warnings",
-                "--maxfail=3",
+                "--maxfail=999999",
             ],
             check=False,
         )

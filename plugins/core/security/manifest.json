@@ -1,0 +1,170 @@
+{
+    "name": "security",
+    "version": "1.0.0",
+    "description": "Complete authentication and authorization system with RBAC support",
+    "author": "Nexus Platform Team",
+    "license": "MIT",
+    "category": "core",
+    "dependencies": {
+        "python": [">=3.8"],
+        "nexus-platform": [">=1.0.0"],
+        "fastapi": [">=0.68.0"],
+        "pydantic": [">=1.8.0"],
+        "passlib": [">=1.7.4"],
+        "python-jose": [">=3.3.0"],
+        "python-multipart": [">=0.0.5"]
+    },
+    "permissions": [
+        "security.auth.login",
+        "security.auth.logout",
+        "security.auth.refresh",
+        "security.users.create",
+        "security.users.read",
+        "security.users.update",
+        "security.users.delete",
+        "security.roles.create",
+        "security.roles.read",
+        "security.roles.update",
+        "security.roles.delete",
+        "security.permissions.assign",
+        "security.sessions.manage",
+        "security.admin.access"
+    ],
+    "routes": [
+        {
+            "path": "/auth",
+            "methods": ["GET", "POST"],
+            "description": "Authentication endpoints"
+        },
+        {
+            "path": "/auth/login",
+            "methods": ["POST"],
+            "description": "User login"
+        },
+        {
+            "path": "/auth/logout",
+            "methods": ["POST"],
+            "description": "User logout"
+        },
+        {
+            "path": "/auth/refresh",
+            "methods": ["POST"],
+            "description": "Refresh authentication token"
+        },
+        {
+            "path": "/auth/profile",
+            "methods": ["GET", "PUT"],
+            "description": "User profile management"
+        },
+        {
+            "path": "/security/dashboard",
+            "methods": ["GET"],
+            "description": "Security dashboard"
+        },
+        {
+            "path": "/security/users",
+            "methods": ["GET", "POST"],
+            "description": "User management"
+        },
+        {
+            "path": "/security/roles",
+            "methods": ["GET", "POST"],
+            "description": "Role management"
+        },
+        {
+            "path": "/security/sessions",
+            "methods": ["GET", "DELETE"],
+            "description": "Session management"
+        }
+    ],
+    "events": {
+        "publishes": [
+            "security.user.login",
+            "security.user.logout",
+            "security.user.created",
+            "security.user.updated",
+            "security.user.deleted",
+            "security.role.created",
+            "security.role.updated",
+            "security.role.deleted",
+            "security.permission.granted",
+            "security.permission.revoked",
+            "security.session.created",
+            "security.session.expired"
+        ],
+        "subscribes": ["system.startup", "system.shutdown", "user.activity"]
+    },
+    "database": {
+        "tables": [
+            "auth_users",
+            "auth_roles",
+            "auth_permissions",
+            "auth_user_roles",
+            "auth_role_permissions",
+            "auth_sessions",
+            "auth_login_attempts"
+        ]
+    },
+    "configuration": {
+        "jwt_secret_key": {
+            "type": "string",
+            "description": "JWT signing secret key",
+            "required": true,
+            "sensitive": true
+        },
+        "jwt_algorithm": {
+            "type": "string",
+            "description": "JWT signing algorithm",
+            "default": "HS256"
+        },
+        "access_token_expire_minutes": {
+            "type": "integer",
+            "description": "Access token expiration in minutes",
+            "default": 30
+        },
+        "refresh_token_expire_days": {
+            "type": "integer",
+            "description": "Refresh token expiration in days",
+            "default": 30
+        },
+        "max_login_attempts": {
+            "type": "integer",
+            "description": "Maximum login attempts before lockout",
+            "default": 5
+        },
+        "lockout_duration_minutes": {
+            "type": "integer",
+            "description": "Account lockout duration in minutes",
+            "default": 15
+        },
+        "password_min_length": {
+            "type": "integer",
+            "description": "Minimum password length",
+            "default": 8
+        },
+        "require_email_verification": {
+            "type": "boolean",
+            "description": "Require email verification for new accounts",
+            "default": false
+        },
+        "enable_2fa": {
+            "type": "boolean",
+            "description": "Enable two-factor authentication",
+            "default": false
+        }
+    },
+    "ui": {
+        "templates": [
+            "login.html",
+            "dashboard.html",
+            "profile.html",
+            "users.html",
+            "roles.html",
+            "sessions.html"
+        ],
+        "static_files": ["css/security.css", "js/security.js", "js/auth.js"]
+    },
+    "startup_order": 1,
+    "essential": true,
+    "hot_reload": true
+}

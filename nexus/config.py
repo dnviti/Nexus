@@ -33,7 +33,10 @@ class Environment(str, Enum):
 
 
 # Security constants
-DEFAULT_JWT_SECRET = "change-me-in-production"
+# WARNING: This is a development-only secret. In production, ALWAYS set
+# NEXUS_JWT_SECRET environment variable or configure via config file.
+# Framework will refuse to start in production with this default value.
+DEFAULT_JWT_SECRET = "dev-only-insecure-secret-change-in-production"
 
 
 class DatabaseType(str, Enum):

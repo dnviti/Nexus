@@ -17,7 +17,7 @@ body:
       attributes:
           label: Nexus Version
           description: What version of Nexus are you running?
-          placeholder: "0.1.5"
+          placeholder: "0.1.6"
       validations:
           required: true
 

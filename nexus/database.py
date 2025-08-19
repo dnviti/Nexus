@@ -137,6 +137,21 @@ class DatabaseAdapter(ABC):
         """Check database health."""
         pass
 
+    @abstractmethod
+    async def execute(self, query: str, params: Optional[List[Any]] = None) -> None:
+        """Execute a raw SQL query."""
+        pass
+
+    @abstractmethod
+    async def query(self, query: str, params: Optional[List[Any]] = None) -> List[Dict[str, Any]]:
+        """Execute a SELECT query and return results as list of dictionaries."""
+        pass
+
+    @abstractmethod
+    async def insert(self, table: str, data: Dict[str, Any]) -> None:
+        """Insert data into a table."""
+        pass
+
 
 class SQLAlchemyAdapter(DatabaseAdapter):
     """SQLAlchemy-based database adapter for SQL databases."""
@@ -305,6 +320,81 @@ class SQLAlchemyAdapter(DatabaseAdapter):
                 }
         except Exception as e:
             return {"status": "unhealthy", "error": str(e), "connected": False}
+
+    async def execute(self, query: str, params: Optional[List[Any]] = None) -> None:
+        """Execute a raw SQL query."""
+        if not self.connected:
+            raise RuntimeError("Database not connected")
+
+        if self.session_factory is None:
+            raise RuntimeError("Database not connected")
+
+        async with self.session_factory() as session:
+            if params:
+                # Convert list of parameters to dictionary for SQLAlchemy
+                param_dict = {f"param_{i}": param for i, param in enumerate(params)}
+                # Replace ? placeholders with :param_0, :param_1, etc.
+                modified_query = query
+                for i in range(len(params)):
+                    modified_query = modified_query.replace("?", f":param_{i}", 1)
+                await session.execute(text(modified_query), param_dict)
+            else:
+                await session.execute(text(query))
+            await session.commit()
+
+    async def query(self, query: str, params: Optional[List[Any]] = None) -> List[Dict[str, Any]]:
+        """Execute a SELECT query and return results as list of dictionaries."""
+        if not self.connected:
+            raise RuntimeError("Database not connected")
+
+        if self.session_factory is None:
+            raise RuntimeError("Database not connected")
+
+        async with self.session_factory() as session:
+            if params:
+                # Convert list of parameters to dictionary for SQLAlchemy
+                param_dict = {f"param_{i}": param for i, param in enumerate(params)}
+                # Replace ? placeholders with :param_0, :param_1, etc.
+                modified_query = query
+                for i in range(len(params)):
+                    modified_query = modified_query.replace("?", f":param_{i}", 1)
+                result = await session.execute(text(modified_query), param_dict)
+            else:
+                result = await session.execute(text(query))
+
+            # Convert result to list of dictionaries
+            rows = result.fetchall()
+            if rows:
+                columns = result.keys()
+                return [dict(zip(columns, row)) for row in rows]
+            return []
+
+    async def insert(self, table: str, data: Dict[str, Any]) -> None:
+        """Insert data into a table."""
+        if not self.connected:
+            raise RuntimeError("Database not connected")
+
+        if self.session_factory is None:
+            raise RuntimeError("Database not connected")
+
+        # Serialize complex data types to JSON
+        serialized_data = {}
+        for key, value in data.items():
+            if isinstance(value, (dict, list)):
+                serialized_data[key] = json.dumps(value)
+            else:
+                serialized_data[key] = value
+
+        # Build INSERT query with OR IGNORE for SQLite to handle duplicates gracefully
+        columns = list(serialized_data.keys())
+        placeholders = [f":param_{i}" for i in range(len(columns))]
+        query = f"INSERT OR IGNORE INTO {table} ({', '.join(columns)}) VALUES ({', '.join(placeholders)})"
+
+        param_dict = {f"param_{i}": serialized_data[col] for i, col in enumerate(columns)}
+
+        async with self.session_factory() as session:
+            await session.execute(text(query), param_dict)
+            await session.commit()
 
     def _build_connection_url(self) -> str:
         """Build database connection URL."""
@@ -500,6 +590,18 @@ class MongoDBAdapter(DatabaseAdapter):
         except Exception as e:
             return {"status": "unhealthy", "error": str(e), "connected": False}
 
+    async def execute(self, query: str, params: Optional[List[Any]] = None) -> None:
+        """Execute a raw query - MongoDB doesn't support SQL, so this raises NotImplementedError."""
+        raise NotImplementedError("MongoDB adapter doesn't support raw SQL execution")
+
+    async def query(self, query: str, params: Optional[List[Any]] = None) -> List[Dict[str, Any]]:
+        """Execute a SELECT query - MongoDB doesn't support SQL, so this raises NotImplementedError."""
+        raise NotImplementedError("MongoDB adapter doesn't support raw SQL queries")
+
+    async def insert(self, table: str, data: Dict[str, Any]) -> None:
+        """Insert data into a collection - MongoDB doesn't support SQL table operations."""
+        raise NotImplementedError("MongoDB adapter doesn't support SQL table operations")
+
     def _build_connection_url(self) -> str:
         """Build MongoDB connection URL."""
         if self.config.url:
@@ -595,6 +697,18 @@ class MemoryAdapter(DatabaseAdapter):
             "connected": self.connected,
             "total_keys": len(self.data) if self.connected else 0,
         }
+
+    async def execute(self, query: str, params: Optional[List[Any]] = None) -> None:
+        """Execute a raw query - MemoryAdapter doesn't support SQL, so this raises NotImplementedError."""
+        raise NotImplementedError("MemoryAdapter doesn't support raw SQL execution")
+
+    async def query(self, query: str, params: Optional[List[Any]] = None) -> List[Dict[str, Any]]:
+        """Execute a SELECT query - MemoryAdapter doesn't support SQL, so this raises NotImplementedError."""
+        raise NotImplementedError("MemoryAdapter doesn't support raw SQL queries")
+
+    async def insert(self, table: str, data: Dict[str, Any]) -> None:
+        """Insert data into a table - MemoryAdapter doesn't support SQL table operations."""
+        raise NotImplementedError("MemoryAdapter doesn't support SQL table operations")
 
 
 # Database Factory

@@ -192,7 +192,7 @@ class MyPlugin(BasePlugin):
     "compatibility": {
         "min_framework_version": "0.1.0",
         "max_framework_version": null,
-        "tested_versions": ["0.1.0", "0.1.5"]
+        "tested_versions": ["0.1.0", "0.1.6"]
     }
 }
 ```

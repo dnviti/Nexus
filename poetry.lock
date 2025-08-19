@@ -5010,6 +5010,21 @@ anyio = ">=3.4.0,<5"
 full = ["httpx (>=0.22.0)", "itsdangerous", "jinja2", "python-multipart (>=0.0.7)", "pyyaml"]
 
 [[package]]
+name = "tabulate"
+version = "0.9.0"
+description = "Pretty-print tabular data"
+optional = false
+python-versions = ">=3.7"
+groups = ["main"]
+files = [
+    {file = "tabulate-0.9.0-py3-none-any.whl", hash = "sha256:024ca478df22e9340661486f85298cff5f6dcdba14f3813e8830015b9ed1948f"},
+    {file = "tabulate-0.9.0.tar.gz", hash = "sha256:0095b12bf5966de529c0feb1fa08671671b3368eec77d7ef7ab114be2c068b3c"},
+]
+
+[package.extras]
+widechars = ["wcwidth"]
+
+[[package]]
 name = "toml"
 version = "0.10.2"
 description = "Python Library for Tom's Obvious, Minimal Language"
@@ -5551,4 +5566,4 @@ task-scheduler = ["apscheduler", "croniter"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.11"
-content-hash = "ac9d4afef5addb3636d9b620044f2dcf80d2f59d8d902118d9c8b5de0c38fc29"
+content-hash = "65d56a1f1e9c2b3479a474863a3603a3e643da413b5f78cb7a1124aebd0e03f1"

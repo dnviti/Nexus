@@ -1,11 +1,308 @@
 {
-  "name": "user_management",
-  "version": "1.0.0",
-  "description": "A user_management plugin",
-  "author": "Unknown",
-  "category": "business",
-  "license": "MIT",
-  "dependencies": {},
-  "permissions": [],
-  "tags": []
+    "name": "user_management",
+    "version": "1.0.0",
+    "description": "Comprehensive user management system with advanced administration features",
+    "author": "Nexus Platform Team",
+    "license": "MIT",
+    "category": "business",
+    "dependencies": {
+        "python": [">=3.8"],
+        "nexus-platform": [">=1.0.0"],
+        "fastapi": [">=0.68.0"],
+        "pydantic": [">=1.8.0"],
+        "jinja2": [">=3.0.0"]
+    },
+    "requires": ["security"],
+    "permissions": [
+        "user_management.admin.access",
+        "user_management.users.create",
+        "user_management.users.read",
+        "user_management.users.update",
+        "user_management.users.delete",
+        "user_management.users.import",
+        "user_management.users.export",
+        "user_management.roles.create",
+        "user_management.roles.read",
+        "user_management.roles.update",
+        "user_management.roles.delete",
+        "user_management.roles.assign",
+        "user_management.permissions.create",
+        "user_management.permissions.read",
+        "user_management.permissions.update",
+        "user_management.permissions.delete",
+        "user_management.permissions.assign",
+        "user_management.groups.create",
+        "user_management.groups.read",
+        "user_management.groups.update",
+        "user_management.groups.delete",
+        "user_management.audit.read",
+        "user_management.reports.generate"
+    ],
+    "routes": [
+        {
+            "path": "/user-management",
+            "methods": ["GET"],
+            "description": "User management dashboard"
+        },
+        {
+            "path": "/user-management/users",
+            "methods": ["GET", "POST"],
+            "description": "User listing and creation"
+        },
+        {
+            "path": "/user-management/users/{user_id}",
+            "methods": ["GET", "PUT", "DELETE"],
+            "description": "Individual user management"
+        },
+        {
+            "path": "/user-management/users/{user_id}/roles",
+            "methods": ["GET", "POST", "DELETE"],
+            "description": "User role management"
+        },
+        {
+            "path": "/user-management/users/{user_id}/permissions",
+            "methods": ["GET", "POST", "DELETE"],
+            "description": "User permission management"
+        },
+        {
+            "path": "/user-management/users/bulk",
+            "methods": ["POST", "PUT", "DELETE"],
+            "description": "Bulk user operations"
+        },
+        {
+            "path": "/user-management/users/import",
+            "methods": ["POST"],
+            "description": "User data import"
+        },
+        {
+            "path": "/user-management/users/export",
+            "methods": ["GET"],
+            "description": "User data export"
+        },
+        {
+            "path": "/user-management/roles",
+            "methods": ["GET", "POST"],
+            "description": "Role management"
+        },
+        {
+            "path": "/user-management/roles/{role_id}",
+            "methods": ["GET", "PUT", "DELETE"],
+            "description": "Individual role management"
+        },
+        {
+            "path": "/user-management/roles/{role_id}/permissions",
+            "methods": ["GET", "POST", "DELETE"],
+            "description": "Role permission management"
+        },
+        {
+            "path": "/user-management/permissions",
+            "methods": ["GET", "POST"],
+            "description": "Permission management"
+        },
+        {
+            "path": "/user-management/permissions/{permission_id}",
+            "methods": ["GET", "PUT", "DELETE"],
+            "description": "Individual permission management"
+        },
+        {
+            "path": "/user-management/groups",
+            "methods": ["GET", "POST"],
+            "description": "Group management"
+        },
+        {
+            "path": "/user-management/groups/{group_id}",
+            "methods": ["GET", "PUT", "DELETE"],
+            "description": "Individual group management"
+        },
+        {
+            "path": "/user-management/groups/{group_id}/members",
+            "methods": ["GET", "POST", "DELETE"],
+            "description": "Group member management"
+        },
+        {
+            "path": "/user-management/audit",
+            "methods": ["GET"],
+            "description": "User management audit logs"
+        },
+        {
+            "path": "/user-management/reports",
+            "methods": ["GET"],
+            "description": "User management reports"
+        },
+        {
+            "path": "/user-management/settings",
+            "methods": ["GET", "PUT"],
+            "description": "User management settings"
+        }
+    ],
+    "events": {
+        "publishes": [
+            "user_management.user.profile_updated",
+            "user_management.user.status_changed",
+            "user_management.user.role_assigned",
+            "user_management.user.role_removed",
+            "user_management.user.permission_granted",
+            "user_management.user.permission_revoked",
+            "user_management.user.group_joined",
+            "user_management.user.group_left",
+            "user_management.role.created",
+            "user_management.role.updated",
+            "user_management.role.deleted",
+            "user_management.permission.created",
+            "user_management.permission.updated",
+            "user_management.permission.deleted",
+            "user_management.group.created",
+            "user_management.group.updated",
+            "user_management.group.deleted",
+            "user_management.bulk_operation.completed",
+            "user_management.import.completed",
+            "user_management.export.completed"
+        ],
+        "subscribes": [
+            "security.user.login",
+            "security.user.logout",
+            "security.user.created",
+            "security.user.updated",
+            "security.user.deleted",
+            "system.startup",
+            "system.shutdown"
+        ]
+    },
+    "database": {
+        "tables": [
+            "user_profiles",
+            "user_groups",
+            "user_group_members",
+            "user_preferences",
+            "user_activity_log",
+            "role_hierarchy",
+            "permission_categories",
+            "user_management_audit",
+            "bulk_operations",
+            "import_export_jobs"
+        ]
+    },
+    "configuration": {
+        "default_user_role": {
+            "type": "string",
+            "description": "Default role assigned to new users",
+            "default": "user"
+        },
+        "require_email_verification": {
+            "type": "boolean",
+            "description": "Require email verification for new users",
+            "default": true
+        },
+        "password_reset_expiry_hours": {
+            "type": "integer",
+            "description": "Password reset token expiry in hours",
+            "default": 24
+        },
+        "max_failed_login_attempts": {
+            "type": "integer",
+            "description": "Maximum failed login attempts before account lock",
+            "default": 5
+        },
+        "account_lockout_duration_minutes": {
+            "type": "integer",
+            "description": "Account lockout duration in minutes",
+            "default": 30
+        },
+        "enable_user_registration": {
+            "type": "boolean",
+            "description": "Allow user self-registration",
+            "default": false
+        },
+        "enable_user_groups": {
+            "type": "boolean",
+            "description": "Enable user groups functionality",
+            "default": true
+        },
+        "enable_role_hierarchy": {
+            "type": "boolean",
+            "description": "Enable hierarchical role inheritance",
+            "default": true
+        },
+        "max_users_per_page": {
+            "type": "integer",
+            "description": "Maximum users displayed per page",
+            "default": 50
+        },
+        "enable_audit_logging": {
+            "type": "boolean",
+            "description": "Enable detailed audit logging",
+            "default": true
+        },
+        "audit_retention_days": {
+            "type": "integer",
+            "description": "Audit log retention period in days",
+            "default": 90
+        },
+        "enable_bulk_operations": {
+            "type": "boolean",
+            "description": "Enable bulk user operations",
+            "default": true
+        },
+        "max_bulk_operation_size": {
+            "type": "integer",
+            "description": "Maximum number of users in bulk operations",
+            "default": 1000
+        },
+        "enable_data_export": {
+            "type": "boolean",
+            "description": "Enable user data export functionality",
+            "default": true
+        },
+        "enable_data_import": {
+            "type": "boolean",
+            "description": "Enable user data import functionality",
+            "default": true
+        },
+        "allowed_import_formats": {
+            "type": "list",
+            "description": "Allowed file formats for user import",
+            "default": ["csv", "xlsx", "json"]
+        }
+    },
+    "ui": {
+        "templates": [
+            "dashboard.html",
+            "users/list.html",
+            "users/detail.html",
+            "users/create.html",
+            "users/edit.html",
+            "users/bulk.html",
+            "users/import.html",
+            "users/export.html",
+            "roles/list.html",
+            "roles/detail.html",
+            "roles/create.html",
+            "roles/edit.html",
+            "permissions/list.html",
+            "permissions/detail.html",
+            "permissions/create.html",
+            "permissions/edit.html",
+            "groups/list.html",
+            "groups/detail.html",
+            "groups/create.html",
+            "groups/edit.html",
+            "audit/logs.html",
+            "reports/dashboard.html",
+            "settings/config.html"
+        ],
+        "static_files": [
+            "css/user-management.css",
+            "js/user-management.js",
+            "js/bulk-operations.js",
+            "js/role-management.js",
+            "js/permission-management.js",
+            "js/group-management.js",
+            "js/audit-viewer.js",
+            "js/import-export.js",
+            "images/user-avatar-default.png"
+        ]
+    },
+    "startup_order": 2,
+    "essential": true,
+    "hot_reload": true
 }

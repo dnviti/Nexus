@@ -10,10 +10,10 @@ import sys
 
 # Setup basic logging
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger("nexus.main")
+
 
 def main():
     """Main application entry point."""
@@ -21,11 +21,12 @@ def main():
         # Import here to avoid import issues during startup
         from nexus import create_nexus_app
 
-        # Create the Nexus application
+        # Create the Nexus application with config file
         app = create_nexus_app(
             title="Nexus Application",
             version="1.0.0",
-            description="A modular application built with Nexus Framework"
+            description="A modular application built with Nexus Framework",
+            config="nexus_config.yaml",
         )
 
         logger.info("Nexus application created successfully")
@@ -39,6 +40,7 @@ def main():
         logger.error(f"Failed to create Nexus application: {e}")
         sys.exit(1)
 
+
 if __name__ == "__main__":
     import uvicorn
 
@@ -47,13 +49,7 @@ if __name__ == "__main__":
 
     # Run the application
     try:
-        uvicorn.run(
-            app,
-            host="0.0.0.0",
-            port=8000,
-            log_level="info",
-            access_log=True
-        )
+        uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info", access_log=True)
     except KeyboardInterrupt:
         logger.info("Application stopped by user")
     except Exception as e:

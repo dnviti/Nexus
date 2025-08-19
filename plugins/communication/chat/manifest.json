@@ -1,0 +1,334 @@
+{
+    "name": "chat",
+    "version": "1.0.0",
+    "description": "Real-time chat system with notifications using Nexus Platform event bus",
+    "author": "Nexus Platform Team",
+    "license": "MIT",
+    "category": "communication",
+    "dependencies": {
+        "python": [">=3.8"],
+        "nexus-platform": [">=1.0.0"],
+        "fastapi": [">=0.68.0"],
+        "pydantic": [">=1.8.0"],
+        "websockets": [">=10.0"],
+        "python-socketio": [">=5.3.0"]
+    },
+    "requires": ["security", "user_management"],
+    "permissions": [
+        "chat.messages.send",
+        "chat.messages.read",
+        "chat.messages.delete",
+        "chat.messages.edit",
+        "chat.rooms.create",
+        "chat.rooms.join",
+        "chat.rooms.leave",
+        "chat.rooms.manage",
+        "chat.rooms.delete",
+        "chat.notifications.read",
+        "chat.notifications.manage",
+        "chat.admin.access",
+        "chat.admin.moderate",
+        "chat.admin.broadcast",
+        "chat.files.upload",
+        "chat.files.download",
+        "chat.history.view",
+        "chat.history.export"
+    ],
+    "routes": [
+        {
+            "path": "/chat",
+            "methods": ["GET"],
+            "description": "Chat application interface"
+        },
+        {
+            "path": "/chat/test",
+            "methods": ["GET"],
+            "description": "Chat application interface"
+        },
+        {
+            "path": "/chat/rooms",
+            "methods": ["GET", "POST"],
+            "description": "Chat rooms management"
+        },
+        {
+            "path": "/chat/rooms/{room_id}",
+            "methods": ["GET", "PUT", "DELETE"],
+            "description": "Individual room management"
+        },
+        {
+            "path": "/chat/rooms/{room_id}/messages",
+            "methods": ["GET", "POST"],
+            "description": "Room messages"
+        },
+        {
+            "path": "/chat/rooms/{room_id}/members",
+            "methods": ["GET", "POST", "DELETE"],
+            "description": "Room member management"
+        },
+        {
+            "path": "/chat/messages/{message_id}",
+            "methods": ["GET", "PUT", "DELETE"],
+            "description": "Individual message management"
+        },
+        {
+            "path": "/chat/notifications",
+            "methods": ["GET", "PUT"],
+            "description": "User notifications"
+        },
+        {
+            "path": "/chat/history",
+            "methods": ["GET"],
+            "description": "Chat history and search"
+        },
+        {
+            "path": "/chat/files/upload",
+            "methods": ["POST"],
+            "description": "File upload for chat"
+        },
+        {
+            "path": "/chat/files/{file_id}",
+            "methods": ["GET", "DELETE"],
+            "description": "File management"
+        },
+        {
+            "path": "/chat/admin",
+            "methods": ["GET"],
+            "description": "Chat administration dashboard"
+        },
+        {
+            "path": "/chat/admin/moderate",
+            "methods": ["POST"],
+            "description": "Message moderation"
+        },
+        {
+            "path": "/chat/admin/broadcast",
+            "methods": ["POST"],
+            "description": "System broadcast messages"
+        },
+        {
+            "path": "/chat/ws",
+            "methods": ["GET"],
+            "description": "WebSocket connection for real-time chat"
+        }
+    ],
+    "websocket": {
+        "endpoints": ["/chat/ws"],
+        "events": [
+            "message_sent",
+            "message_received",
+            "user_joined",
+            "user_left",
+            "user_typing",
+            "user_stopped_typing",
+            "room_created",
+            "room_updated",
+            "room_deleted",
+            "notification_received"
+        ]
+    },
+    "events": {
+        "publishes": [
+            "chat.message.sent",
+            "chat.message.received",
+            "chat.message.edited",
+            "chat.message.deleted",
+            "chat.room.created",
+            "chat.room.updated",
+            "chat.room.deleted",
+            "chat.room.member_joined",
+            "chat.room.member_left",
+            "chat.user.online",
+            "chat.user.offline",
+            "chat.user.typing",
+            "chat.notification.created",
+            "chat.notification.read",
+            "chat.file.uploaded",
+            "chat.file.downloaded",
+            "chat.moderation.action"
+        ],
+        "subscribes": [
+            "security.user.login",
+            "security.user.logout",
+            "user_management.user.profile_updated",
+            "user_management.user.status_changed",
+            "system.startup",
+            "system.shutdown"
+        ]
+    },
+    "database": {
+        "tables": [
+            "chat_rooms",
+            "chat_messages",
+            "chat_room_members",
+            "chat_notifications",
+            "chat_user_presence",
+            "chat_message_reactions",
+            "chat_files",
+            "chat_message_threads",
+            "chat_moderation_logs",
+            "chat_user_settings",
+            "chat_message_attachments"
+        ]
+    },
+    "configuration": {
+        "max_message_length": {
+            "type": "integer",
+            "description": "Maximum message length in characters",
+            "default": 4000
+        },
+        "max_file_size_mb": {
+            "type": "integer",
+            "description": "Maximum file upload size in MB",
+            "default": 10
+        },
+        "allowed_file_types": {
+            "type": "list",
+            "description": "Allowed file types for upload",
+            "default": ["jpg", "jpeg", "png", "gif", "pdf", "txt", "doc", "docx"]
+        },
+        "message_history_days": {
+            "type": "integer",
+            "description": "Days to keep message history",
+            "default": 365
+        },
+        "enable_file_uploads": {
+            "type": "boolean",
+            "description": "Enable file uploads in chat",
+            "default": true
+        },
+        "enable_message_reactions": {
+            "type": "boolean",
+            "description": "Enable message reactions (emoji)",
+            "default": true
+        },
+        "enable_message_threads": {
+            "type": "boolean",
+            "description": "Enable threaded conversations",
+            "default": true
+        },
+        "enable_typing_indicators": {
+            "type": "boolean",
+            "description": "Show typing indicators",
+            "default": true
+        },
+        "enable_read_receipts": {
+            "type": "boolean",
+            "description": "Show message read receipts",
+            "default": true
+        },
+        "enable_message_search": {
+            "type": "boolean",
+            "description": "Enable message search functionality",
+            "default": true
+        },
+        "auto_delete_messages": {
+            "type": "boolean",
+            "description": "Automatically delete old messages",
+            "default": false
+        },
+        "notification_sound": {
+            "type": "boolean",
+            "description": "Play notification sounds",
+            "default": true
+        },
+        "desktop_notifications": {
+            "type": "boolean",
+            "description": "Show desktop notifications",
+            "default": true
+        },
+        "max_rooms_per_user": {
+            "type": "integer",
+            "description": "Maximum rooms a user can create",
+            "default": 50
+        },
+        "max_members_per_room": {
+            "type": "integer",
+            "description": "Maximum members per room",
+            "default": 1000
+        },
+        "enable_private_messages": {
+            "type": "boolean",
+            "description": "Enable direct/private messages",
+            "default": true
+        },
+        "enable_group_chat": {
+            "type": "boolean",
+            "description": "Enable group chat rooms",
+            "default": true
+        },
+        "enable_public_rooms": {
+            "type": "boolean",
+            "description": "Enable public chat rooms",
+            "default": true
+        },
+        "moderation_enabled": {
+            "type": "boolean",
+            "description": "Enable message moderation",
+            "default": true
+        },
+        "profanity_filter": {
+            "type": "boolean",
+            "description": "Enable profanity filtering",
+            "default": false
+        },
+        "rate_limit_messages": {
+            "type": "integer",
+            "description": "Messages per minute rate limit",
+            "default": 30
+        }
+    },
+    "ui": {
+        "templates": [
+            "chat.html",
+            "rooms/list.html",
+            "rooms/create.html",
+            "rooms/detail.html",
+            "messages/thread.html",
+            "notifications/list.html",
+            "admin/dashboard.html",
+            "admin/moderation.html",
+            "history/search.html",
+            "settings/preferences.html"
+        ],
+        "static_files": [
+            "css/chat.css",
+            "css/chat-dark.css",
+            "js/chat.js",
+            "js/websocket-client.js",
+            "js/file-upload.js",
+            "js/emoji-picker.js",
+            "js/message-composer.js",
+            "js/notifications.js",
+            "js/search.js",
+            "sounds/notification.mp3",
+            "sounds/message-sent.mp3",
+            "images/default-avatar.png",
+            "images/file-icons/"
+        ]
+    },
+    "real_time": {
+        "websocket_path": "/chat/ws",
+        "heartbeat_interval": 30,
+        "connection_timeout": 60,
+        "max_connections_per_user": 5,
+        "enable_presence": true,
+        "presence_timeout": 300
+    },
+    "notifications": {
+        "types": [
+            "new_message",
+            "mention",
+            "room_invitation",
+            "room_update",
+            "direct_message",
+            "file_shared",
+            "reaction_added",
+            "thread_reply"
+        ],
+        "delivery": ["websocket", "database", "email"],
+        "retention_days": 30
+    },
+    "startup_order": 3,
+    "essential": false,
+    "hot_reload": true
+}

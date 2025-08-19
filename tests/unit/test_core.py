@@ -436,6 +436,15 @@ class TestDatabaseAdapter:
             async def health_check(self):
                 return {"status": "ok"}
 
+            async def execute(self, query: str, params=None):
+                pass
+
+            async def query(self, query: str, params=None):
+                return []
+
+            async def insert(self, table: str, data):
+                pass
+
         from nexus.database import DatabaseConfig
 
         config = DatabaseConfig()

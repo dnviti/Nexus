@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexus Event Monitor</title>
+    <link rel="stylesheet" href="/static/css/nexus-ui.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Nexus Event Monitor</h1>
+            <p>Real-time event monitoring and debugging interface</p>
+        </div>
+
+        <div class="content">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>Active Plugins</h3>
+                    <div class="stat-value" id="plugin-count">-</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Total Events</h3>
+                    <div class="stat-value" id="event-count">0</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Events/min</h3>
+                    <div class="stat-value" id="events-per-min">0</div>
+                </div>
+                <div class="stat-card">
+                    <h3>System Status</h3>
+                    <div class="stat-value" id="system-status">🟢 Online</div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>🔍 Event Stream</h2>
+                <div class="controls">
+                    <button id="toggle-stream" class="btn btn-primary">▶️ Start Monitor</button>
+                    <button id="clear-events" class="btn btn-secondary">🗑️ Clear</button>
+                    <input type="text" id="filter-input" placeholder="Filter events..." class="filter-input">
+                </div>
+                <div id="event-container" class="event-container">
+                    <div class="no-events">No events captured yet. Click "Start Monitor" to begin.</div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>🔌 Active Plugins</h2>
+                <div id="plugin-list" class="plugin-grid">
+                    <!-- Plugins will be loaded here -->
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>📊 System Information</h2>
+                <div class="system-info">
+                    <div class="info-group">
+                        <h4>Application</h4>
+                        <div id="app-info">Loading...</div>
+                    </div>
+                    <div class="info-group">
+                        <h4>Performance</h4>
+                        <div id="performance-info">Loading...</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>⚡ Quick Actions</h2>
+                <div class="action-buttons">
+                    <button class="btn btn-action" onclick="sendTestEvent()">🧪 Send Test Event</button>
+                    <button class="btn btn-action" onclick="refreshPlugins()">🔄 Refresh Plugins</button>
+                    <button class="btn btn-action" onclick="exportEvents()">📥 Export Events</button>
+                    <button class="btn btn-action" onclick="showSystemHealth()">❤️ System Health</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/nexus-debug.js"></script>
+    <script>
+        // Initialize the debug interface
+        document.addEventListener('DOMContentLoaded', function() {
+            NexusDebug.init();
+        });
+    </script>
+</body>
+</html>

@@ -1,41 +1,136 @@
 # Nexus Platform Configuration
 
 app:
-  name: "Nexus Platform Demo"
-  version: "1.0.0"
-  description: "Complete Nexus Platform demonstration"
-  environment: "development"
-  debug: true
+    name: "Nexus Platform"
+    version: "1.0.0"
+    description: "Complete enterprise-grade platform with user management, security, and real-time chat"
+    environment: "development"
+    debug: true
 
 server:
-  host: "0.0.0.0"
-  port: 8000
-  workers: 1
-  reload: true
+    host: "0.0.0.0"
+    port: 8080
+    workers: 1
+    reload: true
 
 database:
-  type: "memory"
-  # For SQLite:
-  # type: "sqlite"
-  # url: "sqlite:///./nexus.db"
+    type: "sqlite"
+    url: "sqlite:///./nexus.db"
+    # For memory (testing only):
+    # type: "memory"
 
 auth:
-  jwt_secret: "your-secret-key-change-in-production"
-  jwt_algorithm: "HS256"
-  token_expiry: 3600
-  password_min_length: 8
+    jwt_secret: "nexus-platform-secret-key-change-in-production-2024"
+    jwt_algorithm: "HS256"
+    token_expiry: 1800 # 30 minutes
+    refresh_token_expiry: 2592000 # 30 days
+    password_min_length: 8
 
 plugins:
-  directory: "plugins"
-  auto_load: true
-  hot_reload: true
+    directory: "plugins"
+    auto_load: true
+    hot_reload: true
+    enabled_plugins:
+        - "security"
+        - "user_management"
+        - "chat"
+
+# Plugin-specific configurations
+security:
+    jwt_secret_key: "nexus-platform-secret-key-change-in-production-2024"
+    jwt_algorithm: "HS256"
+    access_token_expire_minutes: 30
+    refresh_token_expire_days: 30
+    max_login_attempts: 5
+    lockout_duration_minutes: 15
+    password_min_length: 8
+    require_email_verification: false
+    enable_2fa: false
+
+user_management:
+    default_user_role: "user"
+    require_email_verification: true
+    password_reset_expiry_hours: 24
+    max_failed_login_attempts: 5
+    account_lockout_duration_minutes: 30
+    enable_user_registration: false
+    enable_user_groups: true
+    enable_role_hierarchy: true
+    max_users_per_page: 50
+    enable_audit_logging: true
+    audit_retention_days: 90
+    enable_bulk_operations: true
+    max_bulk_operation_size: 1000
+    enable_data_export: true
+    enable_data_import: true
+    allowed_import_formats: ["csv", "xlsx", "json"]
+
+chat:
+    max_message_length: 4000
+    max_file_size_mb: 10
+    allowed_file_types: ["jpg", "jpeg", "png", "gif", "pdf", "txt", "doc", "docx"]
+    message_history_days: 365
+    enable_file_uploads: true
+    enable_message_reactions: true
+    enable_message_threads: true
+    enable_typing_indicators: true
+    enable_read_receipts: true
+    enable_message_search: true
+    auto_delete_messages: false
+    notification_sound: true
+    desktop_notifications: true
+    max_rooms_per_user: 50
+    max_members_per_room: 1000
+    enable_private_messages: true
+    enable_group_chat: true
+    enable_public_rooms: true
+    moderation_enabled: true
+    profanity_filter: false
+    rate_limit_messages: 30
 
 cors:
-  enabled: true
-  origins: ["*"]
-  methods: ["*"]
-  headers: ["*"]
+    enabled: true
+    origins: ["*"]
+    methods: ["*"]
+    headers: ["*"]
 
 logging:
-  level: "INFO"
-  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level: "INFO"
+    format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    file: "logs/nexus.log"
+
+# WebSocket configuration
+websocket:
+    heartbeat_interval: 30
+    connection_timeout: 60
+    max_connections_per_user: 5
+
+# Email configuration (for notifications and password reset)
+email:
+    enabled: false
+    smtp_server: "localhost"
+    smtp_port: 587
+    smtp_username: ""
+    smtp_password: ""
+    from_address: "noreply@nexus.local"
+
+# File storage configuration
+storage:
+    type: "local"
+    local_path: "storage"
+    max_file_size: 10485760 # 10MB in bytes
+    allowed_extensions: ["jpg", "jpeg", "png", "gif", "pdf", "txt", "doc", "docx", "zip"]
+
+# Rate limiting
+rate_limiting:
+    enabled: true
+    requests_per_minute: 60
+    burst_size: 10
+
+# Session configuration
+session:
+    cookie_name: "nexus_session"
+    cookie_secure: false
+    cookie_httponly: true
+    cookie_samesite: "lax"
+    max_age: 1800 # 30 minutes

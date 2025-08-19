@@ -1,437 +1,437 @@
 name: CI/CD
 
 on:
-  push:
-    branches: [main, develop]
-    tags: ["v*"]
-  pull_request:
-    branches: [main, develop]
-  schedule:
-    - cron: "0 0 * * 0" # Weekly on Sunday
+    push:
+        branches: [main, develop]
+        tags: ["v*"]
+    pull_request:
+        branches: [main, develop]
+    schedule:
+        - cron: "0 0 * * 0" # Weekly on Sunday
 
 env:
-  PYTHON_VERSION: "3.11"
-  PYTHONUNBUFFERED: 1
-  PYTHONDONTWRITEBYTECODE: 1
+    PYTHON_VERSION: "3.11"
+    PYTHONUNBUFFERED: 1
+    PYTHONDONTWRITEBYTECODE: 1
 
 permissions:
-  contents: read
-  issues: write
-  pull-requests: write
-  checks: write
-  security-events: write
-  actions: read
+    contents: read
+    issues: write
+    pull-requests: write
+    checks: write
+    security-events: write
+    actions: read
 
 jobs:
-  quality:
-    name: Code Quality
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+    quality:
+        name: Code Quality
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
+            - name: Setup Python
+              uses: actions/setup-python@v4
+              with:
+                  python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Install Poetry
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install poetry
-          poetry --version
+            - name: Install Poetry
+              run: |
+                  python -m pip install --upgrade pip
+                  python -m pip install poetry
+                  poetry --version
 
-      - name: Configure Poetry
-        run: |
-          poetry config virtualenvs.create true
-          poetry config virtualenvs.in-project true
+            - name: Configure Poetry
+              run: |
+                  poetry config virtualenvs.create true
+                  poetry config virtualenvs.in-project true
 
-      - name: Install dependencies
-        run: |
-          poetry install --no-interaction --with dev
-          poetry show --tree
+            - name: Install dependencies
+              run: |
+                  poetry install --no-interaction --with dev
+                  poetry show --tree
 
-      - name: Format check
-        run: poetry run black --check --diff nexus/ tests/
+            - name: Format check
+              run: poetry run black --check --diff nexus/ tests/
 
-      - name: Import sorting
-        run: poetry run isort --check-only --diff nexus/ tests/
+            - name: Import sorting
+              run: poetry run isort --check-only --diff nexus/ tests/
 
-      - name: Lint
-        run: poetry run flake8 nexus/ tests/ --count --select=E9,F63,F7,F82 --show-source --statistics
+            - name: Lint
+              run: poetry run flake8 nexus/ tests/ --count --select=E9,F63,F7,F82 --show-source --statistics
 
-      - name: Type check
-        run: poetry run mypy nexus/
+            - name: Type check
+              run: poetry run mypy nexus/
 
-      # - name: Security scan
-      #   run: poetry run bandit -r nexus/ -f json -o bandit-report.json
+            # - name: Security scan
+            #   run: poetry run bandit -r nexus/ -f json -o bandit-report.json
 
-      # - name: Upload security results
-      #   uses: actions/upload-artifact@v4
-      #   if: always()
-      #   continue-on-error: true
-      #   with:
-      #     name: bandit-report
-      #     path: bandit-report.json
-      #     retention-days: 30
+            # - name: Upload security results
+            #   uses: actions/upload-artifact@v4
+            #   if: always()
+            #   continue-on-error: true
+            #   with:
+            #     name: bandit-report
+            #     path: bandit-report.json
+            #     retention-days: 30
 
-  test:
-    name: Tests
-    runs-on: ${{ matrix.os }}
-    needs: quality
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ["3.11", "3.12", "3.13"]
-        exclude:
-          - os: macos-latest
-            python-version: "3.13"
-          - os: windows-latest
-            python-version: "3.13"
+    test:
+        name: Tests
+        runs-on: ${{ matrix.os }}
+        needs: quality
+        strategy:
+            fail-fast: false
+            matrix:
+                os: [ubuntu-latest, macos-latest, windows-latest]
+                python-version: ["3.11", "3.12", "3.13"]
+                exclude:
+                    - os: macos-latest
+                      python-version: "3.13"
+                    - os: windows-latest
+                      python-version: "3.13"
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
 
-      - name: Setup Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python-version }}
+            - name: Setup Python ${{ matrix.python-version }}
+              uses: actions/setup-python@v4
+              with:
+                  python-version: ${{ matrix.python-version }}
 
-      - name: Install Poetry (Unix/macOS)
-        if: runner.os != 'Windows'
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install poetry
-          poetry --version
-          poetry config virtualenvs.create true
-          poetry config virtualenvs.in-project true
+            - name: Install Poetry (Unix/macOS)
+              if: runner.os != 'Windows'
+              run: |
+                  python -m pip install --upgrade pip
+                  python -m pip install poetry
+                  poetry --version
+                  poetry config virtualenvs.create true
+                  poetry config virtualenvs.in-project true
 
-      - name: Install Poetry (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install poetry
-          poetry --version
-          poetry config virtualenvs.create true
-          poetry config virtualenvs.in-project true
-          poetry config virtualenvs.path .venv
+            - name: Install Poetry (Windows)
+              if: runner.os == 'Windows'
+              shell: pwsh
+              run: |
+                  python -m pip install --upgrade pip
+                  python -m pip install poetry
+                  poetry --version
+                  poetry config virtualenvs.create true
+                  poetry config virtualenvs.in-project true
+                  poetry config virtualenvs.path .venv
 
-      - name: Install dependencies (Unix/macOS)
-        if: runner.os != 'Windows'
-        run: |
-          poetry install --no-interaction --with dev,test
-          poetry show --tree
+            - name: Install dependencies (Unix/macOS)
+              if: runner.os != 'Windows'
+              run: |
+                  poetry install --no-interaction --with dev,test
+                  poetry show --tree
 
-      - name: Install dependencies (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          poetry install --no-interaction --with dev,test
-          poetry show --tree
+            - name: Install dependencies (Windows)
+              if: runner.os == 'Windows'
+              shell: pwsh
+              run: |
+                  poetry install --no-interaction --with dev,test
+                  poetry show --tree
 
-      - name: Setup async test environment
-        env:
-          PYTHONHASHSEED: 0
-          PYTHONASYNCIODEBUG: 1
-        run: |
-          echo "🔧 Setting up async test environment..."
-          echo "PYTEST_CURRENT_TEST=" >> $GITHUB_ENV
-        shell: bash
+            - name: Setup async test environment
+              env:
+                  PYTHONHASHSEED: 0
+                  PYTHONASYNCIODEBUG: 1
+              run: |
+                  echo "🔧 Setting up async test environment..."
+                  echo "PYTEST_CURRENT_TEST=" >> $GITHUB_ENV
+              shell: bash
 
-      - name: Run tests (Unix/macOS)
-        if: runner.os != 'Windows'
-        env:
-          PYTHONHASHSEED: 0
-          PYTHONASYNCIODEBUG: 1
-        run: |
-          poetry run pytest tests/ --cov=nexus --cov-branch --cov-report=xml --cov-report=html --cov-report=term-missing --junit-xml=junit-${{ matrix.os }}-${{ matrix.python-version }}.xml --tb=short --asyncio-mode=auto --log-cli-level=WARNING --disable-warnings --maxfail=5 -v
+            - name: Run tests (Unix/macOS)
+              if: runner.os != 'Windows'
+              env:
+                  PYTHONHASHSEED: 0
+                  PYTHONASYNCIODEBUG: 1
+              run: |
+                  poetry run pytest tests/ --cov=nexus --cov-branch --cov-report=xml --cov-report=html --cov-report=term-missing --junit-xml=junit-${{ matrix.os }}-${{ matrix.python-version }}.xml --tb=short --asyncio-mode=auto --log-cli-level=WARNING --disable-warnings --maxfail=999999 -v
 
-      - name: Run tests (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        env:
-          PYTHONHASHSEED: 0
-          TEMP: ${{ runner.temp }}
-          TMP: ${{ runner.temp }}
-        run: |
-          poetry run pytest tests/ `
-            --cov=nexus `
-            --cov-branch `
-            --cov-report=xml `
-            --cov-report=html `
-            --cov-report=term-missing `
-            --junit-xml=junit-${{ matrix.os }}-${{ matrix.python-version }}.xml `
-            --tb=short `
-            --asyncio-mode=auto `
-            --log-cli-level=WARNING `
-            --disable-warnings `
-            --maxfail=5 `
-            -v
+            - name: Run tests (Windows)
+              if: runner.os == 'Windows'
+              shell: pwsh
+              env:
+                  PYTHONHASHSEED: 0
+                  TEMP: ${{ runner.temp }}
+                  TMP: ${{ runner.temp }}
+              run: |
+                  poetry run pytest tests/ `
+                    --cov=nexus `
+                    --cov-branch `
+                    --cov-report=xml `
+                    --cov-report=html `
+                    --cov-report=term-missing `
+                    --junit-xml=junit-${{ matrix.os }}-${{ matrix.python-version }}.xml `
+                    --tb=short `
+                    --asyncio-mode=auto `
+                    --log-cli-level=WARNING `
+                    --disable-warnings `
+                    --maxfail=999999 `
+                    -v
 
-      - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v5
-        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-        continue-on-error: true
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./coverage.xml
-          flags: unittests,${{ matrix.os }},python${{ matrix.python-version }}
-          name: codecov-${{ matrix.os }}-${{ matrix.python-version }}
-          fail_ci_if_error: false
+            - name: Upload coverage reports to Codecov
+              uses: codecov/codecov-action@v5
+              if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+              continue-on-error: true
+              with:
+                  token: ${{ secrets.CODECOV_TOKEN }}
+                  file: ./coverage.xml
+                  flags: unittests,${{ matrix.os }},python${{ matrix.python-version }}
+                  name: codecov-${{ matrix.os }}-${{ matrix.python-version }}
+                  fail_ci_if_error: false
 
-      - name: Upload test results
-        uses: dorny/test-reporter@v1
-        if: (success() || failure()) && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
-        continue-on-error: true
-        with:
-          name: Test Results (${{ matrix.os }}-${{ matrix.python-version }})
-          path: junit-${{ matrix.os }}-${{ matrix.python-version }}.xml
-          reporter: java-junit
-          fail-on-error: false
+            - name: Upload test results
+              uses: dorny/test-reporter@v1
+              if: (success() || failure()) && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+              continue-on-error: true
+              with:
+                  name: Test Results (${{ matrix.os }}-${{ matrix.python-version }})
+                  path: junit-${{ matrix.os }}-${{ matrix.python-version }}.xml
+                  reporter: java-junit
+                  fail-on-error: false
 
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
-        with:
-          name: coverage-report
-          path: htmlcov/
-          retention-days: 30
+            - name: Upload artifacts
+              uses: actions/upload-artifact@v4
+              if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+              with:
+                  name: coverage-report
+                  path: htmlcov/
+                  retention-days: 30
 
-  integration:
-    name: Integration Tests
-    runs-on: ubuntu-latest
-    needs: quality
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_USER: postgres
-          POSTGRES_DB: nexus_test
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
+    integration:
+        name: Integration Tests
+        runs-on: ubuntu-latest
+        needs: quality
+        services:
+            postgres:
+                image: postgres:15
+                env:
+                    POSTGRES_PASSWORD: postgres
+                    POSTGRES_USER: postgres
+                    POSTGRES_DB: nexus_test
+                options: >-
+                    --health-cmd pg_isready
+                    --health-interval 10s
+                    --health-timeout 5s
+                    --health-retries 5
+                ports:
+                    - 5432:5432
 
-      redis:
-        image: redis:7-alpine
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 6379:6379
+            redis:
+                image: redis:7-alpine
+                options: >-
+                    --health-cmd "redis-cli ping"
+                    --health-interval 10s
+                    --health-timeout 5s
+                    --health-retries 5
+                ports:
+                    - 6379:6379
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
+            - name: Setup Python
+              uses: actions/setup-python@v4
+              with:
+                  python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Install Poetry
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install poetry
-          poetry --version
-          poetry config virtualenvs.create true
-          poetry config virtualenvs.in-project true
+            - name: Install Poetry
+              run: |
+                  python -m pip install --upgrade pip
+                  python -m pip install poetry
+                  poetry --version
+                  poetry config virtualenvs.create true
+                  poetry config virtualenvs.in-project true
 
-      - name: Install dependencies
-        run: |
-          poetry install --no-interaction --with dev,test
-          poetry run pip install asyncpg psycopg2-binary redis || echo "Optional dependencies not available"
+            - name: Install dependencies
+              run: |
+                  poetry install --no-interaction --with dev,test
+                  poetry run pip install asyncpg psycopg2-binary redis || echo "Optional dependencies not available"
 
-      - name: Wait for services
-        if: runner.os != 'Windows'
-        run: poetry run python scripts/check_services.py --services redis postgres
+            - name: Wait for services
+              if: runner.os != 'Windows'
+              run: poetry run python scripts/check_services.py --services redis postgres
 
-      - name: Run integration tests
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/nexus_test
-          REDIS_URL: redis://localhost:6379/0
-          NEXUS_SECRET_KEY: test-secret-key
-          NEXUS_DEBUG: true
-          PYTHONHASHSEED: 0
-        run: |
-          poetry run pytest tests/integration/ \
-            --junit-xml=junit-integration.xml \
-            --tb=short \
-            --asyncio-mode=auto \
-            --log-cli-level=INFO \
-            --maxfail=3 \
-            -v
+            - name: Run integration tests
+              env:
+                  DATABASE_URL: postgresql://postgres:postgres@localhost:5432/nexus_test
+                  REDIS_URL: redis://localhost:6379/0
+                  NEXUS_SECRET_KEY: test-secret-key
+                  NEXUS_DEBUG: true
+                  PYTHONHASHSEED: 0
+              run: |
+                  poetry run pytest tests/integration/ \
+                    --junit-xml=junit-integration.xml \
+                    --tb=short \
+                    --asyncio-mode=auto \
+                    --log-cli-level=INFO \
+                    --maxfail=999999 \
+                    -v
 
-      - name: Upload integration results
-        uses: dorny/test-reporter@v1
-        if: (success() || failure()) && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
-        continue-on-error: true
-        with:
-          name: Integration Test Results
-          path: junit-integration.xml
-          reporter: java-junit
-          fail-on-error: false
+            - name: Upload integration results
+              uses: dorny/test-reporter@v1
+              if: (success() || failure()) && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+              continue-on-error: true
+              with:
+                  name: Integration Test Results
+                  path: junit-integration.xml
+                  reporter: java-junit
+                  fail-on-error: false
 
-  build:
-    name: Build
-    runs-on: ubuntu-latest
-    needs: [test, integration]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+    build:
+        name: Build
+        runs-on: ubuntu-latest
+        needs: [test, integration]
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
+            - name: Setup Python
+              uses: actions/setup-python@v4
+              with:
+                  python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Install Poetry
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install poetry
-          poetry --version
-          poetry config virtualenvs.create true
-          poetry config virtualenvs.in-project true
+            - name: Install Poetry
+              run: |
+                  python -m pip install --upgrade pip
+                  python -m pip install poetry
+                  poetry --version
+                  poetry config virtualenvs.create true
+                  poetry config virtualenvs.in-project true
 
-      - name: Build package
-        run: poetry build
+            - name: Build package
+              run: poetry build
 
-      - name: Check package
-        run: |
-          poetry run pip install twine
-          poetry run twine check dist/*
+            - name: Check package
+              run: |
+                  poetry run pip install twine
+                  poetry run twine check dist/*
 
-      - name: Test installation
-        run: |
-          python -m venv test_env
-          source test_env/bin/activate
-          pip install dist/*.whl
-          python -c "import nexus; print(f'✓ Nexus {getattr(nexus, \"__version__\", \"unknown\")} installed')"
+            - name: Test installation
+              run: |
+                  python -m venv test_env
+                  source test_env/bin/activate
+                  pip install dist/*.whl
+                  python -c "import nexus; print(f'✓ Nexus {getattr(nexus, \"__version__\", \"unknown\")} installed')"
 
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        continue-on-error: true
-        with:
-          name: dist-${{ github.run_number }}
-          path: dist/
-          retention-days: 30
+            - name: Upload build artifacts
+              uses: actions/upload-artifact@v4
+              continue-on-error: true
+              with:
+                  name: dist-${{ github.run_number }}
+                  path: dist/
+                  retention-days: 30
 
-  docker:
-    name: Docker
-    runs-on: ubuntu-latest
-    needs: build
-    if: github.event_name != 'pull_request'
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+    docker:
+        name: Docker
+        runs-on: ubuntu-latest
+        needs: build
+        if: github.event_name != 'pull_request'
+        permissions:
+            contents: read
+            packages: write
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
 
-      - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v3
+            - name: Setup Docker Buildx
+              uses: docker/setup-buildx-action@v3
 
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+            - name: Login to GitHub Container Registry
+              uses: docker/login-action@v3
+              with:
+                  registry: ghcr.io
+                  username: ${{ github.actor }}
+                  password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ghcr.io/${{ github.repository }}
-          tags: |
-            type=ref,event=branch
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=raw,value=latest,enable={{is_default_branch}}
+            - name: Extract metadata
+              id: meta
+              uses: docker/metadata-action@v5
+              with:
+                  images: ghcr.io/${{ github.repository }}
+                  tags: |
+                      type=ref,event=branch
+                      type=semver,pattern={{version}}
+                      type=semver,pattern={{major}}.{{minor}}
+                      type=raw,value=latest,enable={{is_default_branch}}
 
-      - name: Build and push
-        uses: docker/build-push-action@v5
-        continue-on-error: true
-        with:
-          context: .
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          platforms: linux/amd64,linux/arm64
+            - name: Build and push
+              uses: docker/build-push-action@v5
+              continue-on-error: true
+              with:
+                  context: .
+                  push: true
+                  tags: ${{ steps.meta.outputs.tags }}
+                  labels: ${{ steps.meta.outputs.labels }}
+                  cache-from: type=gha
+                  cache-to: type=gha,mode=max
+                  platforms: linux/amd64,linux/arm64
 
-  security:
-    name: Security
-    runs-on: ubuntu-latest
-    needs: build
-    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
-    permissions:
-      contents: read
-      security-events: write
-      actions: read
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+    security:
+        name: Security
+        runs-on: ubuntu-latest
+        needs: build
+        if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
+        permissions:
+            contents: read
+            security-events: write
+            actions: read
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
 
-      - name: Run Trivy scan
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: "fs"
-          scan-ref: "."
-          format: "sarif"
-          output: "trivy-results.sarif"
+            - name: Run Trivy scan
+              uses: aquasecurity/trivy-action@master
+              with:
+                  scan-type: "fs"
+                  scan-ref: "."
+                  format: "sarif"
+                  output: "trivy-results.sarif"
 
-      - name: Upload Trivy results
-        uses: github/codeql-action/upload-sarif@v3
-        if: always() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
-        continue-on-error: true
-        with:
-          sarif_file: "trivy-results.sarif"
+            - name: Upload Trivy results
+              uses: github/codeql-action/upload-sarif@v3
+              if: always() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+              continue-on-error: true
+              with:
+                  sarif_file: "trivy-results.sarif"
 
-      - name: Run CodeQL
-        uses: github/codeql-action/analyze@v3
-        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-        continue-on-error: true
-        with:
-          languages: python
+            - name: Run CodeQL
+              uses: github/codeql-action/analyze@v3
+              if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+              continue-on-error: true
+              with:
+                  languages: python
 
-  summary:
-    name: Summary
-    runs-on: ubuntu-latest
-    needs: [quality, test, integration, build, docker, security]
-    if: always()
-    steps:
-      - name: Generate summary
-        run: |
-          echo "## CI/CD Pipeline Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Event:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Results:" >> $GITHUB_STEP_SUMMARY
-          echo "- **Quality:** ${{ needs.quality.result == 'success' && '✅' || '❌' }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Tests:** ${{ needs.test.result == 'success' && '✅' || '❌' }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Integration:** ${{ needs.integration.result == 'success' && '✅' || '❌' }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Build:** ${{ needs.build.result == 'success' && '✅' || '❌' }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Docker:** ${{ needs.docker.result == 'success' && '✅' || needs.docker.result == 'skipped' && '⏭️' || '❌' }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Security:** ${{ needs.security.result == 'success' && '✅' || '❌' }}" >> $GITHUB_STEP_SUMMARY
+    summary:
+        name: Summary
+        runs-on: ubuntu-latest
+        needs: [quality, test, integration, build, docker, security]
+        if: always()
+        steps:
+            - name: Generate summary
+              run: |
+                  echo "## CI/CD Pipeline Summary" >> $GITHUB_STEP_SUMMARY
+                  echo "" >> $GITHUB_STEP_SUMMARY
+                  echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+                  echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+                  echo "**Event:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+                  echo "" >> $GITHUB_STEP_SUMMARY
+                  echo "### Results:" >> $GITHUB_STEP_SUMMARY
+                  echo "- **Quality:** ${{ needs.quality.result == 'success' && '✅' || '❌' }}" >> $GITHUB_STEP_SUMMARY
+                  echo "- **Tests:** ${{ needs.test.result == 'success' && '✅' || '❌' }}" >> $GITHUB_STEP_SUMMARY
+                  echo "- **Integration:** ${{ needs.integration.result == 'success' && '✅' || '❌' }}" >> $GITHUB_STEP_SUMMARY
+                  echo "- **Build:** ${{ needs.build.result == 'success' && '✅' || '❌' }}" >> $GITHUB_STEP_SUMMARY
+                  echo "- **Docker:** ${{ needs.docker.result == 'success' && '✅' || needs.docker.result == 'skipped' && '⏭️' || '❌' }}" >> $GITHUB_STEP_SUMMARY
+                  echo "- **Security:** ${{ needs.security.result == 'success' && '✅' || '❌' }}" >> $GITHUB_STEP_SUMMARY
 
-      - name: Check status
-        run: |
-          if [[ "${{ needs.quality.result }}" == "failure" || "${{ needs.test.result }}" == "failure" || "${{ needs.integration.result }}" == "failure" || "${{ needs.build.result }}" == "failure" ]]; then
-            echo "❌ CI pipeline failed"
-            exit 1
-          else
-            echo "✅ CI pipeline passed"
-          fi
+            - name: Check status
+              run: |
+                  if [[ "${{ needs.quality.result }}" == "failure" || "${{ needs.test.result }}" == "failure" || "${{ needs.integration.result }}" == "failure" || "${{ needs.build.result }}" == "failure" ]]; then
+                    echo "❌ CI pipeline failed"
+                    exit 1
+                  else
+                    echo "✅ CI pipeline passed"
+                  fi
