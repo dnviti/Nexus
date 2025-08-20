@@ -108,6 +108,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [ ] Database migrations system
 - [ ] Enhanced monitoring dashboard
 - [ ] Plugin dependency management
+- [ ] Nexus cli works with certificate and calls the existing API (kubectl like)
+- [ ] Shared web frontend components
 
 ### Planned for v0.3.0
 
